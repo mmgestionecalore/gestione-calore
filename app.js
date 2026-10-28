@@ -60,4 +60,6 @@ function showPage(pageId) {
         .classList.remove("hidden");
 }
 
+window.showPage = showPage;
+
 window.onload = caricaCentrali;
