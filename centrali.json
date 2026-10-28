@@ -1,1 +1,48 @@
-
+[
+  {
+    "nome": "Maspero 51",
+    "lotto": "Lotto 1",
+    "fornitore": "Innova",
+    "criticita": true,
+    "tag": [
+      "Amianto",
+      "Generatori",
+      "Distribuzione"
+    ],
+    "sintesi": "Generatori con perdite, rete vetusta e presenza amianto"
+  },
+  {
+    "nome": "Val Cismon 2",
+    "lotto": "Lotto 1",
+    "fornitore": "Innova",
+    "criticita": true,
+    "tag": [
+      "Seveso",
+      "Allagamento",
+      "Antincendio"
+    ],
+    "sintesi": "Alimentazione provvisoria post esondazione"
+  },
+  {
+    "nome": "Uccelli di Nemi 58",
+    "lotto": "Lotto 1",
+    "fornitore": "Innova",
+    "criticita": true,
+    "tag": [
+      "Lambro",
+      "Allagamento"
+    ],
+    "sintesi": "Ripetuti allagamenti e sostituzioni generatori"
+  },
+  {
+    "nome": "Bagarotti 44",
+    "lotto": "Lotto 2",
+    "fornitore": "Renovit",
+    "criticita": false,
+    "tag": [
+      "Superbonus",
+      "Politica"
+    ],
+    "sintesi": "Problemi di bilanciamento termico"
+  }
+]
