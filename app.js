@@ -1,81 +1,62 @@
-function showPage(pageId) {
+let centrali = [];
 
-    document.querySelectorAll(".page")
-        .forEach(p => p.classList.add("hidden"));
+async function caricaDati() {
 
-    document.getElementById(pageId)
-        .classList.remove("hidden");
+    const response =
+        await fetch("centrali.json");
+
+    centrali =
+        await response.json();
+
+    mostraCentrali();
 }
 
-const centrali = [
-    {
-        nome: "Maspero 51",
-        stato: "Critica",
-        note: "Generatori con perdite, amianto, rete vetusta"
-    },
-    {
-        nome: "Val Cismon 2",
-        stato: "Critica",
-        note: "Esondazione Seveso, alimentazione provvisoria"
-    },
-    {
-        nome: "Uccelli di Nemi 58",
-        stato: "Critica",
-        note: "Rischio esondazione Lambro"
-    },
-    {
-        nome: "Bagarotti 44",
-        stato: "Strategica",
-        note: "Superbonus parziale"
-    }
-];
-
-function loadCentrali() {
+function mostraCentrali() {
 
     const container =
-        document.getElementById("centraliContainer");
+        document.getElementById(
+            "centraliContainer"
+        );
+
+    if (!container)
+        return;
 
     container.innerHTML = "";
 
     centrali.forEach(c => {
 
         container.innerHTML += `
-        <div class="card">
-            <h3>${c.nome}</h3>
-            <b>${c.stato}</b>
-            <p>${c.note}</p>
-        </div>
+            <div class="card">
+                <h3>${c.nome}</h3>
+
+                <p>
+                    <b>${c.lotto}</b>
+                    -
+                    ${c.fornitore}
+                </p>
+
+                <p>${c.sintesi}</p>
+
+                <p>
+                    ${c.tag.join(" • ")}
+                </p>
+            </div>
         `;
     });
 }
 
-function searchCentrale() {
+function showPage(pageId) {
 
-    const text =
-        document.getElementById("searchInput")
-        .value
-        .toLowerCase();
+    document
+        .querySelectorAll(".page")
+        .forEach(p =>
+            p.classList.add("hidden")
+        );
 
-    const results =
-        document.getElementById("searchResults");
-
-    results.innerHTML = "";
-
-    if(text.length < 2)
-        return;
-
-    centrali
-        .filter(c =>
-            c.nome.toLowerCase().includes(text))
-        .forEach(c => {
-
-            results.innerHTML += `
-                <div class="card">
-                    <b>${c.nome}</b>
-                    <p>${c.note}</p>
-                </div>
-            `;
-        });
+    document
+        .getElementById(pageId)
+        .classList.remove("hidden");
 }
 
-loadCentrali();
+window.onload =
+    caricaDati;
