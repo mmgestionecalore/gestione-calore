@@ -1,30 +1,55 @@
-🔥 Gestione Calore
-🏠 Dashboard 🏭 Centrali 📚 Database 📅 Programmazione
-Control Room
-Cerca una centrale...
-🔴 Criticità Operative
-Maspero 51
-Val Cismon 2
-Padre Luigi Monti 18
-Uccelli di Nemi 58
-Barzoni 11
-🏛 Centrali Sensibili
-Bagarotti 44
-Coppin 3
-Tarabella 4
-Rizzoli Bassi
-🏭 Centrali Termiche
-📚 Database Conoscenza
-Amianto
-Maspero, Console Marcello, Ulisse Dini
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Calore</title>
 
-Rischio Allagamento
-Val Cismon, Uccelli di Nemi, Rilke, Borsieri
+    <link rel="stylesheet" href="styles.css">
+</head>
 
-Superbonus
-Bagarotti, Coppin
+<body>
 
-📅 Programmazione
-Caldaie > 15 anni nel 2028
-Da collegare al file Anni Caldaie
-Errore durante il caricamento delle librerie. Controlla la console per i dettagli.
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <h2>🔥 Gestione Calore</h2>
+
+        <button onclick="showPage('dashboard')">
+            Dashboard
+        </button>
+
+        <button onclick="showPage('centrali')">
+            Centrali
+        </button>
+
+        <button onclick="showPage('database')">
+            Database
+        </button>
+
+        <button onclick="showPage('programmazione')">
+            Programmazione
+        </button>
+
+    </aside>
+
+    <main class="content">
+
+        <section id="dashboard" class="page">
+
+            <h1>Control Room</h1>
+
+            <input
+                class="search"
+                id="searchInput"
+                type="text"
+                placeholder="Cerca centrale..."
+            >
+
+            <div class="card">
+                <h3>🔴 Criticità Operative</h3>
+
+                <ul>
+                    <li>Maspero 51</li>
+  
