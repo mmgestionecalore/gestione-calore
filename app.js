@@ -1,17 +1,10 @@
-let centrali = [];
-
-async function caricaDati() {
+async function caricaCentrali() {
 
     const response =
         await fetch("centrali.json");
 
-    centrali =
+    const centrali =
         await response.json();
-
-    mostraCentrali();
-}
-
-function mostraCentrali() {
 
     const container =
         document.getElementById(
@@ -27,22 +20,31 @@ function mostraCentrali() {
 
         container.innerHTML += `
             <div class="card">
+
                 <h3>${c.nome}</h3>
 
                 <p>
-                    <b>${c.lotto}</b>
-                    -
+                    <strong>${c.lotto}</strong>
+                </p>
+
+                <p>
+                    Fornitore:
                     ${c.fornitore}
                 </p>
 
-                <p>${c.sintesi}</p>
+                <p>
+                    Livello:
+                    ${c.livello}
+                </p>
 
                 <p>
-                    ${c.tag.join(" • ")}
+                    ${c.sintesi}
                 </p>
+
             </div>
         `;
     });
+
 }
 
 function showPage(pageId) {
@@ -58,5 +60,4 @@ function showPage(pageId) {
         .classList.remove("hidden");
 }
 
-window.onload =
-    caricaDati;
+window.onload = caricaCentrali;
