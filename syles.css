@@ -1,1 +1,64 @@
+body {
+    margin: 0;
+    font-family: Segoe UI, sans-serif;
+    background: #f4f6f9;
+}
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background: #18344f;
+    color: white;
+    padding: 20px;
+}
+
+.sidebar button {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 12px;
+    background: transparent;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.sidebar button:hover {
+    background: #294f75;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+.red {
+    border-left: 6px solid red;
+}
+
+.orange {
+    border-left: 6px solid orange;
+}
+
+.hidden {
+    display: none;
+}
+
+#searchInput {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+}
 
