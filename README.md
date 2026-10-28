@@ -1,1 +1,0 @@
-# gestione-calore
