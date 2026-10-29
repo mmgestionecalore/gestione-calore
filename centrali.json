@@ -1,221 +1,26 @@
 [
   {
-    "id": "CT-L1-001",
     "nome": "Maspero 51",
     "lotto": "Lotto 1",
     "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Rosso",
-    "tag": [
-      "Amianto",
-      "CriticitaGeneratori",
-      "CriticitaDistribuzione",
-      "Pianificazione"
-    ],
-    "sintesi": "Generatori con perdite, rete vetusta e presenza di amianto.",
-    "conoscenze": [
-      "Centrale condivisa con il condominio di Via Maspero",
-      "MM serve esclusivamente gli edifici di Viale Turchino",
-      "Generatori con perdite",
-      "Rete vetusta",
-      "Presenza amianto",
-      "CPI in capo al condominio"
-    ],
-    "eventi": [
-      "2025 - Installazione nuova caldaia",
-      "2025 - Predisposto progetto riqualificazione",
-      "2025 - Progetto stralciato"
-    ],
-    "attenzioni": [
-      "Valutare nuova progettazione"
-    ]
+    "sintesi": "Generatori con perdite, rete vetusta e amianto"
   },
   {
-    "id": "CT-L1-002",
-    "nome": "Santa Maria del Suffragio 2",
+    "nome": "Val Cismon 2",
     "lotto": "Lotto 1",
     "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Verde",
-    "tag": [
-      "CPI"
-    ],
-    "sintesi": "Nessuna criticità rilevante.",
-    "conoscenze": [
-      "Ogni alloggio dispone di chiusura individuale",
-      "CPI recentemente ottenuto"
-    ],
-    "eventi": [],
-    "attenzioni": []
+    "sintesi": "Alimentazione provvisoria post Seveso"
   },
   {
-    "id": "CT-L1-003",
-    "nome": "Barzoni 11",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Rosso",
-    "tag": [
-      "CriticitaDistribuzione",
-      "Demolizione",
-      "Ricostruzione"
-    ],
-    "sintesi": "Perdite diffuse e complesso in attesa di demolizione e ricostruzione.",
-    "conoscenze": [
-      "Perdite diffuse sulla rete",
-      "Progetto demolizione e ricostruzione previsto",
-      "Alloggi progressivamente liberati"
-    ],
-    "eventi": [
-      "2023 - Sostituzione caldaia",
-      "2024 - Nuova sostituzione caldaia",
-      "2024 - Installazione scambiatore a piastre"
-    ],
-    "attenzioni": [
-      "Monitorare evoluzione piano demolizione"
-    ]
-  },
-  {
-    "id": "CT-L1-004",
-    "nome": "Tarabella 4",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Arancione",
-    "tag": [
-      "InteressePolitico",
-      "Riqualificazione",
-      "Distribuzione"
-    ],
-    "sintesi": "Centrale rifatta nel 2024 ma rete ancora problematica.",
-    "conoscenze": [
-      "Tre caldaie con una mantenuta di riserva",
-      "Fanghi e detriti nella distribuzione",
-      "Pompe di rilancio presenti",
-      "Interesse politico elevato"
-    ],
-    "eventi": [
-      "2024 - Rifacimento completo centrale"
-    ],
-    "attenzioni": [
-      "Monitorare circolazione impianto"
-    ]
-  },
-  {
-    "id": "CT-L1-005",
     "nome": "Uccelli di Nemi 58",
     "lotto": "Lotto 1",
     "fornitore": "Innova",
-    "servizi": [
-      "Riscaldamento",
-      "ACS"
-    ],
-    "livelloAttenzione": "Rosso",
-    "tag": [
-      "Allagamento",
-      "Lambro",
-      "Politica"
-    ],
-    "sintesi": "Ripetute esondazioni e sostituzioni generatori.",
-    "conoscenze": [
-      "Area soggetta a esondazioni del Lambro",
-      "Storico allagamenti",
-      "Action plan previsto ma non finanziato"
-    ],
-    "eventi": [
-      "2026 - Prevista sostituzione 3 caldaie murali",
-      "2026 - Prevista sostituzione 2 bollitori"
-    ],
-    "attenzioni": [
-      "Valutare protezione idraulica definitiva"
-    ]
+    "sintesi": "Rischio esondazione Lambro"
   },
   {
-    "id": "CT-L1-006",
-    "nome": "San Mamete 8",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Verde",
-    "tag": [],
-    "sintesi": "Piccola centrale senza criticità.",
-    "conoscenze": [
-      "Impianto di piccole dimensioni"
-    ],
-    "eventi": [],
-    "attenzioni": []
-  },
-  {
-    "id": "CT-L1-007",
-    "nome": "Rilke 6/10",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Rosso",
-    "tag": [
-      "Allagamento",
-      "Lambro"
-    ],
-    "sintesi": "Centrale soggetta ad allagamenti ricorrenti.",
-    "conoscenze": [
-      "Area soggetta alle esondazioni del Lambro",
-      "Storico allagamenti"
-    ],
-    "eventi": [],
-    "attenzioni": [
-      "Valutare mitigazione rischio idraulico"
-    ]
-  },
-  {
-    "id": "CT-L1-008",
-    "nome": "Omero 15",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Verde",
-    "tag": [],
-    "sintesi": "Centrale in buone condizioni.",
-    "conoscenze": [
-      "Caldaie relativamente recenti"
-    ],
-    "eventi": [],
-    "attenzioni": []
-  },
-  {
-    "id": "CT-L1-009",
-    "nome": "Osimo 2",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Verde",
-    "tag": [],
-    "sintesi": "Impianto analogo a Omero 15.",
-    "conoscenze": [
-      "Caldaie relativamente recenti",
-      "Condizioni soddisfacenti"
-    ],
-    "eventi": [],
-    "attenzioni": []
-  },
-  {
-    "id": "CT-L1-010",
-    "nome": "Bezzecca 4",
-    "lotto": "Lotto 1",
-    "fornitore": "Innova",
-    "servizi": ["Riscaldamento"],
-    "livelloAttenzione": "Verde",
-    "tag": [
-      "Riqualificazione"
-    ],
-    "sintesi": "Centrale rifatta nel 2024 per problemi emissivi.",
-    "conoscenze": [
-      "Nuova caldaia",
-      "Scambiatore a piastre",
-      "Nuova canna fumaria"
-    ],
-    "eventi": [
-      "2024 - Rifacimento centrale"
-    ],
-    "attenzioni": []
+    "nome": "Bagarotti 44",
+    "lotto": "Lotto 2",
+    "fornitore": "Renovit",
+    "sintesi": "Superbonus e problemi di bilanciamento"
   }
 ]
