@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Gestione Calore">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Gestione Calore</title>
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 <div id="login" class="login hidden">
@@ -21,8 +21,12 @@
     <h1>Gestione Calore</h1>
     <p class="muted">Accesso riservato</p>
     <div id="stepEmail">
-      <label>Email<input id="email" type="email" required autocomplete="email" placeholder="la tua email"></label>
-      <button type="submit">Invia link di accesso</button>
+      <label>Email<input id="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="la tua email"></label>
+      <label>Password<input id="pwd" type="password" required autocomplete="current-password" placeholder="la tua password"></label>
+      <label class="chk"><input type="checkbox" id="showpwd" style="width:auto"> Mostra password</label>
+      <button type="submit" id="entra">Entra</button>
+      <button type="button" id="linkMail" class="ghost">Inviami un link per email</button>
+      <p class="hint">Dall’app sulla schermata Home entra con la password: il link ricevuto per email si apre nel browser e non nell’app, e funziona una sola volta.</p>
     </div>
     <div id="stepCode" class="hidden">
       <p class="muted">Ti ho inviato un link per email: aprilo da questo browser per entrare.</p>
@@ -44,6 +48,6 @@
 <dialog id="dlg"><form method="dialog" id="dform"></form></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
