@@ -32,7 +32,11 @@ const MODULI={
  memoria:{nome:'Memoria operativa',tab:'memoria',ord:['aggiornato_il',false],campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'categoria',l:'Categoria',t:'text',list:1},{k:'tag',l:'Tag',t:'text',list:1},{k:'testo',l:'Testo',t:'long'}]},
  riferimenti:{nome:'Normativa e riferimenti',tab:'riferimenti',ord:['titolo',true],campi:[
-  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text',list:1},{k:'link',l:'Link',t:'text'},{k:'testo',l:'Testo / sintesi',t:'long'}]}
+  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text',list:1},{k:'link',l:'Link',t:'text'},{k:'testo',l:'Testo / sintesi',t:'long'}]},
+ documenti:{nome:'Documenti',tab:'documenti',ord:['titolo',true],campi:[
+  {k:'titolo',l:'Documento',t:'text',list:1},{k:'cartella',l:'Cartella',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},
+  {k:'dimensione_kb',l:'Dimensione (KB)',t:'num',dec:0,list:1},{k:'modificato_il',l:'Modificato il',t:'date',list:1,nc:1},{k:'modificato_da',l:'Modificato da',t:'text',list:1},
+  {k:'link',l:'Link',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text'},{k:'note',l:'Note',t:'long'}]}
 };
 const TABELLE=Object.keys(MODULI).filter(k=>MODULI[k].tab);
 
@@ -42,10 +46,11 @@ const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const oggi=()=>iso(new Date());
 const fmtD=d=>d?d.split('-').reverse().join('/'):'';
-const fmtN=n=>n==null||n===''?'':Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN=(n,d=2)=>n==null||n===''?'':Number(n).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});
 const aggiungiGiorni=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
 const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
 let corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[];
+const LIM=300;let limite=LIM;
 
 function msg(t){$('#loginMsg').textContent=t||''}
 function show(logged){$('#login').classList.toggle('hidden',logged);$('#app').classList.toggle('hidden',!logged)}
@@ -74,7 +79,7 @@ $('#loginForm').addEventListener('submit',async e=>{
 });
 $('#back').onclick=()=>{$('#stepCode').classList.add('hidden');$('#stepEmail').classList.remove('hidden');msg('')};
 $('#logout').onclick=()=>sb.auth.signOut();
-let deb;$('#search').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(()=>{corrente==='oggi'?ricercaGlobale():disegna()},250)});
+let deb;$('#search').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(()=>{corrente==='oggi'?ricercaGlobale():(limite=LIM,disegna())},250)});
 
 async function caricaIndirizzi(){
   const{data}=await sb.from('impianti').select('indirizzo').order('indirizzo');
@@ -83,13 +88,23 @@ async function caricaIndirizzi(){
   dl.innerHTML=indirizzi.map(a=>'<option value="'+esc(a)+'">').join('');
 }
 
+async function leggiTutto(m){
+  let all=[],da=0;
+  for(;;){
+    const r=await sb.from(m.tab).select('*').order(m.ord[0],{ascending:m.ord[1],nullsFirst:false}).order('id').range(da,da+999);
+    if(r.error)return{data:null,error:r.error};
+    all=all.concat(r.data);if(r.data.length<1000)break;da+=1000;
+  }
+  return{data:all,error:null};
+}
+
 /* ---------- elenchi ---------- */
 async function apri(k){
-  corrente=k;sort=null;$('#search').value='';
+  corrente=k;sort=null;limite=LIM;$('#search').value='';
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
   if(k==='oggi')return oggiVista();
   const m=MODULI[k];
-  const{data,error}=await sb.from(m.tab).select('*').order(m.ord[0],{ascending:m.ord[1],nullsFirst:false});
+  const{data,error}=await leggiTutto(m);
   if(error){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(error.message)+'</p>';return}
   dati=data;disegna();
 }
@@ -100,10 +115,12 @@ function disegna(){
   const cols=m.campi.filter(c=>c.list);
   let h='<div class="bar"><h2 style="margin:0">'+esc(m.nome)+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></h2><span class="grp"><button class="ghost" id="imp">Importa</button><button class="ghost" id="exp">Esporta</button><button id="nuovo">+ Nuovo</button></span></div>';
   h+='<div class="tw"><table><thead><tr>'+cols.map(c=>'<th data-k="'+c.k+'">'+esc(c.l)+(sort&&sort.k===c.k?(sort.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead><tbody>';
-  for(const r of rows)h+='<tr class="row" data-id="'+r.id+'">'+cols.map(c=>'<td>'+cella(c,r)+'</td>').join('')+'</tr>';
+  for(const r of rows.slice(0,limite))h+='<tr class="row" data-id="'+r.id+'">'+cols.map(c=>'<td>'+cella(c,r)+'</td>').join('')+'</tr>';
   h+='</tbody></table></div>';
   if(!rows.length)h+='<p class="muted">Nessun elemento.</p>';
+  if(rows.length>limite)h+='<p><button class="ghost" id="piu">Mostra altri '+Math.min(LIM,rows.length-limite)+' (ne restano '+(rows.length-limite)+')</button></p>';
   $('#main').innerHTML=h;
+  const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   $('#nuovo').onclick=()=>modulo(null);$('#imp').onclick=importa;$('#exp').onclick=()=>esporta(corrente,dati);
   document.querySelectorAll('th').forEach(t=>t.onclick=()=>{sort={k:t.dataset.k,d:sort&&sort.k===t.dataset.k?-sort.d:1};disegna()});
   document.querySelectorAll('tr.row').forEach(t=>t.onclick=()=>{const r=dati.find(x=>x.id===t.dataset.id);m.dossier?scheda(r):modulo(r)});
@@ -114,7 +131,7 @@ function cella(c,r){
   if(c.k==='stato'&&/fermo/i.test(v||''))return'<span class="late">'+esc(v)+'</span>';
   if(c.k==='stato'&&/parziale/i.test(v||''))return'<span class="soon">'+esc(v)+'</span>';
   if(c.t==='date'){const chiuso=r.fatto||r.stato==='Fatto'||r.stato==='Risolta';const cl=v&&v<oggi()&&!chiuso?'late':(v&&v<=aggiungiGiorni(30)&&!chiuso?'soon':'');return'<span class="'+cl+'">'+fmtD(v)+'</span>'}
-  if(c.t==='num')return fmtN(v);
+  if(c.t==='num')return fmtN(v,c.dec);
   if(c.t==='bool')return v?'✔':'';
   if(c.k==='link'&&/^https?:\/\//i.test(v||''))return'<a href="'+esc(v)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">apri</a>';
   return esc(v);
@@ -171,10 +188,12 @@ async function scheda(r){
    ['scadenze','Scadenze',x=>fmtD(x.data)+' · '+(x.titolo||'')+(x.fatto?' ✔':'')],
    ['programmazione','Programmazione',x=>(x.anno||'')+' · '+(x.titolo||'')+' · '+fmtN(x.importo)]];
   const res=await Promise.all(coll.map(c=>sb.from(c[0]).select('*').eq('impianto',a).order(MODULI[c[0]].ord[0],{ascending:false,nullsFirst:false})));
+  const dc=await sb.from('documenti').select('titolo,cartella,link',{count:'exact'}).ilike('cartella','%'+a+'%').limit(30);
   let h='<h3>'+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
+  h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(x.link)+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
   h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button><button type="button" id="mod">Modifica impianto</button></div>';
   $('#dform').innerHTML=h;const d=$('#dlg');if(!d.open)d.showModal();
   $('#ann').onclick=()=>d.close();$('#mod').onclick=()=>modulo(r);
@@ -223,7 +242,7 @@ function esporta(k,rows){
 }
 async function backup(){
   const out={esportato_il:new Date().toISOString(),da:utente.email};
-  for(const k of TABELLE){const{data,error}=await sb.from(MODULI[k].tab).select('*');if(error){alert('Errore su '+k+': '+error.message);return}out[k]=data}
+  for(const k of TABELLE){const{data,error}=await leggiTutto(MODULI[k]);if(error){alert('Errore su '+k+': '+error.message);return}out[k]=data}
   scarica('backup-gestione-calore-'+oggi()+'.json',JSON.stringify(out,null,1),'application/json');toast('Backup scaricato');
 }
 
