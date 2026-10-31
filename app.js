@@ -66,23 +66,75 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 async function avvia(){
   const{data:{session}}=await sb.auth.getSession();
   if(session){await entra(session)}else show(false);
-  sb.auth.onAuthStateChange((e,s)=>{if(s&&!utente)entra(s);if(!s){utente=null;show(false)}});
+  sb.auth.onAuthStateChange((e,s)=>{if(s&&!utente)entra(s);if(!s){utente=null;show(false);if($('#pwd'))$('#pwd').value=''}});
 }
 async function entra(session){
-  const{error}=await sb.from('attivita').select('id').limit(1);
-  if(error){await sb.auth.signOut();show(false);msg('Utente non autorizzato.');return}
+  const{data:ok,error}=await sb.rpc('is_autorizzato');
+  if(error||ok!==true){await sb.auth.signOut();show(false);msg('Utente non autorizzato.');return}
   utente=session.user;$('#who').textContent=utente.email;show(true);
   const nav=$('#nav');nav.innerHTML='';
   for(const k in MODULI){const b=document.createElement('button');b.textContent=MODULI[k].nome;b.dataset.k=k;b.onclick=()=>apri(k);nav.appendChild(b)}
   if(!$('#bk')){const b=document.createElement('button');b.id='bk';b.className='ghost';b.textContent='Backup';b.title='Scarica tutti i dati in un file';b.onclick=backup;$('#logout').before(b)}
+  if(!$('#pw')){const b=document.createElement('button');b.id='pw';b.className='ghost';b.textContent='Password';b.title='Imposta o cambia la tua password';b.onclick=cambiaPassword;$('#logout').before(b)}
   await caricaIndirizzi();apri(corrente);
+}
+function erroreAccesso(er,come){
+  const st=er&&er.status,c=er&&er.code;
+  if(c==='over_email_send_rate_limit')return "Il servizio email ha raggiunto il limite (poche email all'ora): riprova più tardi oppure entra con la password.";
+  if(st===429||c==='over_request_rate_limit')return 'Troppi tentativi ravvicinati: attendi qualche minuto e riprova.';
+  if(come==='password'&&(st===400||c==='invalid_credentials'))return 'Email o password non corretta.';
+  if(c==='email_not_confirmed')return 'Indirizzo email non ancora confermato.';
+  return (come==='password'?'Accesso non riuscito':'Impossibile inviare il link')+(c||st?' ('+(c||st)+')':'')+'.';
 }
 $('#loginForm').addEventListener('submit',async e=>{
   e.preventDefault();msg('');
-  const{error}=await sb.auth.signInWithOtp({email:$('#email').value.trim(),options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
-  if(error){msg('Impossibile inviare il link per questa email.');return}
-  $('#stepEmail').classList.add('hidden');$('#stepCode').classList.remove('hidden');
+  if(!$('#pwd')){msg('Pagina in aggiornamento: ricaricala tra un minuto.');return}
+  const email=$('#email').value.trim(),password=$('#pwd').value;
+  if(!email||!password){msg('Scrivi email e password.');return}
+  const b=$('#entra');b.disabled=true;b.textContent='Accesso in corso…';
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  b.disabled=false;b.textContent='Entra';
+  if(error){msg(erroreAccesso(error,'password'));return}
+  setTimeout(()=>{$('#pwd').value=''},3000);
 });
+if($('#linkMail'))$('#linkMail').onclick=async()=>{
+  msg('');const email=$('#email').value.trim();
+  if(!email){msg('Scrivi prima la tua email.');return}
+  const b=$('#linkMail');b.disabled=true;
+  const{error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+  b.disabled=false;
+  if(error){msg(erroreAccesso(error,'link'));return}
+  $('#stepEmail').classList.add('hidden');$('#stepCode').classList.remove('hidden');
+};
+if($('#showpwd'))$('#showpwd').onchange=e=>{$('#pwd').type=e.target.checked?'text':'password'};
+function erroreCambio(er){
+  const c=er&&er.code;
+  if(c==='same_password')return 'La nuova password è uguale a quella attuale: scegline un\u2019altra.';
+  if(c==='weak_password')return 'Password troppo semplice: allungala o cambia la frase.';
+  if(c==='reauthentication_needed')return 'Per sicurezza serve un accesso recente: esci, rientra e riprova.';
+  return 'Non sono riuscito a salvare la password'+(c?' ('+c+')':'')+'.';
+}
+function cambiaPassword(){
+  const f=$('#dform'),d=$('#dlg');
+  f.innerHTML='<h3>La tua password</h3>'+
+    '<p class="muted" style="font-size:13px">Con la password entri con email e password, anche dall\u2019app sulla schermata Home, senza aspettare email. Scegline una di almeno 10 caratteri: una frase facile da ricordare va benissimo.</p>'+
+    '<label>Nuova password<input name="p1" type="password" autocomplete="new-password" minlength="10" required></label>'+
+    '<label>Ripeti la password<input name="p2" type="password" autocomplete="new-password" minlength="10" required></label>'+
+    '<p class="msg" id="pwMsg"></p>'+
+    '<div class="acts"><button type="button" class="ghost" id="ann">Annulla</button><button type="submit">Salva password</button></div>';
+  if(!d.open)d.showModal();
+  $('#ann').onclick=()=>d.close();
+  d.addEventListener('close',()=>{f.onsubmit=null;f.innerHTML=''},{once:true});
+  f.onsubmit=async ev=>{
+    ev.preventDefault();
+    const p1=f.elements.p1.value,p2=f.elements.p2.value,m=$('#pwMsg');m.textContent='';
+    if(p1.length<10){m.textContent='La password deve avere almeno 10 caratteri.';return}
+    if(p1!==p2){m.textContent='Le due password non coincidono.';return}
+    const{error}=await sb.auth.updateUser({password:p1});
+    if(error){m.textContent=erroreCambio(error);return}
+    d.close();toast('Password salvata: da ora puoi entrare con email e password');
+  };
+}
 $('#back').onclick=()=>{$('#stepCode').classList.add('hidden');$('#stepEmail').classList.remove('hidden');msg('')};
 $('#logout').onclick=()=>sb.auth.signOut();
 let deb;$('#search').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(()=>{corrente==='oggi'?ricercaGlobale():(limite=LIM,disegna())},250)});
