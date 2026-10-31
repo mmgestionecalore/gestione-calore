@@ -206,7 +206,7 @@ async function oggiVista(){
     sb.from('attivita').select('*').neq('stato','Fatto').order('scadenza',{ascending:true,nullsFirst:false}).limit(15),
     sb.from('scadenze').select('*').eq('fatto',false).lte('data',fra).order('data'),
     sb.from('segnalazioni').select('*').neq('stato','Risolta').order('data',{ascending:false}).limit(15),
-    sb.from('impianti').select('*').neq('stato','In funzione').order('fermo_dal',{ascending:true,nullsFirst:false}),
+    sb.from('impianti').select('*').not('stato','in','("In funzione","Dismesso")').order('fermo_dal',{ascending:true,nullsFirst:false}),
     ...TABELLE.map(k=>sb.from(MODULI[k].tab).select('id',{count:'exact',head:true}))]);
   const blocco=(tit,rows,fn,vuoto)=>'<div class="card"><h3 style="margin-top:0">'+tit+'</h3>'+(rows&&rows.length?'<ul class="lst">'+rows.map(fn).join('')+'</ul>':'<p class="muted">'+vuoto+'</p>')+'</div>';
   $('#main').innerHTML='<h2 style="margin-top:0">Oggi · '+fmtD(t)+'</h2><div id="ris"></div><div id="home"><div class="grid">'+
