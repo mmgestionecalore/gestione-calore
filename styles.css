@@ -39,3 +39,4 @@ dialog::backdrop{background:#0008}
 .kv{display:grid;grid-template-columns:max-content 1fr;gap:.2rem .8rem}.kv dt{color:var(--mut)}.kv dd{margin:0;white-space:pre-wrap}
 .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:.6rem 1rem;border-radius:8px;z-index:50}
 a{color:var(--ac)}
+td{overflow-wrap:anywhere}
