@@ -13,7 +13,7 @@
     <h1>Gestione Calore</h1>
     <p class="muted">Accesso riservato</p>
     <div id="stepEmail">
-      <label>Email aziendale<input id="email" type="email" required autocomplete="email" placeholder="nome.cognome@mmspa.eu"></label>
+      <label>Email<input id="email" type="email" required autocomplete="email" placeholder="la tua email"></label>
       <button type="submit">Invia link di accesso</button>
     </div>
     <div id="stepCode" class="hidden">
@@ -35,6 +35,7 @@
 </div>
 <dialog id="dlg"><form method="dialog" id="dform"></form></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
