@@ -14,13 +14,11 @@
     <p class="muted">Accesso riservato</p>
     <div id="stepEmail">
       <label>Email aziendale<input id="email" type="email" required autocomplete="email" placeholder="nome.cognome@mmspa.eu"></label>
-      <button type="submit">Invia codice</button>
+      <button type="submit">Invia link di accesso</button>
     </div>
     <div id="stepCode" class="hidden">
-      <p class="muted">Ti ho inviato un codice per email. Inseriscilo qui sotto.</p>
-      <label>Codice<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10"></label>
-      <button type="submit">Entra</button>
-      <button type="button" id="back" class="ghost">Cambia email</button>
+      <p class="muted">Ti ho inviato un link per email: aprilo da questo browser per entrare.</p>
+      <input id="code" type="hidden"><button type="button" id="back" class="ghost">Cambia email</button>
     </div>
     <p id="loginMsg" class="msg"></p>
   </form>
