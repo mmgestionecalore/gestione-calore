@@ -12,8 +12,8 @@ const MODULI={
   {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile'],list:1},
   {k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'fatto',l:'Fatto',t:'bool',list:1},{k:'note',l:'Note',t:'long'}]},
  impianti:{nome:'Impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,campi:[
-  {k:'indirizzo',l:'Indirizzo',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},{k:'fornitore',l:'Fornitore',t:'text',list:1},
-  {k:'tipologia',l:'Tipologia',t:'text',list:1},{k:'stato',l:'Stato',t:'text',list:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long'}]},
+  {k:'indirizzo',l:'Indirizzo',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},{k:'fornitore',l:'Fornitore',t:'text'},
+  {k:'tipologia',l:'Tipologia',t:'text',list:1},{k:'stato',l:'Stato',t:'sel',o:['In funzione','Funzionamento parziale','Fermo','Dismesso'],list:1},{k:'fermo_dal',l:'Fermo dal',t:'date',list:1,nc:1},{k:'rimessa_prevista',l:'Rimessa in funzione prevista',t:'date',list:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long'}]},
  contratti:{nome:'Contratti',tab:'contratti',ord:['nome',true],campi:[
   {k:'nome',l:'Contratto',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},{k:'fornitore',l:'Fornitore',t:'text',list:1},
   {k:'importo_base',l:'Importo base (€)',t:'num',list:1},{k:'importo_attuale',l:'Importo attuale (€)',t:'num',list:1},{k:'scadenza',l:'Scadenza',t:'date',list:1},{k:'stato',l:'Stato',t:'text'},{k:'note',l:'Note',t:'long'}]},
@@ -110,6 +110,9 @@ function disegna(){
 }
 function cella(c,r){
   const v=r[c.k];
+  if(c.t==='date'&&c.nc)return fmtD(v);
+  if(c.k==='stato'&&/fermo/i.test(v||''))return'<span class="late">'+esc(v)+'</span>';
+  if(c.k==='stato'&&/parziale/i.test(v||''))return'<span class="soon">'+esc(v)+'</span>';
   if(c.t==='date'){const chiuso=r.fatto||r.stato==='Fatto'||r.stato==='Risolta';const cl=v&&v<oggi()&&!chiuso?'late':(v&&v<=aggiungiGiorni(30)&&!chiuso?'soon':'');return'<span class="'+cl+'">'+fmtD(v)+'</span>'}
   if(c.t==='num')return fmtN(v);
   if(c.t==='bool')return v?'✔':'';
@@ -180,16 +183,18 @@ async function scheda(r){
 /* ---------- Oggi + ricerca globale ---------- */
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30);
-  const [a,s,g,...cn]=await Promise.all([
+  const [a,s,g,im,...cn]=await Promise.all([
     sb.from('attivita').select('*').neq('stato','Fatto').order('scadenza',{ascending:true,nullsFirst:false}).limit(15),
     sb.from('scadenze').select('*').eq('fatto',false).lte('data',fra).order('data'),
     sb.from('segnalazioni').select('*').neq('stato','Risolta').order('data',{ascending:false}).limit(15),
+    sb.from('impianti').select('*').neq('stato','In funzione').order('fermo_dal',{ascending:true,nullsFirst:false}),
     ...TABELLE.map(k=>sb.from(MODULI[k].tab).select('id',{count:'exact',head:true}))]);
   const blocco=(tit,rows,fn,vuoto)=>'<div class="card"><h3 style="margin-top:0">'+tit+'</h3>'+(rows&&rows.length?'<ul class="lst">'+rows.map(fn).join('')+'</ul>':'<p class="muted">'+vuoto+'</p>')+'</div>';
   $('#main').innerHTML='<h2 style="margin-top:0">Oggi · '+fmtD(t)+'</h2><div id="ris"></div><div id="home"><div class="grid">'+
    blocco('Da fare <button class="ghost mini" id="qa">+ rapida</button>',a.data,r=>'<li>'+esc(r.titolo)+' <span class="muted">'+(r.priorita?'· '+esc(r.priorita):'')+' '+(r.scadenza?'· '+fmtD(r.scadenza):'')+'</span></li>','Nulla in sospeso.')+
    blocco('Scadenze entro 30 giorni',s.data,r=>'<li><span class="'+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span> '+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></li>','Nessuna scadenza imminente.')+
    blocco('Segnalazioni aperte',g.data,r=>'<li>'+fmtD(r.data)+' '+esc(r.impianto||'')+' – '+esc(r.oggetto||'')+'</li>','Nessuna segnalazione aperta.')+
+   blocco('Impianti non in pieno funzionamento',im.data,r=>'<li><b>'+esc(r.indirizzo)+'</b> – <span class="'+(/fermo/i.test(r.stato||'')?'late':'soon')+'">'+esc(r.stato)+'</span>'+(r.fermo_dal?' dal '+fmtD(r.fermo_dal):'')+(r.rimessa_prevista?' · rimessa prevista '+fmtD(r.rimessa_prevista):'')+(r.note?'<br><span class="muted">'+esc(r.note)+'</span>':'')+'</li>','Tutti gli impianti sono in funzione.')+
    '</div><div class="card" style="margin-top:1rem"><h3 style="margin-top:0">Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div></div>';
   $('#qa').onclick=()=>{corrente='attivita';modulo(null,'attivita',()=>apri('oggi'))};
   document.querySelectorAll('.cnt a').forEach(x=>x.onclick=e=>{e.preventDefault();apri(x.dataset.k)});
