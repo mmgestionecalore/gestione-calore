@@ -11,9 +11,9 @@ const MODULI={
  scadenze:{nome:'Scadenze',tab:'scadenze',ord:['data',true],campi:[
   {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile'],list:1},
   {k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'fatto',l:'Fatto',t:'bool',list:1},{k:'note',l:'Note',t:'long'}]},
- impianti:{nome:'Impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,campi:[
-  {k:'indirizzo',l:'Indirizzo',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},{k:'fornitore',l:'Fornitore',t:'text'},
-  {k:'tipologia',l:'Tipologia',t:'text',list:1},{k:'stato',l:'Stato',t:'sel',o:['In funzione','Funzionamento parziale','Fermo','Dismesso'],list:1},{k:'fermo_dal',l:'Fermo dal',t:'date',list:1,nc:1},{k:'rimessa_prevista',l:'Rimessa in funzione prevista',t:'date',list:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long'}]},
+ impianti:{nome:'Impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,avviso:'I campi contrassegnati «da SharePoint» sono allineati con la lista della Dashboard: per cambiarli modifica la lista, altrimenti al prossimo allineamento tornano al valore della lista.',campi:[
+  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},
+  {k:'tipologia',l:'Tipologia',t:'text',list:1,sp:1},{k:'stato',l:'Stato',t:'sel',o:['In funzione','Funzionamento parziale','Fermo','Dismesso'],list:1,sp:1},{k:'fermo_dal',l:'Fermo dal',t:'date',list:1,nc:1,sp:1},{k:'rimessa_prevista',l:'Rimessa in funzione prevista',t:'date',list:1,sp:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long',sp:1}]},
  contratti:{nome:'Contratti',tab:'contratti',ord:['nome',true],campi:[
   {k:'nome',l:'Contratto',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},{k:'fornitore',l:'Fornitore',t:'text',list:1},
   {k:'importo_base',l:'Importo base (€)',t:'num',list:1},{k:'importo_attuale',l:'Importo attuale (€)',t:'num',list:1},{k:'scadenza',l:'Scadenza',t:'date',list:1},{k:'stato',l:'Stato',t:'text'},{k:'note',l:'Note',t:'long'}]},
@@ -36,9 +36,11 @@ const MODULI={
  documenti:{nome:'Documenti',tab:'documenti',ord:['titolo',true],campi:[
   {k:'titolo',l:'Documento',t:'text',list:1},{k:'cartella',l:'Cartella',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},
   {k:'dimensione_kb',l:'Dimensione (KB)',t:'num',dec:0,list:1},{k:'modificato_il',l:'Modificato il',t:'date',list:1,nc:1},{k:'modificato_da',l:'Modificato da',t:'text',list:1},
-  {k:'link',l:'Link',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text'},{k:'note',l:'Note',t:'long'}]}
+  {k:'link',l:'Link',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text'},{k:'note',l:'Note',t:'long'}]},
+ registro:{nome:'Registro modifiche',tab:'registro',ord:['quando',false],ro:1,campi:[
+  {k:'quando',l:'Quando',t:'dt',list:1},{k:'utente',l:'Chi',t:'text',list:1},{k:'azione',l:'Azione',t:'text',list:1},{k:'tabella',l:'Dove',t:'text',list:1},{k:'etichetta',l:'Elemento',t:'text',list:1},{k:'modifiche',l:'Dettaglio',t:'text'}]}
 };
-const TABELLE=Object.keys(MODULI).filter(k=>MODULI[k].tab);
+const TABELLE=Object.keys(MODULI).filter(k=>MODULI[k].tab&&!MODULI[k].ro);
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -49,8 +51,12 @@ const fmtD=d=>d?d.split('-').reverse().join('/'):'';
 const fmtN=(n,d=2)=>n==null||n===''?'':Number(n).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});
 const aggiungiGiorni=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
 const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
-let corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[];
+let corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null;
 const LIM=300;let limite=LIM;
+const AZIONI={INSERT:'Creata',UPDATE:'Modificata',DELETE:'Eliminata'};
+const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+const sv=v=>v==null?'':(typeof v==='object'?JSON.stringify(v):String(v));
+const lab=c=>esc(c.l)+(c.sp?' <span class="sp">da SharePoint</span>':'');
 
 function msg(t){$('#loginMsg').textContent=t||''}
 function show(logged){$('#login').classList.toggle('hidden',logged);$('#app').classList.toggle('hidden',!logged)}
@@ -106,14 +112,17 @@ async function apri(k){
   const m=MODULI[k];
   const{data,error}=await leggiTutto(m);
   if(error){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(error.message)+'</p>';return}
+  if(k==='impianti'){const st=await sb.from('impostazioni').select('valore').eq('chiave','allineamento_sharepoint').maybeSingle();allineato=st&&st.data?st.data.valore:null}
   dati=data;disegna();
 }
 function disegna(){
   const m=MODULI[corrente],q=$('#search').value.toLowerCase();
-  let rows=dati.filter(r=>!q||m.campi.some(c=>String(r[c.k]??'').toLowerCase().includes(q)));
+  let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q)));
   if(sort)rows=[...rows].sort((a,b)=>{const x=a[sort.k]??'',y=b[sort.k]??'';return(x>y?1:x<y?-1:0)*sort.d});
   const cols=m.campi.filter(c=>c.list);
-  let h='<div class="bar"><h2 style="margin:0">'+esc(m.nome)+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></h2><span class="grp"><button class="ghost" id="imp">Importa</button><button class="ghost" id="exp">Esporta</button><button id="nuovo">+ Nuovo</button></span></div>';
+  let h='<div class="bar"><h2 style="margin:0">'+esc(m.nome)+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
+  if(m.tab==='impianti'&&allineato)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Stato, date e note allineati con la lista SharePoint il '+esc(fmtDT(allineato))+'.</p>';
+  if(m.ro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Registro in sola lettura: tiene traccia di chi crea, modifica o elimina elementi nelle altre sezioni.</p>';
   h+='<div class="tw"><table><thead><tr>'+cols.map(c=>'<th data-k="'+c.k+'">'+esc(c.l)+(sort&&sort.k===c.k?(sort.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead><tbody>';
   for(const r of rows.slice(0,limite))h+='<tr class="row" data-id="'+r.id+'">'+cols.map(c=>'<td>'+cella(c,r)+'</td>').join('')+'</tr>';
   h+='</tbody></table></div>';
@@ -121,11 +130,14 @@ function disegna(){
   if(rows.length>limite)h+='<p><button class="ghost" id="piu">Mostra altri '+Math.min(LIM,rows.length-limite)+' (ne restano '+(rows.length-limite)+')</button></p>';
   $('#main').innerHTML=h;
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
-  $('#nuovo').onclick=()=>modulo(null);$('#imp').onclick=importa;$('#exp').onclick=()=>esporta(corrente,dati);
+  if(!m.ro){$('#nuovo').onclick=()=>modulo(null);$('#imp').onclick=importa}$('#exp').onclick=()=>esporta(corrente,dati);
   document.querySelectorAll('th').forEach(t=>t.onclick=()=>{sort={k:t.dataset.k,d:sort&&sort.k===t.dataset.k?-sort.d:1};disegna()});
-  document.querySelectorAll('tr.row').forEach(t=>t.onclick=()=>{const r=dati.find(x=>x.id===t.dataset.id);m.dossier?scheda(r):modulo(r)});
+  document.querySelectorAll('tr.row').forEach(t=>t.onclick=()=>{const r=dati.find(x=>String(x.id)===t.dataset.id);m.ro?dettaglio(r):m.dossier?scheda(r):modulo(r)});
 }
 function cella(c,r){
+  if(c.t==='dt')return esc(fmtDT(r[c.k]));
+  if(corrente==='registro'&&c.k==='azione')return esc(AZIONI[r[c.k]]||r[c.k]);
+  if(corrente==='registro'&&c.k==='tabella')return esc((MODULI[r[c.k]]&&MODULI[r[c.k]].nome)||r[c.k]);
   const v=r[c.k];
   if(c.t==='date'&&c.nc)return fmtD(v);
   if(c.k==='stato'&&/fermo/i.test(v||''))return'<span class="late">'+esc(v)+'</span>';
@@ -141,12 +153,13 @@ function cella(c,r){
 function modulo(r,tab,dopo){
   const k=tab||corrente,m=MODULI[k],f=$('#dform');
   let h='<h3>'+(r&&r.id?'Modifica':'Nuovo')+' – '+esc(m.nome)+'</h3>';
+  if(m.avviso)h+='<p class="aviso">'+esc(m.avviso)+'</p>';
   for(const c of m.campi){
     const v=r?r[c.k]:(c.k==='stato'&&c.o?c.o[0]:'');
-    if(c.t==='long')h+='<label>'+esc(c.l)+'<textarea name="'+c.k+'">'+esc(v)+'</textarea></label>';
-    else if(c.t==='sel')h+='<label>'+esc(c.l)+'<select name="'+c.k+'"><option value=""></option>'+c.o.map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></label>';
-    else if(c.t==='bool')h+='<label><input type="checkbox" name="'+c.k+'" style="width:auto"'+(v?' checked':'')+'> '+esc(c.l)+'</label>';
-    else h+='<label>'+esc(c.l)+'<input name="'+c.k+'" type="'+(c.t==='date'?'date':c.t==='num'?'number':'text')+'"'+(c.t==='num'?' step="any"':'')+(c.k==='impianto'?' list="ind"':'')+' value="'+esc(v)+'"></label>';
+    if(c.t==='long')h+='<label>'+lab(c)+'<textarea name="'+c.k+'">'+esc(v)+'</textarea></label>';
+    else if(c.t==='sel')h+='<label>'+lab(c)+'<select name="'+c.k+'"><option value=""></option>'+c.o.map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></label>';
+    else if(c.t==='bool')h+='<label><input type="checkbox" name="'+c.k+'" style="width:auto"'+(v?' checked':'')+'> '+lab(c)+'</label>';
+    else h+='<label>'+lab(c)+'<input name="'+c.k+'" type="'+(c.t==='date'?'date':c.t==='num'?'number':'text')+'"'+(c.t==='num'?' step="any"':'')+(c.k==='impianto'?' list="ind"':'')+' value="'+esc(v)+'"></label>';
   }
   if(r&&r.id)h+='<p class="muted" style="font-size:12px">Creato da '+esc(r.creato_da||'?')+' il '+fmtD((r.creato_il||'').slice(0,10))+' · ultima modifica '+fmtD((r.aggiornato_il||'').slice(0,10))+'</p>';
   h+='<div class="acts">'+(r&&r.id?'<button type="button" class="danger" id="del">Elimina</button>':'')+'<button type="button" class="ghost" id="ann">Annulla</button><button type="submit" value="ok">Salva</button></div>';
@@ -233,11 +246,23 @@ async function ricercaGlobale(){
   ris.querySelectorAll('a').forEach(a=>a.onclick=async e=>{e.preventDefault();const k=a.dataset.k,row=out.find(o=>o[0]===k)[1].find(x=>x.id===a.dataset.id);corrente=k;MODULI[k].dossier?scheda(row):modulo(row,k,()=>apri('oggi'))});
 }
 
+/* ---------- registro modifiche ---------- */
+function nomeCampo(tab,k){const m=MODULI[tab],c=m&&m.campi.find(x=>x.k===k);return c?c.l:k}
+function fmtV(v){if(v==null||v==='')return'(vuoto)';if(typeof v==='boolean')return v?'Sì':'No';const t=String(v);return /^\d{4}-\d{2}-\d{2}$/.test(t)?fmtD(t):t}
+function dettaglio(r){
+  const nt=(MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella,mod=r.modifiche||{},ks=Object.keys(mod);
+  let h='<h3>'+esc(AZIONI[r.azione]||r.azione)+' · '+esc(nt)+'</h3><dl class="kv"><dt>Quando</dt><dd>'+esc(fmtDT(r.quando))+'</dd><dt>Chi</dt><dd>'+esc(r.utente||'')+'</dd><dt>Elemento</dt><dd>'+esc(r.etichetta||'—')+'</dd></dl>';
+  if(r.azione==='UPDATE')h+='<h4>Cosa è cambiato</h4><ul class="lst">'+ks.map(x=>'<li><b>'+esc(nomeCampo(r.tabella,x))+'</b>: '+esc(fmtV(mod[x]&&mod[x].da))+' → '+esc(fmtV(mod[x]&&mod[x].a))+'</li>').join('')+'</ul>';
+  else{const vis=ks.filter(x=>mod[x]!=null&&mod[x]!=='');h+='<h4>'+(r.azione==='DELETE'?"Contenuto al momento dell'eliminazione":'Contenuto inserito')+'</h4>'+(vis.length?'<dl class="kv">'+vis.map(x=>'<dt>'+esc(nomeCampo(r.tabella,x))+'</dt><dd>'+esc(fmtV(mod[x]))+'</dd>').join('')+'</dl>':'<p class="muted">Nessun dato.</p>')}
+  h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button></div>';
+  $('#dform').innerHTML=h;const d=$('#dlg');if(!d.open)d.showModal();$('#ann').onclick=()=>d.close();
+}
+
 /* ---------- esporta / backup ---------- */
 function scarica(nome,testo,tipo){const b=new Blob([testo],{type:tipo}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000)}
 function esporta(k,rows){
   const cs=MODULI[k].campi,cel=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const csv='﻿'+cs.map(c=>cel(c.l)).join(';')+'\n'+rows.map(r=>cs.map(c=>cel(c.t==='bool'?(r[c.k]?'Sì':''):r[c.k])).join(';')).join('\n');
+  const csv='﻿'+cs.map(c=>cel(c.l)).join(';')+'\n'+rows.map(r=>cs.map(c=>cel(c.t==='bool'?(r[c.k]?'Sì':''):(c.t==='dt'?fmtDT(r[c.k]):(k==='registro'&&c.k==='azione'?(AZIONI[r[c.k]]||r[c.k]):(k==='registro'&&c.k==='tabella'?((MODULI[r[c.k]]&&MODULI[r[c.k]].nome)||r[c.k]):sv(r[c.k])))))).join(';')).join('\n');
   scarica('gestione-calore-'+k+'-'+oggi()+'.csv',csv,'text/csv;charset=utf-8');
 }
 async function backup(){
@@ -293,4 +318,5 @@ function anteprimaImport(nome,righe){
     d.close();await caricaIndirizzi();apri(corrente);toast('Importazione completata');
   };
 }
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 avvia();
