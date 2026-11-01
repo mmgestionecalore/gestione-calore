@@ -614,7 +614,10 @@ async function hubVista(){
      kp(ritardo?'ko':scH.length?'wa':'ok',scH.length,'Scadenze aperte',ritardo?ritardo+' già scadute':'')+
      kp('',atH.length,'Attività aperte','')+kp(sgH.length?'wa':'ok',sgH.length,'Segnalazioni aperte','')+'</div>';
   const tabs='<div class="chips" id="hubtabs">'+Object.keys(HUB).map(k=>'<button class="chip'+(k===hubSel?' on':'')+'" data-h="'+k+'">'+esc(HUB[k].nome)+'</button>').join('')+'</div>';
-  let H='<h2 class="hd" style="margin-bottom:.4rem"><span class="hico">'+ico('hub')+'</span><span>'+esc(h.tit)+' <span class="muted">· '+esc(h.sub)+'</span></span></h2>'+tabs+kpis;
+  let H='<h2 class="hd" style="margin-bottom:.4rem"><span class="hico">'+ico('hub')+'</span><span>'+esc(h.tit)+' <span class="muted">· '+esc(h.sub)+'</span></span></h2><div class="noprint" style="margin:.2rem 0 .6rem"><button class="ghost mini" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
+  const dvC=(me.data||[]).find(r=>/Da verificare/.test(r.titolo||'')&&(h.tipo==='leg'?/^Legionella/.test(r.titolo):h.tipo==='tlr'?/^TLR/.test(r.titolo):/^Gestione Calore/.test(r.titolo)));
+  if(dvC){const righe=String(dvC.testo||'').split('\n').map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
+    H+=sez('attivita','Da verificare <span class="muted" style="font-weight:400">('+righe.length+')</span>','<ul class="lst">'+righe.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><p class="muted" style="font-size:13px;margin:.5rem 0 0">'+link('memoria',dvC,'Apri la scheda per modificare o togliere le voci risolte')+'</p>');}
   H+=sez('contratti','Scheda contratto',cH,'<a href="#" id="vaiC" style="margin-left:auto;font-size:13px">Tutti i contratti →</a>');
   H+=sez('contatti','Ruoli e contatti','<ul class="lst">'+HUB_RUOLI[h.tipo]+'</ul><p class="muted" style="font-size:13px;margin:.4rem 0">Storico, CSE e nomine: scheda «Chi ha ricoperto i ruoli» (Memoria operativa).</p>'+(cH2.length?'<ul class="lst">'+cH2.map(c=>'<li>'+link('contatti',c,esc(c.nome))+' · '+esc(c.ruolo||'')+' · '+esc(c.ente||'')+(c.email?' · '+esc(c.email):'')+(c.telefono?' · '+esc(c.telefono):'')+'</li>').join('')+'</ul>':''));
   H+=sez('scadenze','Scadenze aperte <span class="muted" style="font-weight:400">('+scH.length+')</span>',scH.length?'<ul class="ev">'+scH.map(r=>'<li><span class="dt '+(r.data<t?'late':'')+'">'+(r.data?fmtD(r.data):'—')+'</span><span class="tx">'+link('scadenze',r,esc(r.titolo))+'</span></li>').join('')+'</ul>':vuotoP('Nessuna scadenza aperta.'),'<button class="ghost mini" id="nuS" style="margin-left:auto">+ scadenza</button>');
@@ -630,7 +633,7 @@ async function hubVista(){
   H+=sez('documenti','Documenti e fonti','<ul class="lst"><li>Documenti di gara e di esecuzione: sezione Documenti (SharePoint) e scheda «Dove trovare i documenti».</li><li>Normativa e riferimenti: sezione «Normativa e riferimenti».</li><li>Modifiche recenti: sezione Registro modifiche.</li></ul>');
   $('#main').innerHTML=H;
   document.querySelectorAll('#hubtabs .chip').forEach(b=>b.onclick=()=>{hubSel=b.dataset.h;try{localStorage.setItem('hub',hubSel)}catch(e){}hubVista()});
-  const go=(id,k)=>{const e=$(id);if(e)e.onclick=ev=>{ev.preventDefault();apri(k)}};go('#vaC','contratti');go('#vaI','impianti');go('#vaB','contabilita');go('#vaM','memoria');
+  const go=(id,k)=>{const e=$(id);if(e)e.onclick=ev=>{ev.preventDefault();apri(k)}};const sp=$('#stampaHub');if(sp)sp.onclick=()=>window.print();go('#vaC','contratti');go('#vaI','impianti');go('#vaB','contabilita');go('#vaM','memoria');
   const nu=(id,tb,pre)=>{const e=$(id);if(e)e.onclick=()=>{corrente='hub';modulo(pre,tb,()=>apri('hub'))}};
   nu('#nuS','scadenze',{titolo:'',data:null});nu('#nuA','attivita',{stato:'Da fare',titolo:'',priorita:'Media'});
   document.querySelectorAll('#main a.lk').forEach(a=>a.onclick=ev=>{ev.preventDefault();const tb=a.dataset.t,r=reg[tb+a.dataset.id];if(!r)return;
