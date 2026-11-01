@@ -5,6 +5,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSe
 
 const MODULI={
  oggi:{nome:'Oggi'},
+ hub:{nome:'Hub contratti'},
  attivita:{nome:'Da fare',tab:'attivita',ord:['scadenza',true],campi:[
   {k:'titolo',l:'Attività',t:'text',list:1},{k:'priorita',l:'Priorità',t:'sel',o:['Alta','Media','Bassa'],list:1},
   {k:'stato',l:'Stato',t:'sel',o:['Da fare','In corso','In attesa','Fatto'],list:1},{k:'scadenza',l:'Scadenza',t:'date',list:1},{k:'note',l:'Note',t:'long'}]},
@@ -93,6 +94,7 @@ const IC={
  key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l3 3"/>',
  neve:'<path d="M12 2v20M4.9 7l14.2 10M4.9 17L19.1 7M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/>'
 };
+IC.hub='<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
 IC.sal=IC.contratti;IC.quadro=IC.contabilita;IC.fiamma=IC.impianti;
 const ico=k=>'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+(IC[k]||IC.documenti)+'</svg>';
 function tonoStato(v){
@@ -252,7 +254,7 @@ function cambiaPassword(){
 }
 $('#back').onclick=()=>{$('#stepCode').classList.add('hidden');$('#stepEmail').classList.remove('hidden');msg('')};
 $('#logout').onclick=()=>sb.auth.signOut();
-let deb;$('#search').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(()=>{corrente==='oggi'?ricercaGlobale():corrente==='contabilita'?contabDisegna():(limite=LIM,disegna())},250)});
+let deb;$('#search').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(()=>{corrente==='oggi'?ricercaGlobale():corrente==='contabilita'?contabDisegna():corrente==='hub'?0:(limite=LIM,disegna())},250)});
 
 async function caricaIndirizzi(){
   const{data}=await sb.from('impianti').select('indirizzo').order('indirizzo');
@@ -277,6 +279,7 @@ async function apri(k){
   corrente=k;sort=null;limite=LIM;$('#search').value='';
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
   if(k==='oggi')return oggiVista();
+  if(k==='hub')return hubVista();
   if(k==='contabilita')return contabVista();
   const m=MODULI[k];
   const{data,error}=await leggiTutto(m);
@@ -523,6 +526,116 @@ async function ricercaGlobale(){
     h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">'+esc(m.nome)+' <span class="muted">('+rows.length+')</span></h3><ul class="lst">'+rows.map(r=>'<li><a href="#" data-k="'+k+'" data-id="'+r.id+'">'+esc((m.glob?m.glob(r):cs.map(c=>r[c.k]).filter(Boolean).join(' · '))||'(senza titolo)')+'</a></li>').join('')+'</ul></div>'}
   ris.innerHTML=n?h:'<p class="muted">Nessun risultato in tutta l\'archivio.</p>';
   ris.querySelectorAll('a').forEach(a=>a.onclick=async e=>{e.preventDefault();const k=a.dataset.k,row=out.find(o=>o[0]===k)[1].find(x=>x.id===a.dataset.id);if(MODULI[k].vista)return schedaCens(row,ricercaGlobale);corrente=k;MODULI[k].dossier?scheda(row):modulo(row,k,()=>apri('oggi'))});
+}
+
+/* ---------- Hub per contratto: tutto di un appalto in una pagina, letto dal vivo ---------- */
+const RE_L=/legionella|rentokil|bioh|108\/2025|campionament/i,RE_T=/\bTLR\b|A2A|bonus di regolarit|sconto del 15|teleriscald/i;
+const HUB={
+ l1:{nome:'Lotto 1',tit:'Gestione calore · Lotto 1',sub:'Gara 63/2022 · Consorzio Innova',tipo:'gc',lotto:'LOTTO 1',re:/lotto 1(?!\d)|innova/i,ente:/innova/i},
+ l2:{nome:'Lotto 2',tit:'Gestione calore · Lotto 2',sub:'Gara 63/2022 · Renovit Public Solutions',tipo:'gc',lotto:'LOTTO 2',re:/lotto 2(?!\d)|renovit/i,ente:/renovit/i},
+ tlr:{nome:'Teleriscaldamento',tit:'Teleriscaldamento (TLR)',sub:'Contratto quadro · A2A Calore e Servizi',tipo:'tlr',lotto:'LOTTO TLR',re:RE_T,ente:/a2a/i},
+ leg:{nome:'Legionella',tit:'Legionella',sub:'Servizio ponte Rentokil · gara 108/2025 (RTI Bioh-MBT)',tipo:'leg',lotto:null,re:RE_L,ente:/rentokil|bioh|mbt|molecular/i}
+};
+let hubSel='l1';try{hubSel=localStorage.getItem('hub')||'l1'}catch(e){}
+const HUB_RUOLI={
+ gc:'<li><b>DEC</b>: Andrea Lampignani, dal 01/08/2022</li><li><b>RdP</b> (responsabile del procedimento): Paolo Viesti, dal 10/03/2025</li><li><b>Permessi nell’app</b>: Andrea Lampignani e Gianluca Sardo hanno gli stessi permessi</li>',
+ tlr:'<li><b>DEC</b>: Andrea Lampignani, dal 01/08/2022 (Gianluca Sardo per una finestra di 4 mesi)</li><li><b>RdP</b>: Paolo Viesti, dal 10/03/2025</li><li><b>Permessi nell’app</b>: Andrea Lampignani e Gianluca Sardo</li>',
+ leg:'<li><b>DEC</b>: Andrea Lampignani (proposto per la gara 108/2025)</li><li><b>RUP</b>: Paolo Viesti (da verificare per il servizio ponte)</li><li><b>Permessi nell’app</b>: Andrea Lampignani e Gianluca Sardo</li>'
+};
+const HUB_REGOLE={
+ gc:['Si tengono separati: canone (SAC bimestrali), utenze e consumi, SAL extra canone.','Extra canone: segnalazione dell’utente al call center MM (SAP/Mitti) → verifica del Building Manager o dell’appaltatore → richiesta di passaggio da canone a extra → il BM inserisce l’ordine extra → il DEC lo approva → SAL bimestrale.','Pagamenti: bimestrali, a 30 giorni, ritenuta 0,50%, split payment. Fatture intestate «in nome e per conto del Comune di Milano».','Penali: 17 codici, tetto 10% dell’importo; contestazione entro 5 giorni lavorativi (schede «Penali» e «Tempi di intervento»).'],
+ tlr:['Si tengono separate le utenze (consumi) dalle altre voci.','Bonus di regolarità e sconto del 15% (già recuperato): vedi le schede dedicate.','Spesa «in nome e per conto del Comune di Milano».'],
+ leg:['Servizio ponte Rentokil: canone variabile in base alle attività e agli impianti in funzione.','Gara 108/2025: canone bimestrale più extra canone a SAL su ordine del DEC (tetto di spesa); penali fino al 10%.','Spesa «in nome e per conto del Comune di Milano».']
+};
+async function hubVista(){
+  const h=HUB[hubSel]||HUB.l1,t=oggi(),reg={};
+  $('#main').innerHTML='<p class="muted">Carico l’hub…</p>';
+  const vuoto=Promise.resolve({data:[],error:null,count:null});
+  const[co,sc,at,im,me,ctt,sg,sl,qd]=await Promise.all([
+    sb.from('contratti').select('*').order('nome'),
+    sb.from('scadenze').select('*').eq('fatto',false).order('data'),
+    sb.from('attivita').select('*').neq('stato','Fatto'),
+    h.lotto?sb.from('impianti').select('*').eq('lotto',h.lotto).order('indirizzo'):vuoto,
+    sb.from('memoria').select('*').order('titolo'),
+    sb.from('contatti').select('*').order('nome'),
+    sb.from('segnalazioni').select('*').neq('stato','Risolta'),
+    h.tipo==='gc'?sb.from('sal').select('*'):vuoto,
+    h.tipo==='gc'?sb.from('quadro').select('*'):vuoto]);
+  const er=[co,sc,at,im,me,ctt,sg].find(x=>x.error);
+  if(er){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(er.error.message)+'</p>';return}
+  const altri=[HUB.l1,HUB.l2,HUB.tlr,HUB.leg];
+  const mio=(txt,x)=>x.re.test(txt);
+  const tuttiRe=r=>altri.some(x=>mio(r,x));
+  const dellHub=txt=>h.tipo==='gc'?(mio(txt,h)||!tuttiRe(txt)):mio(txt,h);
+  const link=(tb,r,lab)=>{reg[tb+r.id]=r;return'<a href="#" class="lk" data-t="'+tb+'" data-id="'+r.id+'">'+lab+'</a>'};
+  const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
+  const sez=(ic,tit,body,extra)=>'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico(ic)+tit+(extra||'')+'</h3>'+body+'</div>';
+  const vuotoP=s=>'<p class="muted" style="margin:0">'+s+'</p>';
+  /* contratti */
+  const mioC=(co.data||[]).filter(c=>String(c.lotto||'').toUpperCase()===(h.lotto||'LEGIONELLA'));
+  const cH=mioC.length?mioC.map(c=>'<div class="vrow" style="margin-bottom:.9rem"><div class="vt"><span class="vn">'+link('contratti',c,esc(c.nome))+'</span></div><dl class="kv"><dt>Fornitore</dt><dd>'+esc(c.fornitore||'—')+'</dd><dt>Stato</dt><dd>'+esc(c.stato||'—')+'</dd>'+(c.importo_base!=null?'<dt>Importo base</dt><dd>'+eur(c.importo_base)+'</dd>':'')+(c.importo_attuale!=null?'<dt>Importo attuale</dt><dd>'+eur(c.importo_attuale)+'</dd>':'')+'<dt>Scadenza</dt><dd>'+(c.scadenza?fmtD(c.scadenza):'—')+'</dd></dl>'+(c.note?'<p class="muted" style="font-size:13px;white-space:pre-wrap">'+esc(c.note)+'</p>':'')+'</div>').join(''):vuotoP('Nessun contratto registrato.');
+  /* scadenze e attività */
+  const scH=(sc.data||[]).filter(r=>dellHub((r.titolo||'')+' '+(r.impianto||'')+' '+(r.note||'')));
+  const atH=ordinaAttivita((at.data||[]).filter(r=>dellHub((r.titolo||'')+' '+(r.note||''))));
+  const atComuni=h.tipo==='gc';
+  /* impianti */
+  const I=im.data||[],cnt=s=>I.filter(r=>r.stato===s).length;
+  const setI=new Set(I.map(r=>r.indirizzo));
+  const sgH=(sg.data||[]).filter(r=>setI.has(r.impianto)||(h.tipo==='leg'&&RE_L.test((r.oggetto||'')+' '+(r.impianto||''))));
+  /* memoria */
+  const memOk=r=>{const ti=r.titolo||'';if(/^Hub|^HUB/.test(ti)||/^Hub/.test(r.categoria||'')||/^Come si usa questa app/.test(ti))return false;
+    if(h.tipo==='tlr')return/^TLR/.test(ti);
+    if(h.tipo==='leg')return/^(Legionella|Gara Legionella)/.test(ti)&&!/tutti i campionamenti 2026$/.test(ti);
+    return!/^(TLR|Legionella|Gara Legionella)/.test(ti)};
+  const memH=(me.data||[]).filter(memOk);
+  const cat={};memH.forEach(r=>{(cat[r.categoria||'Altro']=cat[r.categoria||'Altro']||[]).push(r)});
+  const khH=Object.keys(cat).sort((a,b)=>a.localeCompare(b,'it')).map(k=>'<div><b>'+esc(k)+'</b> <span class="muted">('+cat[k].length+')</span><ul class="lst">'+cat[k].map(r=>'<li>'+link('memoria',r,esc(r.titolo))+'</li>').join('')+'</ul></div>').join('');
+  /* Legionella: stabili */
+  let stab=[];
+  if(h.tipo==='leg'){
+    stab=(me.data||[]).map(r=>{const m=(r.titolo||'').match(/^Legionella · (.+): tutti i campionamenti 2026$/);if(!m)return null;
+      const tot=(r.testo||'').match(/2026: (\d+) campioni, (\d+) positivi/),ul=[...(r.testo||'').matchAll(/^(\d\d\/\d\d)\/\d{4} · ([^:\n]+): (\d+) campioni, (\d+) positivi$/gm)].pop();
+      return{r,n:m[1],c:tot?+tot[1]:0,p:tot?+tot[2]:0,u:ul?{d:ul[1],t:ul[2],c:+ul[3],p:+ul[4]}:null}}).filter(Boolean).sort((a,b)=>b.p-a.p||a.n.localeCompare(b.n,'it'));
+  }
+  /* contatti */
+  const cH2=(ctt.data||[]).filter(c=>h.ente.test((c.ente||'')+' '+(c.ruolo||'')+' '+(c.note||'')));
+  /* contabilità */
+  let cbH='';
+  if(h.tipo==='gc'&&!sl.error&&!qd.error&&qd.data&&qd.data.length){
+    const C=calcContab(sl.data||[],qd.data),P=C.per[C.attivo],L=P&&P[h.lotto];
+    if(L){cbH='<p class="muted" style="margin:0 0 .5rem;font-size:13px">Periodo '+esc(C.attivo)+(L.ult?' · ultimo SAL n. '+L.ult.numero:'')+'. Importi netti IVA esclusa.</p><div class="grid">'+ordinaVoci(L).map(v=>'<div>'+vriga(v,L.voci[v])+'</div>').join('')+'</div>'}
+  }
+  const regole='<ul class="lst">'+HUB_REGOLE[h.tipo].map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+  const kp=(tono,val,lab,sub)=>'<div class="kpi '+tono+'"><b>'+val+'</b><span>'+lab+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
+  const ritardo=scH.filter(r=>r.data&&r.data<t).length;
+  const kpis='<div class="kpis">'+(h.tipo==='leg'?
+     kp('',String(stab.length),'Stabili',stab.reduce((a,x)=>a+x.c,0)+' campioni nel 2026')+kp(stab.some(x=>x.p)?'wa':'ok',stab.reduce((a,x)=>a+x.p,0),'Campioni positivi',stab.filter(x=>x.p).length+' stabili interessati'):
+     kp(cnt('Fermo')||cnt('Funzionamento parziale')?'wa':'ok',I.length,'Impianti',cnt('In funzione')+' in funzione · '+(cnt('Fermo')+cnt('Funzionamento parziale'))+' fermi o parziali'))+
+     kp(ritardo?'ko':scH.length?'wa':'ok',scH.length,'Scadenze aperte',ritardo?ritardo+' già scadute':'')+
+     kp('',atH.length,'Attività aperte','')+kp(sgH.length?'wa':'ok',sgH.length,'Segnalazioni aperte','')+'</div>';
+  const tabs='<div class="chips" id="hubtabs">'+Object.keys(HUB).map(k=>'<button class="chip'+(k===hubSel?' on':'')+'" data-h="'+k+'">'+esc(HUB[k].nome)+'</button>').join('')+'</div>';
+  let H='<h2 class="hd" style="margin-bottom:.4rem"><span class="hico">'+ico('hub')+'</span><span>'+esc(h.tit)+' <span class="muted">· '+esc(h.sub)+'</span></span></h2>'+tabs+kpis;
+  H+=sez('contratti','Scheda contratto',cH,'<a href="#" id="vaiC" style="margin-left:auto;font-size:13px">Tutti i contratti →</a>');
+  H+=sez('contatti','Ruoli e contatti','<ul class="lst">'+HUB_RUOLI[h.tipo]+'</ul><p class="muted" style="font-size:13px;margin:.4rem 0">Storico, CSE e nomine: scheda «Chi ha ricoperto i ruoli» (Memoria operativa).</p>'+(cH2.length?'<ul class="lst">'+cH2.map(c=>'<li>'+link('contatti',c,esc(c.nome))+' · '+esc(c.ruolo||'')+' · '+esc(c.ente||'')+(c.email?' · '+esc(c.email):'')+(c.telefono?' · '+esc(c.telefono):'')+'</li>').join('')+'</ul>':''));
+  H+=sez('scadenze','Scadenze aperte <span class="muted" style="font-weight:400">('+scH.length+')</span>',scH.length?'<ul class="ev">'+scH.map(r=>'<li><span class="dt '+(r.data<t?'late':'')+'">'+(r.data?fmtD(r.data):'—')+'</span><span class="tx">'+link('scadenze',r,esc(r.titolo))+'</span></li>').join('')+'</ul>':vuotoP('Nessuna scadenza aperta.'),'<button class="ghost mini" id="nuS" style="margin-left:auto">+ scadenza</button>');
+  if(h.tipo==='leg'){
+    H+=sez('impianti','Stabili e campionamenti 2026',stab.length?'<div class="tw"><table class="stk"><thead><tr><th>Stabile</th><th class="n">Campioni</th><th class="n">Positivi</th><th>Ultima campagna</th></tr></thead><tbody>'+stab.map(x=>'<tr><td data-l="Stabile">'+link('memoria',x.r,esc(x.n))+'</td><td class="n" data-l="Campioni">'+x.c+'</td><td class="n" data-l="Positivi"><span class="st '+(x.p?'wa':'ok')+'">'+x.p+'</span></td><td data-l="Ultima campagna">'+(x.u?esc(x.u.d)+' · '+esc(x.u.t.replace(/^campagna di |^prelievi di |^prelievi extra del /,''))+': '+x.u.p+' positivi su '+x.u.c:'—')+'</td></tr>').join('')+'</tbody></table></div><p class="muted" style="font-size:13px;margin:.5rem 0 0">Dati dal portale Rentokil (letti il 01/11/2026). Soglia di riferimento: sotto 100 UFC/L. Le schede si aggiornano dalla Memoria operativa.</p>':vuotoP('Nessuna scheda di campionamento.'));
+  }else{
+    H+=sez('impianti','Impianti <span class="muted" style="font-weight:400">('+I.length+')</span>',I.length?'<details><summary>Mostra elenco</summary><ul class="lst">'+I.map(r=>'<li>'+link('impianti',r,esc(r.indirizzo))+' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato||'')+'</span>'+(r.sintesi&&/DA ATTENZIONARE|IN PROSSIMIT/.test(r.sintesi)?' <span class="st '+(/DA ATTENZIONARE/.test(r.sintesi)?'ko':'wa')+'">caldaie '+(/DA ATTENZIONARE/.test(r.sintesi)?'oltre 15 anni':'vicine a 15 anni')+'</span>':'')+'</li>').join('')+'</ul></details>':vuotoP('Nessun impianto.'),'<a href="#" id="vaI" style="margin-left:auto;font-size:13px">Sezione Impianti →</a>');
+  }
+  H+=sez('contabilita','Contabilità',(cbH||'')+regole,h.tipo==='gc'?'<a href="#" id="vaB" style="margin-left:auto;font-size:13px">Apri Contabilità →</a>':'');
+  H+=sez('attivita','Attività aperte <span class="muted" style="font-weight:400">('+atH.length+')</span>',(atH.length?'<ul class="ev">'+atH.map(r=>'<li><span class="dt '+(r.scadenza&&r.scadenza<t?'late':'')+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+link('attivita',r,esc(r.titolo))+' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato)+'</span>'+pri(r.priorita)+'</span></li>').join('')+'</ul>':vuotoP('Nessuna attività aperta.')),'<button class="ghost mini" id="nuA" style="margin-left:auto">+ attività</button>');
+  if(sgH.length)H+=sez('segnalazioni','Segnalazioni aperte <span class="muted" style="font-weight:400">('+sgH.length+')</span>','<ul class="ev">'+sgH.map(r=>'<li><span class="dt">'+fmtD(r.data)+'</span><span class="tx">'+link('segnalazioni',r,'<b>'+esc(r.impianto||'')+'</b> – '+esc(r.oggetto||''))+'</span></li>').join('')+'</ul>');
+  H+=sez('memoria','Know-how e schede <span class="muted" style="font-weight:400">('+memH.length+')</span>',khH?'<div class="grid">'+khH+'</div>':vuotoP('Nessuna scheda.'),'<a href="#" id="vaM" style="margin-left:auto;font-size:13px">Memoria operativa →</a>');
+  H+=sez('documenti','Documenti e fonti','<ul class="lst"><li>Documenti di gara e di esecuzione: sezione Documenti (SharePoint) e scheda «Dove trovare i documenti».</li><li>Normativa e riferimenti: sezione «Normativa e riferimenti».</li><li>Modifiche recenti: sezione Registro modifiche.</li></ul>');
+  $('#main').innerHTML=H;
+  document.querySelectorAll('#hubtabs .chip').forEach(b=>b.onclick=()=>{hubSel=b.dataset.h;try{localStorage.setItem('hub',hubSel)}catch(e){}hubVista()});
+  const go=(id,k)=>{const e=$(id);if(e)e.onclick=ev=>{ev.preventDefault();apri(k)}};go('#vaC','contratti');go('#vaI','impianti');go('#vaB','contabilita');go('#vaM','memoria');
+  const nu=(id,tb,pre)=>{const e=$(id);if(e)e.onclick=()=>{corrente='hub';modulo(pre,tb,()=>apri('hub'))}};
+  nu('#nuS','scadenze',{titolo:'',data:null});nu('#nuA','attivita',{stato:'Da fare',titolo:'',priorita:'Media'});
+  document.querySelectorAll('#main a.lk').forEach(a=>a.onclick=ev=>{ev.preventDefault();const tb=a.dataset.t,r=reg[tb+a.dataset.id];if(!r)return;
+    if(tb==='impianti'){corrente='impianti';$('#dlg').addEventListener('close',()=>{corrente='hub'},{once:true});scheda(r)}
+    else{corrente='hub';modulo(r,tb,()=>apri('hub'))}});
 }
 
 /* ---------- Contabilità: tetti, SAL emessi, residui ---------- */
