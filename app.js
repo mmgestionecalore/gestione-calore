@@ -472,11 +472,12 @@ function schedaCens(r,rientro){
 }
 
 /* ---------- Oggi + ricerca globale ---------- */
+function badgeC(t){const x=String(t||''),c=/legionella|rentokil|bioh|108\/2025/i.test(x)?['Legionella','#2e9e5b']:/\bTLR\b|A2A/i.test(x)?['TLR','#d1453b']:/lotto 1(?!\d)|innova/i.test(x)?['Lotto 1','#ff7a26']:/lotto 2(?!\d)|renovit/i.test(x)?['Lotto 2','#2f7fd1']:null;return c?'<span class="hubtag" style="--hc:'+c[1]+';font-size:11px;padding:.05rem .5rem;margin-right:.4rem">'+c[0]+'</span>':''}
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
-  const[a,s,g,im,ia,na,ng,sl,qd,...cn]=await Promise.all([
+  const[a,s,g,im,ia,na,ng,sl,qd,rg,...cn]=await Promise.all([
     sb.from('attivita').select('*').neq('stato','Fatto').order('scadenza',{ascending:true,nullsFirst:false}),
-    sb.from('scadenze').select('*').eq('fatto',false).lte('data',fra).order('data'),
+    sb.from('scadenze').select('*').eq('fatto',false).lte('data',aggiungiGiorni(60)).order('data'),
     sb.from('segnalazioni').select('*').neq('stato','Risolta').order('data',{ascending:false}).limit(15),
     sb.from('impianti').select('*').not('stato','in','("In funzione","Dismesso")').order('fermo_dal',{ascending:true,nullsFirst:false}),
     sb.from('impianti').select('stato'),
@@ -484,11 +485,12 @@ async function oggiVista(){
     cc('segnalazioni',q=>q.neq('stato','Risolta')),
     sb.from('sal').select('lotto,tipo,stato,netto,periodo,numero,anno,progressivo'),
     sb.from('quadro').select('*'),
+    sb.from('registro').select('quando,utente,azione,tabella,etichetta').order('quando',{ascending:false}).limit(8),
     ...TABELLE.map(k=>sb.from(MODULI[k].tab).select('id',{count:'exact',head:true}))]);
   if(a.data)a.data=ordinaAttivita(a.data).slice(0,15);
   const I=ia.data||[],cnt=x=>I.filter(r=>r.stato===x).length;
   const inf=cnt('In funzione'),par=cnt('Funzionamento parziale'),fer=cnt('Fermo'),dis=cnt('Dismesso');
-  const scad=s.data||[],ritardo=scad.filter(r=>r.data<t).length,fd=d=>fmtD(iso(d)),S=stagione(new Date());
+  const scadTutte=s.data||[],scad=scadTutte.filter(r=>r.data<=fra),ritardo=scad.filter(r=>r.data<t).length,fd=d=>fmtD(iso(d)),S=stagione(new Date());
   const fl='<svg class="fl" viewBox="0 0 32 32" aria-hidden="true"><use href="#flame1"/></svg>';
   const hero=S.dentro
     ?'<section class="hero"><div class="kick">'+ico('fiamma')+' Stagione termica '+S.i.getFullYear()+'/'+String(S.f.getFullYear()).slice(2)+' · zona E, Milano</div><div class="big">In corso: giorno '+S.n+' di '+S.tot+'</div><div class="sub">Periodo di accensione dal '+fd(S.i)+' al '+fd(S.f)+' · '+(S.aFine?'mancano '+S.aFine+(S.aFine===1?' giorno':' giorni'):'ultimo giorno')+'</div><div class="prog"><i style="width:'+Math.round(S.n/S.tot*100)+'%"></i></div>'+fl+'</section>'
@@ -506,9 +508,10 @@ async function oggiVista(){
   const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data)):'';
   $('#main').innerHTML='<h2 class="hd" style="margin-bottom:.9rem"><span class="hico">'+ico('oggi')+'</span><span>Oggi <span class="muted">· '+esc(new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</span></span></h2><div id="ris"></div><div id="home">'+hero+kpis+'<div class="grid">'+
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
-   blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
+   blocco('scadenze','Scadenze entro 60 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
    blocco('segnalazioni','Segnalazioni aperte',g.data,r=>'<li><span class="dt">'+fmtD(r.data)+'</span><span class="tx"><b>'+esc(r.impianto||'')+'</b> – '+esc(r.oggetto||'')+(r.stato?' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato)+'</span>':'')+'</span></li>','Nessuna segnalazione aperta.')+
    blocco('impianti','Impianti non in pieno funzionamento',im.data,r=>'<li><span class="tx"><b>'+esc(r.indirizzo)+'</b> <span class="st '+(/fermo/i.test(r.stato||'')?'ko':'wa')+'">'+esc(r.stato)+'</span>'+(r.fermo_dal?' dal '+fmtD(r.fermo_dal):'')+(r.rimessa_prevista?' · rimessa prevista '+fmtD(r.rimessa_prevista):'')+(r.note?'<br><span class="muted">'+esc(r.note)+'</span>':'')+'</span></li>','Tutti gli impianti sono in funzione.')+
+   blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+
    '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div></div>';
   $('#qa').onclick=()=>{corrente='attivita';modulo(null,'attivita',()=>apri('oggi'))};
   document.querySelectorAll('.cnt a,a.kpi,a[data-k=contabilita]').forEach(x=>x.onclick=e=>{e.preventDefault();const k=x.dataset.k;apri((MODULI[k]&&MODULI[k].vai)||k)});
