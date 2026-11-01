@@ -276,7 +276,7 @@ async function leggiTutto(m){
 /* ---------- elenchi ---------- */
 async function apri(k){
   if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens=''}
-  corrente=k;sort=null;limite=LIM;$('#search').value='';
+  corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
   if(k==='oggi')return oggiVista();
   if(k==='hub')return hubVista();
@@ -605,6 +605,8 @@ async function hubVista(){
     const C=calcContab(sl.data||[],qd.data),P=C.per[C.attivo],L=P&&P[h.lotto];
     if(L){cbH='<p class="muted" style="margin:0 0 .5rem;font-size:13px">Periodo '+esc(C.attivo)+(L.ult?' · ultimo SAL n. '+L.ult.numero:'')+'. Importi netti IVA esclusa.</p><div class="grid">'+ordinaVoci(L).map(v=>'<div>'+vriga(v,L.voci[v])+'</div>').join('')+'</div>'}
   }
+  const ultAgg=[].concat(me.data||[],at.data||[],sc.data||[]).map(r=>r.aggiornato_il||'').sort().pop();
+  const ultTxt=ultAgg?new Date(ultAgg).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
   const regole='<ul class="lst">'+HUB_REGOLE[h.tipo].map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
   const kp=(tono,val,lab,sub)=>'<div class="kpi '+tono+'"><b>'+val+'</b><span>'+lab+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
   const ritardo=scH.filter(r=>r.data&&r.data<t).length;
@@ -614,7 +616,7 @@ async function hubVista(){
      kp(ritardo?'ko':scH.length?'wa':'ok',scH.length,'Scadenze aperte',ritardo?ritardo+' già scadute':'')+
      kp('',atH.length,'Attività aperte','')+kp(sgH.length?'wa':'ok',sgH.length,'Segnalazioni aperte','')+'</div>';
   const tabs='<div class="chips" id="hubtabs">'+Object.keys(HUB).map(k=>'<button class="chip'+(k===hubSel?' on':'')+'" data-h="'+k+'">'+esc(HUB[k].nome)+'</button>').join('')+'</div>';
-  let H='<h2 class="hd" style="margin-bottom:.4rem"><span class="hico">'+ico('hub')+'</span><span>'+esc(h.tit)+' <span class="muted">· '+esc(h.sub)+'</span></span></h2><div class="noprint" style="margin:.2rem 0 .6rem"><button class="ghost mini" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
+  let H='<h2 class="hd" style="margin-bottom:.4rem"><span class="hico">'+ico('hub')+'</span><span>'+esc(h.tit)+' <span class="muted">· '+esc(h.sub)+'</span></span></h2><div style="margin:.2rem 0 .6rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap"><span class="hubtag">'+esc(h.nome)+'</span><span class="muted" style="font-size:13px">'+(ultTxt?'Dati aggiornati al '+ultTxt:'')+'</span><button class="ghost mini noprint" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
   const dvC=(me.data||[]).find(r=>/Da verificare/.test(r.titolo||'')&&(h.tipo==='leg'?/^Legionella/.test(r.titolo):h.tipo==='tlr'?/^TLR/.test(r.titolo):/^Gestione Calore/.test(r.titolo)));
   if(dvC){const righe=String(dvC.testo||'').split('\n').map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
     H+=sez('attivita','Da verificare <span class="muted" style="font-weight:400">('+righe.length+')</span>','<ul class="lst">'+righe.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><p class="muted" style="font-size:13px;margin:.5rem 0 0">'+link('memoria',dvC,'Apri la scheda per modificare o togliere le voci risolte')+'</p>');}
@@ -622,7 +624,7 @@ async function hubVista(){
   H+=sez('contatti','Ruoli e contatti','<ul class="lst">'+HUB_RUOLI[h.tipo]+'</ul><p class="muted" style="font-size:13px;margin:.4rem 0">Storico, CSE e nomine: scheda «Chi ha ricoperto i ruoli» (Memoria operativa).</p>'+(cH2.length?'<ul class="lst">'+cH2.map(c=>'<li>'+link('contatti',c,esc(c.nome))+' · '+esc(c.ruolo||'')+' · '+esc(c.ente||'')+(c.email?' · '+esc(c.email):'')+(c.telefono?' · '+esc(c.telefono):'')+'</li>').join('')+'</ul>':''));
   H+=sez('scadenze','Scadenze aperte <span class="muted" style="font-weight:400">('+scH.length+')</span>',scH.length?'<ul class="ev">'+scH.map(r=>'<li><span class="dt '+(r.data<t?'late':'')+'">'+(r.data?fmtD(r.data):'—')+'</span><span class="tx">'+link('scadenze',r,esc(r.titolo))+'</span></li>').join('')+'</ul>':vuotoP('Nessuna scadenza aperta.'),'<button class="ghost mini" id="nuS" style="margin-left:auto">+ scadenza</button>');
   if(h.tipo==='leg'){
-    H+=sez('impianti','Stabili e campionamenti 2026',stab.length?'<div class="tw"><table class="stk"><thead><tr><th>Stabile</th><th class="n">Campioni</th><th class="n">Positivi</th><th>Ultima campagna</th></tr></thead><tbody>'+stab.map(x=>'<tr><td data-l="Stabile">'+link('memoria',x.r,esc(x.n))+'</td><td class="n" data-l="Campioni">'+x.c+'</td><td class="n" data-l="Positivi"><span class="st '+(x.p?'wa':'ok')+'">'+x.p+'</span></td><td data-l="Ultima campagna">'+(x.u?esc(x.u.d)+' · '+esc(x.u.t.replace(/^campagna di |^prelievi di |^prelievi extra del /,''))+': '+x.u.p+' positivi su '+x.u.c:'—')+'</td></tr>').join('')+'</tbody></table></div><p class="muted" style="font-size:13px;margin:.5rem 0 0">Dati dal portale Rentokil (letti il 01/11/2026). Soglia di riferimento: sotto 100 UFC/L. Le schede si aggiornano dalla Memoria operativa.</p>':vuotoP('Nessuna scheda di campionamento.'));
+    H+=sez('impianti','Stabili e campionamenti 2026',stab.length?'<div class="tw"><table class="stk"><thead><tr><th>Stabile</th><th class="n">Campioni</th><th class="n">Positivi</th><th>Ultima campagna</th></tr></thead><tbody>'+stab.map(x=>'<tr class="row"><td data-l="Stabile">'+link('memoria',x.r,esc(x.n))+'</td><td class="n" data-l="Campioni">'+x.c+'</td><td class="n" data-l="Positivi"><span class="st '+(x.p?'wa':'ok')+'">'+x.p+'</span></td><td data-l="Ultima campagna">'+(x.u?esc(x.u.d)+' · '+esc(x.u.t.replace(/^campagna di |^prelievi di |^prelievi extra del /,''))+': '+x.u.p+' positivi su '+x.u.c:'—')+'</td></tr>').join('')+'</tbody></table></div><p class="muted" style="font-size:13px;margin:.5rem 0 0">Dati dal portale Rentokil (letti il 01/11/2026). Soglia di riferimento: sotto 100 UFC/L. Le schede si aggiornano dalla Memoria operativa.</p>':vuotoP('Nessuna scheda di campionamento.'));
   }else{
     H+=sez('impianti','Impianti <span class="muted" style="font-weight:400">('+I.length+')</span>',I.length?'<details><summary>Mostra elenco</summary><ul class="lst">'+I.map(r=>'<li>'+link('impianti',r,esc(r.indirizzo))+' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato||'')+'</span>'+(r.sintesi&&/DA ATTENZIONARE|IN PROSSIMIT/.test(r.sintesi)?' <span class="st '+(/DA ATTENZIONARE/.test(r.sintesi)?'ko':'wa')+'">caldaie '+(/DA ATTENZIONARE/.test(r.sintesi)?'oltre 15 anni':'vicine a 15 anni')+'</span>':'')+'</li>').join('')+'</ul></details>':vuotoP('Nessun impianto.'),'<a href="#" id="vaI" style="margin-left:auto;font-size:13px">Sezione Impianti →</a>');
   }
@@ -631,7 +633,7 @@ async function hubVista(){
   if(sgH.length)H+=sez('segnalazioni','Segnalazioni aperte <span class="muted" style="font-weight:400">('+sgH.length+')</span>','<ul class="ev">'+sgH.map(r=>'<li><span class="dt">'+fmtD(r.data)+'</span><span class="tx">'+link('segnalazioni',r,'<b>'+esc(r.impianto||'')+'</b> – '+esc(r.oggetto||''))+'</span></li>').join('')+'</ul>');
   H+=sez('memoria','Know-how e schede <span class="muted" style="font-weight:400">('+memH.length+')</span>',khH?'<div class="grid">'+khH+'</div>':vuotoP('Nessuna scheda.'),'<a href="#" id="vaM" style="margin-left:auto;font-size:13px">Memoria operativa →</a>');
   H+=sez('documenti','Documenti e fonti','<ul class="lst"><li>Documenti di gara e di esecuzione: sezione Documenti (SharePoint) e scheda «Dove trovare i documenti».</li><li>Normativa e riferimenti: sezione «Normativa e riferimenti».</li><li>Modifiche recenti: sezione Registro modifiche.</li></ul>');
-  $('#main').innerHTML=H;
+  $('#main').innerHTML=H;$('#main').dataset.hub=hubSel;
   document.querySelectorAll('#hubtabs .chip').forEach(b=>b.onclick=()=>{hubSel=b.dataset.h;try{localStorage.setItem('hub',hubSel)}catch(e){}hubVista()});
   const go=(id,k)=>{const e=$(id);if(e)e.onclick=ev=>{ev.preventDefault();apri(k)}};const sp=$('#stampaHub');if(sp)sp.onclick=()=>window.print();go('#vaC','contratti');go('#vaI','impianti');go('#vaB','contabilita');go('#vaM','memoria');
   const nu=(id,tb,pre)=>{const e=$(id);if(e)e.onclick=()=>{corrente='hub';modulo(pre,tb,()=>apri('hub'))}};

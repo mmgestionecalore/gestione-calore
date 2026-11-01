@@ -177,3 +177,7 @@ table.cens td.k-lotto{white-space:nowrap}
  table.cens td.k-criticita::before,table.cens td.k-voce::before{content:attr(data-l);display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 }
 @media print{header,nav,#nav,.chips,.noprint,button,.toast,#search,.ghost{display:none!important}body,#app,#main{background:#fff!important;color:#000!important}.card{box-shadow:none!important;break-inside:avoid;border:1px solid #ccc!important}details:not([open])>*:not(summary){display:block}a{color:#000!important;text-decoration:none!important}}
+#main[data-hub=l1]{--hc:#ff7a26}#main[data-hub=l2]{--hc:#2f7fd1}#main[data-hub=tlr]{--hc:#d1453b}#main[data-hub=leg]{--hc:#2e9e5b}
+#main[data-hub] .card{border-left:4px solid var(--hc)}
+#main[data-hub] .chip.on{background:var(--hc);border-color:var(--hc);color:#fff}
+.hubtag{background:var(--hc,var(--ac));color:#fff;border-radius:999px;padding:.15rem .7rem;font-size:12.5px;font-weight:600;letter-spacing:.02em}
