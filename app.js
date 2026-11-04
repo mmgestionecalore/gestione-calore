@@ -39,13 +39,13 @@ const MODULI={
   avviso:'Un tetto per voce e per periodo. Per la quota annua del canone usa la voce «Canone – quota annua» e scrivi l’anno nel campo Periodo.',campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'lotto',l:'Lotto',t:'sel',o:['LOTTO 1','LOTTO 2'],list:1},{k:'periodo',l:'Periodo',t:'text',list:1},{k:'voce',l:'Voce',t:'text',list:1},
   {k:'importo_base',l:'Importo base (€)',t:'num'},{k:'importo_attuale',l:'Importo attuale (€)',t:'num'},{k:'fonte',l:'Fonte',t:'text'},{k:'note',l:'Note',t:'long'}]},
- ordini:{nome:'Ordini e manutenzione',tab:'ordini',ord:['data',false],campi:[
+ ordini:{altro:1,nome:'Ordini e manutenzione',tab:'ordini',ord:['data',false],campi:[
   {k:'numero',l:'N. ordine',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},
   {k:'codice_stato',l:'Codice stato',t:'text',list:1},{k:'fornitore',l:'Fornitore',t:'text',list:1},{k:'descrizione',l:'Descrizione',t:'long'},{k:'note',l:'Note',t:'long'}]},
- segnalazioni:{nome:'Segnalazioni',tab:'segnalazioni',ord:['data',false],campi:[
+ segnalazioni:{altro:1,nome:'Segnalazioni',tab:'segnalazioni',ord:['data',false],campi:[
   {k:'data',l:'Data',t:'date',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'stagione',l:'Stagione',t:'text',list:1},
   {k:'oggetto',l:'Oggetto',t:'text',list:1},{k:'stato',l:'Stato',t:'sel',o:['Aperta','In corso','Risolta'],list:1},{k:'esito',l:'Esito',t:'long'},{k:'note',l:'Note',t:'long'}]},
- programmazione:{nome:'Programmazione',tab:'programmazione',ord:['anno',false],campi:[
+ programmazione:{altro:1,nome:'Programmazione',tab:'programmazione',ord:['anno',false],campi:[
   {k:'anno',l:'Anno',t:'num',dec:0,list:1},{k:'titolo',l:'Intervento',t:'text',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},
   {k:'importo',l:'Importo (€)',t:'num',list:1},{k:'stato',l:'Stato',t:'text',list:1},{k:'note',l:'Note',t:'long'}]},
  contatti:{nome:'Contatti',tab:'contatti',ord:['nome',true],campi:[
@@ -75,6 +75,7 @@ const aggiungiGiorni=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(
 const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
 /* ---------- tema: icone, stagione termica, calcoli di contabilità ---------- */
 const IC={
+ altro:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
  oggi:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  attivita:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
  scadenze:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
@@ -155,7 +156,7 @@ function vriga(nome,x,compatto){
 }
 /* Da fare: i fatti in fondo, poi per scadenza (senza data dopo), poi per priorità */
 function ordinaAttivita(rows){const rk={Alta:0,Media:1,Bassa:2},fa=r=>r.stato==='Fatto'?1:0;return rows.slice().sort((a,b)=>fa(a)-fa(b)||(a.scadenza||'9999').localeCompare(b.scadenza||'9999')||(rk[a.priorita]??3)-(rk[b.priorita]??3)||String(a.titolo||'').localeCompare(String(b.titolo||''),'it'))}
-let corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
+let mostraFatte=false,corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
 const LIM=300;let limite=LIM;
 const AZIONI={INSERT:'Creata',UPDATE:'Modificata',DELETE:'Eliminata'};
 const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
@@ -189,7 +190,8 @@ async function entra(session){
   if(error||ok!==true){await sb.auth.signOut();show(false);msg('Utente non autorizzato.');return}
   utente=session.user;$('#who').textContent=utente.email;show(true);
   const nav=$('#nav');nav.innerHTML='';
-  for(const k in MODULI){if(MODULI[k].nascosto)continue;const b=document.createElement('button');b.innerHTML=ico(k)+'<span>'+esc(MODULI[k].nome)+'</span>';b.dataset.k=k;b.onclick=()=>apri(k);nav.appendChild(b)}
+  for(const k in MODULI){if(MODULI[k].nascosto||MODULI[k].altro)continue;const b=document.createElement('button');b.innerHTML=ico(k)+'<span>'+esc(MODULI[k].nome)+'</span>';b.dataset.k=k;b.onclick=()=>apri(k);nav.appendChild(b)}
+  {const b=document.createElement('button');b.innerHTML=ico('altro')+'<span>Altro</span>';b.dataset.k='altro';b.onclick=()=>apri('altro');nav.appendChild(b)}
   if(!$('#bk')){const b=document.createElement('button');b.id='bk';b.className='ghost';b.innerHTML=ico('backup')+'<span class="tx">Backup</span>';b.setAttribute('aria-label','Backup');b.title='Scarica tutti i dati in un file';b.onclick=backup;$('#logout').before(b)}
   if(!$('#pw')){const b=document.createElement('button');b.id='pw';b.className='ghost';b.innerHTML=ico('key')+'<span class="tx">Password</span>';b.setAttribute('aria-label','Password');b.title='Imposta o cambia la tua password';b.onclick=cambiaPassword;$('#logout').before(b)}
   const br=$('.brand');if(br)br.onclick=e=>{e.preventDefault();apri('oggi')};
@@ -277,7 +279,9 @@ async function leggiTutto(m){
 async function apri(k){
   if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens=''}
   corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');
-  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':k)));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':(k==='altro'||(MODULI[k]&&MODULI[k].altro)?'altro':k))));
+  if(k!=='attivita')mostraFatte=false;
+  if(k==='altro')return altroVista();
   if(k==='oggi')return oggiVista();
   if(k==='hub')return hubVista();
   if(k==='contabilita')return contabVista();
@@ -287,10 +291,18 @@ async function apri(k){
   if(k==='impianti'){const ce=await leggiTutto(MODULI.censimento);censAll=ce.data||[];const st=await sb.from('impostazioni').select('valore').eq('chiave','allineamento_sharepoint').maybeSingle();allineato=st&&st.data?st.data.valore:null}
   dati=data;disegna();
 }
+async function altroVista(){
+  const v=['ordini','segnalazioni','programmazione'];
+  const cn=await Promise.all(v.map(k=>sb.from(MODULI[k].tab).select('*',{count:'exact',head:true})));
+  $('#main').innerHTML='<div class="bar"><h2 class="hd"><span class="hico">'+ico('altro')+'</span><span>Altro</span></h2></div><p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Sezioni che per ora contengono pochi o nessun dato.</p><div class="chips fb">'+v.map((k,i)=>'<button type="button" class="chip" data-alt="'+k+'">'+esc(MODULI[k].nome)+' <span class="muted">'+(cn[i].count??0)+'</span></button>').join('')+'</div>';
+  document.querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>apri(b.dataset.alt));
+}
 function disegna(){
   const m=MODULI[corrente],q=$('#search').value.toLowerCase();
   if(corrente==='impianti')arricchisciImp();
   let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q))||(corrente==='impianti'&&r.__txt.includes(q)));
+  const nFatte=corrente==='attivita'?dati.filter(r=>r.stato==='Fatto').length:0;
+  if(corrente==='attivita'&&!mostraFatte&&!q)rows=rows.filter(r=>r.stato!=='Fatto');
   if(corrente==='impianti'){
     if(fc.lotto)rows=rows.filter(r=>r.lotto===fc.lotto);
     if(fc.stato)rows=rows.filter(r=>r.stato===fc.stato);
@@ -315,6 +327,7 @@ function disegna(){
   if(m.intro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">'+esc(m.intro)+'</p>';
   if(m.vista)h+=barraCens();
   if(corrente==='impianti')h+=barraImp();
+  if(corrente==='attivita'&&nFatte)h+='<div class="chips fb"><button type="button" class="chip'+(mostraFatte?' on':'')+'" id="fatte">'+(mostraFatte?'Nascondi le attività fatte':'Mostra anche le fatte')+' <span class="muted">'+nFatte+'</span></button></div>';
   h+='<div class="tw"><table class="'+(m.vista?'cens':'stk')+'"><thead><tr>'+cols.map(c=>'<th data-k="'+c.k+'"'+(c.t==='num'?' class="n"':'')+'>'+esc(c.l)+(sort&&sort.k===c.k?(sort.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead><tbody>';
   let ult;
   for(const r of rows.slice(0,limite)){
@@ -327,6 +340,7 @@ function disegna(){
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>apri(b.dataset.pi));
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
+  const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
   const az=$('#azzera');if(az)az.onclick=()=>{fc={lotto:'',crit:false,tag:[]};voceCens='';limite=LIM;disegna()};
   const vs=$('#voce');if(vs)vs.onchange=()=>{voceCens=vs.value;sort=null;limite=LIM;disegna()};
