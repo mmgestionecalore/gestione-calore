@@ -12,10 +12,10 @@ const MODULI={
  scadenze:{nome:'Scadenze',tab:'scadenze',ord:['data',true],campi:[
   {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile'],list:1},
   {k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'fatto',l:'Fatto',t:'bool',list:1},{k:'note',l:'Note',t:'long'}]},
- impianti:{nome:'Impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,avviso:'I campi contrassegnati «da SharePoint» sono allineati con la lista della Dashboard: per cambiarli modifica la lista, altrimenti al prossimo allineamento tornano al valore della lista.',campi:[
+ impianti:{nome:'Parco impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,pi:1,intro:'Tutto sugli impianti in un posto solo: stato, fermi e note, più le schede tecniche (il know-how raccolto nel censimento). Filtra per lotto, stato o tag; clic su una riga per aprire la scheda completa con ordini, segnalazioni, scadenze e documenti. Passa a «Schede tecniche» per confrontare una voce su tutte le centrali.',avviso:'I campi contrassegnati «da SharePoint» sono allineati con la lista della Dashboard: per cambiarli modifica la lista, altrimenti al prossimo allineamento tornano al valore della lista.',campi:[
   {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},
   {k:'tipologia',l:'Tipologia',t:'text',list:1,sp:1},{k:'stato',l:'Stato',t:'sel',o:['In funzione','Funzionamento parziale','Fermo','Dismesso'],list:1,sp:1},{k:'fermo_dal',l:'Fermo dal',t:'date',list:1,nc:1,sp:1},{k:'rimessa_prevista',l:'Rimessa in funzione prevista',t:'date',list:1,sp:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long',sp:1}]},
- censimento:{nome:'Censimento',tab:'censimento',ord:['ordine',true],vista:1,intro:'Il nostro know-how sulle centrali, una scheda per impianto (o per gruppo di impianti). Filtra per lotto e per tag, oppure scegli una voce per confrontarla su tutte le schede. Clic su una riga per leggere la scheda; da lì si modifica. Ogni modifica resta nel Registro.',avviso:'Scheda: una voce per riga, nella forma «Etichetta: testo»; le sotto-voci iniziano con «- ». Criticità principale e Note hanno il loro campo. Tag: separati da virgola, oppure tocca quelli già in uso. Per collegare la scheda a più impianti scrivi gli indirizzi separati da «;», identici a come compaiono in Impianti.',campi:[
+ censimento:{nome:'Schede tecniche',tab:'censimento',ord:['ordine',true],vista:1,pi:1,nascosto:1,vai:'impianti',intro:'Il nostro know-how sulle centrali, una scheda per impianto (o per gruppo di impianti). Filtra per lotto e per tag, oppure scegli una voce per confrontarla su tutte le schede. Clic su una riga per leggere la scheda; da lì si modifica. Ogni modifica resta nel Registro.',avviso:'Scheda: una voce per riga, nella forma «Etichetta: testo»; le sotto-voci iniziano con «- ». Criticità principale e Note hanno il loro campo. Tag: separati da virgola, oppure tocca quelli già in uso. Per collegare la scheda a più impianti scrivi gli indirizzi separati da «;», identici a come compaiono nel Parco impianti.',campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},
   {k:'tag',l:'Tag',t:'text',list:1,tags:1},
   {k:'scheda',l:'Scheda',t:'long',rows:14,ph:'Una voce per riga: «Etichetta: testo». Le sotto-voci iniziano con «- ».'},
@@ -155,7 +155,7 @@ function vriga(nome,x,compatto){
 }
 /* Da fare: i fatti in fondo, poi per scadenza (senza data dopo), poi per priorità */
 function ordinaAttivita(rows){const rk={Alta:0,Media:1,Bassa:2},fa=r=>r.stato==='Fatto'?1:0;return rows.slice().sort((a,b)=>fa(a)-fa(b)||(a.scadenza||'9999').localeCompare(b.scadenza||'9999')||(rk[a.priorita]??3)-(rk[b.priorita]??3)||String(a.titolo||'').localeCompare(String(b.titolo||''),'it'))}
-let corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={};
+let corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
 const LIM=300;let limite=LIM;
 const AZIONI={INSERT:'Creata',UPDATE:'Modificata',DELETE:'Eliminata'};
 const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
@@ -277,19 +277,27 @@ async function leggiTutto(m){
 async function apri(k){
   if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens=''}
   corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');
-  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':k)));
   if(k==='oggi')return oggiVista();
   if(k==='hub')return hubVista();
   if(k==='contabilita')return contabVista();
   const m=MODULI[k];
   const{data,error}=await leggiTutto(m);
   if(error){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(error.message)+'</p>';return}
-  if(k==='impianti'){const st=await sb.from('impostazioni').select('valore').eq('chiave','allineamento_sharepoint').maybeSingle();allineato=st&&st.data?st.data.valore:null}
+  if(k==='impianti'){const ce=await leggiTutto(MODULI.censimento);censAll=ce.data||[];const st=await sb.from('impostazioni').select('valore').eq('chiave','allineamento_sharepoint').maybeSingle();allineato=st&&st.data?st.data.valore:null}
   dati=data;disegna();
 }
 function disegna(){
   const m=MODULI[corrente],q=$('#search').value.toLowerCase();
-  let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q)));
+  if(corrente==='impianti')arricchisciImp();
+  let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q))||(corrente==='impianti'&&r.__txt.includes(q)));
+  if(corrente==='impianti'){
+    if(fc.lotto)rows=rows.filter(r=>r.lotto===fc.lotto);
+    if(fc.stato)rows=rows.filter(r=>r.stato===fc.stato);
+    if(fc.crit)rows=rows.filter(r=>r.__crit);
+    for(const t of fc.tag)rows=rows.filter(r=>r.__tags.some(x=>norm(x)===t));
+    if(!sort)rows=[...rows].sort((a,b)=>String(a.lotto||'~').localeCompare(String(b.lotto||'~'))||String(a.indirizzo||'').localeCompare(String(b.indirizzo||''),'it'));
+  }
   if(m.vista){
     for(const r of dati){r.__v=vociDi(r);r.__voce=voceCens?(r.__v[voceCens]??''):''}
     if(fc.lotto)rows=rows.filter(r=>r.lotto===fc.lotto);
@@ -299,12 +307,14 @@ function disegna(){
     if(!sort)rows=[...rows].sort((a,b)=>String(a.lotto||'~').localeCompare(String(b.lotto||'~')));
   }
   if(sort)rows=[...rows].sort((a,b)=>{const x=a[sort.k]??'',y=b[sort.k]??'';return(x>y?1:x<y?-1:0)*sort.d});
-  const cols=m.campi.filter(c=>c.list&&!(m.vista&&voceCens&&(c.k==='impianto'||c.k==='criticita'))).concat(m.vista&&voceCens?[{k:'__voce',l:voceCens,t:'text'}]:[]);
-  let h='<div class="bar"><h2 class="hd"><span class="hico">'+ico(corrente)+'</span><span>'+esc(m.nome)+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
+  const cols=m.campi.filter(c=>c.list&&!(m.vista&&voceCens&&(c.k==='impianto'||c.k==='criticita'))).concat(m.vista&&voceCens?[{k:'__voce',l:voceCens,t:'text'}]:[]).concat(corrente==='impianti'?[{k:'__tag',l:'Tag',t:'text'},{k:'__crit',l:'Criticità principale',t:'text'}]:[]);
+  let h='<div class="bar"><h2 class="hd"><span class="hico">'+ico(corrente)+'</span><span>'+esc(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'')+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
+  if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
   if(m.tab==='impianti'&&allineato)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Stato, date e note allineati con la lista SharePoint il '+esc(fmtDT(allineato))+'.</p>';
   if(m.ro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Registro in sola lettura: tiene traccia di chi crea, modifica o elimina elementi nelle altre sezioni.</p>';
   if(m.intro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">'+esc(m.intro)+'</p>';
   if(m.vista)h+=barraCens();
+  if(corrente==='impianti')h+=barraImp();
   h+='<div class="tw"><table class="'+(m.vista?'cens':'stk')+'"><thead><tr>'+cols.map(c=>'<th data-k="'+c.k+'"'+(c.t==='num'?' class="n"':'')+'>'+esc(c.l)+(sort&&sort.k===c.k?(sort.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead><tbody>';
   let ult;
   for(const r of rows.slice(0,limite)){
@@ -315,8 +325,9 @@ function disegna(){
   if(!rows.length)h+='<p class="muted">Nessun elemento.</p>';
   if(rows.length>limite)h+='<p><button class="ghost" id="piu">Mostra altri '+Math.min(LIM,rows.length-limite)+' (ne restano '+(rows.length-limite)+')</button></p>';
   $('#main').innerHTML=h;
+  document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>apri(b.dataset.pi));
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
-  document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
+  document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
   const az=$('#azzera');if(az)az.onclick=()=>{fc={lotto:'',crit:false,tag:[]};voceCens='';limite=LIM;disegna()};
   const vs=$('#voce');if(vs)vs.onchange=()=>{voceCens=vs.value;sort=null;limite=LIM;disegna()};
   if(!m.ro){$('#nuovo').onclick=()=>modulo(null);$('#imp').onclick=importa}$('#exp').onclick=()=>esporta(corrente,dati);
@@ -328,6 +339,8 @@ function cella(c,r){
   if(corrente==='registro'&&c.k==='azione')return esc(AZIONI[r[c.k]]||r[c.k]);
   if(corrente==='registro'&&c.k==='tabella')return esc((MODULI[r[c.k]]&&MODULI[r[c.k]].nome)||r[c.k]);
   const v=r[c.k];
+  if(c.k==='__tag')return (r.__tags||[]).map(t=>'<span class="tg">'+esc(t)+'</span>').join(' ');
+  if(c.k==='__crit'){const t=r.__crit||'';return t.length>110?esc(t.slice(0,109).trimEnd())+'…':esc(t)}
   if(c.k==='__voce')return r.__voce?esc(r.__voce):'<span class="muted">—</span>';
   if(c.tags)return tagLista(v).map(t=>'<span class="tg">'+esc(t)+'</span>').join(' ');
   if(c.cut&&v&&String(v).length>c.cut)return esc(String(v).slice(0,c.cut-1).trimEnd())+'…';
@@ -401,7 +414,7 @@ async function scheda(r){
   let h='<h3>'+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
-  h+='<h4>Censimento <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+x.id+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
+  h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+x.id+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
   h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(x.link)+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
   h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button><button type="button" id="mod">Modifica impianto</button></div>';
@@ -427,6 +440,27 @@ async function tagPick(f){
     box.querySelectorAll('button').forEach(b=>b.onclick=()=>{const l=tagLista(inp.value),k=norm(b.dataset.t);inp.value=(l.some(x=>norm(x)===k)?l.filter(x=>norm(x)!==k):[...l,b.dataset.t]).join(', ');dis()});
   };
   inp.addEventListener('input',dis);dis();
+}
+function arricchisciImp(){
+  const per={};
+  for(const x of censAll)for(const p of String(x.impianto||'').split(';')){const k=norm(p);if(k)(per[k]=per[k]||[]).push(x)}
+  for(const r of dati){
+    const cs=per[norm(r.indirizzo)]||[];
+    r.__tags=[...new Map(cs.flatMap(x=>tagLista(x.tag)).map(t=>[norm(t),t])).values()];
+    r.__crit=cs.map(x=>x.criticita).filter(Boolean).join(' · ');
+    r.__txt=cs.map(x=>[x.titolo,x.tag,x.scheda,x.criticita,x.note].join(' ')).join(' ').toLowerCase();
+  }
+}
+function barraImp(){
+  const lotti=[...new Set(dati.map(r=>r.lotto).filter(Boolean))].sort();
+  const stati=[...new Set(dati.map(r=>r.stato).filter(Boolean))].sort();
+  const tg={};dati.forEach(r=>(r.__tags||[]).forEach(t=>{const k=norm(t);(tg[k]=tg[k]||{t,n:0}).n++}));
+  const tags=Object.entries(tg).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t,'it'));
+  const ch=(g,v,t,n,on)=>'<button type="button" class="chip'+(on?' on':'')+'" data-g="'+g+'" data-v="'+esc(v)+'">'+esc(t)+' <span>'+n+'</span></button>';
+  const attivi=fc.lotto||fc.stato||fc.crit||fc.tag.length;
+  return '<div class="chips fb">'+lotti.map(l=>ch('lotto',l,l,dati.filter(r=>r.lotto===l).length,fc.lotto===l)).join('')+stati.map(x=>ch('stato',x,x,dati.filter(r=>r.stato===x).length,fc.stato===x)).join('')+ch('crit','1','Con criticità principale',dati.filter(r=>r.__crit).length,fc.crit)+'</div>'+
+    (tags.length?'<div class="chips fb">'+tags.map(([k,o])=>ch('tag',k,o.t,o.n,fc.tag.includes(k))).join('')+'</div>':'')+
+    (attivi?'<div class="vc"><button type="button" class="ghost mini" id="azzera">Azzera filtri</button></div>':'');
 }
 function barraCens(){
   const tg={};dati.forEach(r=>tagLista(r.tag).forEach(t=>{const k=norm(t);(tg[k]=tg[k]||{t,n:0}).n++}));
