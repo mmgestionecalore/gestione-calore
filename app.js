@@ -27,7 +27,7 @@ const MODULI={
  sal:{nome:'SAL',tab:'sal',ord:['numero',true],nascosto:1,vai:'contabilita',glob:r=>r.titolo||'',
   pre:o=>{if(!o.titolo&&o.numero!=null&&o.tipo&&o.lotto)o.titolo='SAL '+o.numero+' · '+o.tipo+' · '+o.lotto.replace('LOTTO','Lotto')},
   avviso:'Importi netti, IVA esclusa, con gli oneri della sicurezza (come nella «Situazione progressiva» del SAL). Se lasci vuoto il titolo si compila da solo. Un SAL annullato resta in elenco ma non entra nei residui.',campi:[
-  {k:'lotto',l:'Lotto',t:'sel',o:['LOTTO 1','LOTTO 2'],list:1},{k:'numero',l:'N. SAL',t:'num',dec:0,list:1},
+  {k:'lotto',l:'Lotto',t:'sel',o:['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'],list:1},{k:'numero',l:'N. SAL',t:'num',dec:0,list:1},
   {k:'tipo',l:'Tipo',t:'sel',o:['Canone','Extra-canone','Attività tecnico-ricognitive'],list:1},{k:'stato',l:'Stato',t:'sel',o:['Emesso','Annullato'],list:1},
   {k:'periodo_dal',l:'Periodo dal',t:'date',nc:1},{k:'periodo_al',l:'Periodo al',t:'date',nc:1},{k:'emissione',l:'Data emissione',t:'date',nc:1,list:1},
   {k:'anno',l:'Anno',t:'num',dec:0,list:1},{k:'n_ordini',l:'N. ordini',t:'num',dec:0},
@@ -37,7 +37,7 @@ const MODULI={
   {k:'titolo',l:'Titolo',t:'text',ph:'si compila da solo'},{k:'fonte',l:'Fonte',t:'text'},{k:'note',l:'Note',t:'long'}]},
  quadro:{nome:'Quadro economico',tab:'quadro',ord:['lotto',true],nascosto:1,vai:'contabilita',glob:r=>r.titolo||'',
   avviso:'Un tetto per voce e per periodo. Per la quota annua del canone usa la voce «Canone – quota annua» e scrivi l’anno nel campo Periodo.',campi:[
-  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'lotto',l:'Lotto',t:'sel',o:['LOTTO 1','LOTTO 2'],list:1},{k:'periodo',l:'Periodo',t:'text',list:1},{k:'voce',l:'Voce',t:'text',list:1},
+  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'lotto',l:'Lotto',t:'sel',o:['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'],list:1},{k:'periodo',l:'Periodo',t:'text',list:1},{k:'voce',l:'Voce',t:'text',list:1},
   {k:'importo_base',l:'Importo base (€)',t:'num'},{k:'importo_attuale',l:'Importo attuale (€)',t:'num'},{k:'fonte',l:'Fonte',t:'text'},{k:'note',l:'Note',t:'long'}]},
  ordini:{altro:1,nome:'Ordini e manutenzione',tab:'ordini',ord:['data',false],campi:[
   {k:'numero',l:'N. ordine',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},
