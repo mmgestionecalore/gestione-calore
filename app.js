@@ -545,8 +545,6 @@ async function oggiVista(){
     :'<section class="hero fuori"><div class="kick">'+ico('neve')+' Fuori dal periodo di accensione · zona E, Milano</div><div class="big">Prossima accensione: '+fd(S.i)+'</div><div class="sub">tra '+S.aInizio+(S.aInizio===1?' giorno':' giorni')+' · il periodo di accensione va dal '+fmtD(iso(S.i)).slice(0,5)+' al '+fmtD(iso(S.f)).slice(0,5)+'</div><div class="prog"><i style="width:'+Math.round(S.perc*100)+'%"></i></div>'+fl+'</section>';
   const kp=(k,tono,val,lab,sub)=>'<a href="#" class="kpi '+tono+'" data-k="'+k+'"><b>'+val+'</b><span>'+lab+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</a>';
   const kpis='<div class="kpis">'+
-    kp('impianti',fer||par?'wa':'ok',inf+'/'+(I.length-dis),'Impianti in funzione',dis?dis+' dismessi':'')+
-    kp('impianti',fer?'ko':par?'wa':'ok',fer+par,'Fermi o parziali',fer+' fermi · '+par+' parziali')+
     kp('scadenze',ritardo?'ko':scad.length?'wa':'ok',scad.length,'Scadenze entro 30 giorni',ritardo?ritardo+(ritardo===1?' già scaduta':' già scadute'):'nessuna scaduta')+
     kp('attivita','',na.count??0,'Attività da fare','')+
     kp('segnalazioni',ng.count?'wa':'ok',ng.count??0,'Segnalazioni aperte','')+'</div>';
