@@ -523,41 +523,34 @@ function schedaCens(r,rientro){
 function badgeC(t){const x=String(t||''),c=/legionella|rentokil|bioh|108\/2025/i.test(x)?['Legionella','#2e9e5b']:/\bTLR\b|A2A/i.test(x)?['TLR','#d1453b']:/lotto 1(?!\d)|innova/i.test(x)?['Lotto 1','#ff7a26']:/lotto 2(?!\d)|renovit/i.test(x)?['Lotto 2','#2f7fd1']:null;return c?'<span class="hubtag" style="--hc:'+c[1]+';font-size:11px;padding:.05rem .5rem;margin-right:.4rem">'+c[0]+'</span>':''}
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
-  const[a,s,g,im,ia,na,ng,sl,qd,rg,...cn]=await Promise.all([
+  const[a,s,sl,qd,rg,...cn]=await Promise.all([
     sb.from('attivita').select('*').neq('stato','Fatto').order('scadenza',{ascending:true,nullsFirst:false}),
-    sb.from('scadenze').select('*').eq('fatto',false).lte('data',aggiungiGiorni(60)).order('data'),
-    sb.from('segnalazioni').select('*').neq('stato','Risolta').order('data',{ascending:false}).limit(15),
-    sb.from('impianti').select('*').not('stato','in','("In funzione","Dismesso")').order('fermo_dal',{ascending:true,nullsFirst:false}),
-    sb.from('impianti').select('stato'),
-    cc('attivita',q=>q.neq('stato','Fatto')),
-    cc('segnalazioni',q=>q.neq('stato','Risolta')),
+    sb.from('scadenze').select('*').eq('fatto',false).lte('data',fra).order('data'),
     sb.from('sal').select('lotto,tipo,stato,netto,periodo,numero,anno,progressivo'),
     sb.from('quadro').select('*'),
     sb.from('registro').select('quando,utente,azione,tabella,etichetta').order('quando',{ascending:false}).limit(8),
     ...TABELLE.map(k=>sb.from(MODULI[k].tab).select('id',{count:'exact',head:true}))]);
+  const a30=(a.data||[]).filter(r=>r.scadenza&&r.scadenza<=fra).length;
   if(a.data)a.data=ordinaAttivita(a.data).slice(0,15);
-  const I=ia.data||[],cnt=x=>I.filter(r=>r.stato===x).length;
-  const inf=cnt('In funzione'),par=cnt('Funzionamento parziale'),fer=cnt('Fermo'),dis=cnt('Dismesso');
-  const scadTutte=s.data||[],scad=scadTutte.filter(r=>r.data<=fra),ritardo=scad.filter(r=>r.data<t).length,fd=d=>fmtD(iso(d)),S=stagione(new Date());
+  const scadTutte=s.data||[],ritardo=scadTutte.filter(r=>r.data<t).length,fd=d=>fmtD(iso(d)),S=stagione(new Date());
   const fl='<svg class="fl" viewBox="0 0 32 32" aria-hidden="true"><use href="#flame1"/></svg>';
   const hero=S.dentro
     ?'<section class="hero"><div class="kick">'+ico('fiamma')+' Stagione termica '+S.i.getFullYear()+'/'+String(S.f.getFullYear()).slice(2)+' · zona E, Milano</div><div class="big">In corso: giorno '+S.n+' di '+S.tot+'</div><div class="sub">Periodo di accensione dal '+fd(S.i)+' al '+fd(S.f)+' · '+(S.aFine?'mancano '+S.aFine+(S.aFine===1?' giorno':' giorni'):'ultimo giorno')+'</div><div class="prog"><i style="width:'+Math.round(S.n/S.tot*100)+'%"></i></div>'+fl+'</section>'
     :'<section class="hero fuori"><div class="kick">'+ico('neve')+' Fuori dal periodo di accensione · zona E, Milano</div><div class="big">Prossima accensione: '+fd(S.i)+'</div><div class="sub">tra '+S.aInizio+(S.aInizio===1?' giorno':' giorni')+' · il periodo di accensione va dal '+fmtD(iso(S.i)).slice(0,5)+' al '+fmtD(iso(S.f)).slice(0,5)+'</div><div class="prog"><i style="width:'+Math.round(S.perc*100)+'%"></i></div>'+fl+'</section>';
   const kp=(k,tono,val,lab,sub)=>'<a href="#" class="kpi '+tono+'" data-k="'+k+'"><b>'+val+'</b><span>'+lab+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</a>';
   const kpis='<div class="kpis">'+
-    kp('scadenze',ritardo?'ko':scad.length?'wa':'ok',scad.length,'Scadenze entro 30 giorni',ritardo?ritardo+(ritardo===1?' già scaduta':' già scadute'):'nessuna scaduta')+
-    kp('attivita','',na.count??0,'Attività da fare','')+
-    kp('segnalazioni',ng.count?'wa':'ok',ng.count??0,'Segnalazioni aperte','')+'</div>';
+    kp('scadenze',ritardo?'ko':'ok',ritardo,'Scadute',ritardo?(ritardo===1?'scadenza non evasa':'scadenze non evase'):'nessuna scadenza in ritardo')+
+    kp('attivita',a30?'wa':'ok',a30,'Attività da fare entro 30 giorni','scadute incluse')+'</div>';
   const dtc=d=>d?(d<t?'late':d<=fra?'soon':''):'';
   const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0">'+vuoto+'</p>')+'</div>';
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
-  const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data)):'';
+  const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data),sl.data||[],qd.data):'';
   $('#main').innerHTML='<h2 class="hd" style="margin-bottom:.9rem"><span class="hico">'+ico('oggi')+'</span><span>Oggi <span class="muted">· '+esc(new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</span></span></h2><div id="ris"></div><div id="home">'+hero+kpis+'<div class="grid">'+
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
-   blocco('scadenze','Scadenze entro 60 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
-   blocco('segnalazioni','Segnalazioni aperte',g.data,r=>'<li><span class="dt">'+fmtD(r.data)+'</span><span class="tx"><b>'+esc(r.impianto||'')+'</b> – '+esc(r.oggetto||'')+(r.stato?' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato)+'</span>':'')+'</span></li>','Nessuna segnalazione aperta.')+
-   blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+
-   '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div></div>';
+   blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
+   
+   '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div>'+'<footer class="recente">'+blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+'</footer></div>';
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.querySelectorAll('a.kpi b').forEach(b=>{const n=parseInt(b.textContent,10);if(!(n>0))return;const st=Math.max(1,Math.ceil(n/18));let i=0;b.textContent='0';const h=setInterval(()=>{i=Math.min(n,i+st);b.textContent=i;if(i>=n)clearInterval(h)},35)});
   $('#qa').onclick=()=>{corrente='attivita';modulo(null,'attivita',()=>apri('oggi'))};
   document.querySelectorAll('.cnt a,a.kpi,a[data-k=contabilita]').forEach(x=>x.onclick=e=>{e.preventDefault();const k=x.dataset.k;apri((MODULI[k]&&MODULI[k].vai)||k)});
 }
@@ -693,14 +686,16 @@ async function hubVista(){
 
 /* ---------- Contabilità: tetti, SAL emessi, residui ---------- */
 let ct={periodo:'',lotto:'',tipo:'',anno:'',ann:true},ctSal=[],ctQuadro=[];
-function contabMini(C){
+function contabMini(C,S,Q){
   const P=C.per[C.attivo];if(!P)return'';
   const nomi=Object.keys(P).sort(),sez=nomi.map(n=>{
     const L=P[n],vs=['Canone','Extra-canone'].filter(v=>L.voci[v]&&L.voci[v].tetto);
-    return vs.length?'<div><b>'+esc(n.replace('LOTTO','Lotto'))+'</b>'+vs.map(v=>vriga(v,L.voci[v],1)).join('')+'</div>':'';
+    return vs.length?'<div><b>'+esc(n.replace('LOTTO','Lotto'))+' <span class="muted" style="font-weight:400">· '+esc(C.attivo)+'</span></b>'+vs.map(v=>vriga(v,L.voci[v],1)).join('')+'</div>':'';
   }).join('');
-  if(!sez)return'';
-  return'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('contabilita')+'Budget dei contratti <span class="muted" style="font-weight:400">· '+esc(C.attivo)+'</span><a href="#" data-k="contabilita" style="margin-left:auto;font-size:13px">Apri Contabilità →</a></h3><div class="grid">'+sez+'</div></div>';
+  const xs=['TLR','LEGIONELLA'].map(n=>{const q=(Q||[]).filter(r=>r.lotto===n);if(!q.length)return'';const C2=calcContab((S||[]).filter(r=>r.lotto===n),q),L2=(C2.per[C2.attivo]||{})[n];if(!L2)return'';const vs=['Canone','Extra-canone'].filter(x=>L2.voci[x]&&L2.voci[x].tetto);return vs.length?'<div><b>'+(n==='TLR'?'TLR':'Legionella')+'</b>'+vs.map(x=>vriga(n==='TLR'&&x==='Canone'?'Utenze (quota consumo)':x,L2.voci[x],1)).join('')+'</div>':''}).join('');
+  const tutto=sez+xs;
+  if(!tutto)return'';
+  return'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('contabilita')+'Budget dei contratti<a href="#" data-k="contabilita" style="margin-left:auto;font-size:13px">Apri Contabilità →</a></h3><div class="grid">'+tutto+'</div></div>';
 }
 async function contabVista(){
   const[rs,rq]=await Promise.all([leggiTutto(MODULI.sal),leggiTutto(MODULI.quadro)]);
