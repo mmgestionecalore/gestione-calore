@@ -181,3 +181,31 @@ table.cens td.k-lotto{white-space:nowrap}
 #main[data-hub] .card{border-left:4px solid var(--hc)}
 #main[data-hub] .chip.on{background:var(--hc);border-color:var(--hc);color:#fff}
 .hubtag{background:var(--hc,var(--ac));color:#fff;border-radius:999px;padding:.15rem .7rem;font-size:12.5px;font-weight:600;letter-spacing:.02em}
+
+
+/* Home Oggi: grafica più dinamica */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}50%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
+#home>*{animation:rise .45s ease-out both}
+#home>*:nth-child(2){animation-delay:.06s}
+#home>*:nth-child(3){animation-delay:.12s}
+#home>*:nth-child(4){animation-delay:.18s}
+#home>*:nth-child(5){animation-delay:.24s}
+#home>*:nth-child(6){animation-delay:.3s}
+.kpi{transition:transform .15s,box-shadow .15s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.kpi.ko{animation:pulse 2.4s ease-in-out infinite}
+.kpi b{font-size:2.1rem}
+.hero .prog i,.meter .fill{transform-origin:left center;animation:grow 1s ease-out both}
+.hero{transition:transform .2s,box-shadow .2s}
+.hero:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.15)}
+.card{transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 6px 18px rgba(0,0,0,.1)}
+.ev li{transition:background .15s}
+.ev li:hover{background:var(--bg2)}
+.vrow{padding:.2rem 0}
+footer.recente{margin-top:1.4rem;padding-top:.9rem;border-top:1px dashed var(--bd);opacity:.85}
+footer.recente .card{box-shadow:none;background:transparent}
+footer.recente h3.ch{font-size:13px;color:var(--mut)}
+@media (prefers-reduced-motion:reduce){#home>*,.kpi.ko,.hero .prog i,.meter .fill{animation:none}.kpi,.hero,.card{transition:none}}
