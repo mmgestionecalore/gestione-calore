@@ -322,6 +322,7 @@ function disegna(){
   const cols=m.campi.filter(c=>c.list&&!(m.vista&&voceCens&&(c.k==='impianto'||c.k==='criticita'))).concat(m.vista&&voceCens?[{k:'__voce',l:voceCens,t:'text'}]:[]).concat(corrente==='impianti'?[{k:'__tag',l:'Tag',t:'text'},{k:'__crit',l:'Criticità principale',t:'text'}]:[]);
   let h='<div class="bar"><h2 class="hd"><span class="hico">'+ico(corrente)+'</span><span>'+esc(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'')+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
   if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'&&vistaMappa?' on':'')+'" data-pi="mappa">Mappa</button><button type="button" class="chip'+(corrente==='impianti'&&!vistaMappa?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
+  if(corrente==='contatti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaRubrica?' on':'')+'" data-ct="rubrica">Rubrica</button><button type="button" class="chip'+(vistaRubrica?'':' on')+'" data-ct="elenco">Elenco</button></div>';
   if(m.tab==='impianti'&&allineato)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Stato, date e note allineati con la lista SharePoint il '+esc(fmtDT(allineato))+'.</p>';
   if(m.ro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Registro in sola lettura: tiene traccia di chi crea, modifica o elimina elementi nelle altre sezioni.</p>';
   if(m.intro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">'+esc(m.intro)+'</p>';
@@ -337,10 +338,13 @@ function disegna(){
   h+='</tbody></table></div>';
   if(!rows.length)h+='<p class="muted">Nessun elemento.</p>';
   if(rows.length>limite)h+='<p><button class="ghost" id="piu">Mostra altri '+Math.min(LIM,rows.length-limite)+' (ne restano '+(rows.length-limite)+')</button></p>';
+  if(corrente==='contatti'&&vistaRubrica)h=h.slice(0,h.indexOf('<div class="tw">'))+rubricaCont(rows);
   if(corrente==='impianti'&&vistaMappa)h=h.slice(0,h.indexOf('<div class="tw">'))+mappaImp(rows);
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{const p=b.dataset.pi;if(p==='mappa'){vistaMappa=true;apri('impianti')}else{if(p==='impianti')vistaMappa=false;apri(p)}});
   if(corrente==='impianti'&&vistaMappa)bindMappa();
+  document.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{vistaRubrica=b.dataset.ct==='rubrica';disegna()});
+  if(corrente==='contatti'&&vistaRubrica)bindRubrica();
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
@@ -380,6 +384,73 @@ function bindMappa(){
   document.querySelectorAll('.pm-lot').forEach(function(b){b.onclick=function(){lottoMappa=b.dataset.l;disegna()}});
   document.querySelectorAll('.pm-n').forEach(function(b){b.onclick=function(){
     var m=MODULI.impianti,r=dati.find(function(x){return String(x.id)===b.dataset.id});
+    if(r)(m.ro?dettaglio(r):m.vista?schedaCens(r):m.dossier?scheda(r):modulo(r));
+  }});
+}
+
+/* ---------- Contatti: rubrica per ente ---------- */
+var vistaRubrica=true,enteRub='';
+var RB_NET="<svg viewBox=\"0 0 1200 96\" width=\"100%\" aria-hidden=\"true\" style=\"display:block;margin-top:12px\"><path d=\"M0 48H1200\" stroke=\"#3a2212\" stroke-width=\"6\"/><path d=\"M0 48H1200\" stroke=\"#ff8a1f\" stroke-width=\"2.5\" class=\"rb-pipe\"/><circle cx=\"110\" cy=\"48\" r=\"30\" fill=\"#26160d\" stroke=\"#ff8a1f\" stroke-width=\"3\"/><g transform=\"translate(94.4,32.4) scale(1.3)\" fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z\"/></g><path d=\"M132 26a44 44 0 0 1 0 44\" fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w0\"/><path d=\"M138 20a56 56 0 0 1 0 56\" fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w1\"/><path d=\"M144 14a68 68 0 0 1 0 68\" fill=\"none\" stroke=\"#ff8a1f\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w2\"/><circle cx=\"310\" cy=\"48\" r=\"30\" fill=\"#26160d\" stroke=\"#ffc247\" stroke-width=\"3\"/><g transform=\"translate(294.4,32.4) scale(1.3)\" fill=\"none\" stroke=\"#ffc247\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M3 7l9 6 9-6\"/></g><path d=\"M332 26a44 44 0 0 1 0 44\" fill=\"none\" stroke=\"#ffc247\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w0\"/><path d=\"M338 20a56 56 0 0 1 0 56\" fill=\"none\" stroke=\"#ffc247\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w1\"/><path d=\"M344 14a68 68 0 0 1 0 68\" fill=\"none\" stroke=\"#ffc247\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w2\"/><circle cx=\"510\" cy=\"48\" r=\"30\" fill=\"#26160d\" stroke=\"#5cc3e6\" stroke-width=\"3\"/><g transform=\"translate(494.4,32.4) scale(1.3)\" fill=\"none\" stroke=\"#5cc3e6\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 5h16v11H9l-5 4z\"/></g><path d=\"M532 26a44 44 0 0 1 0 44\" fill=\"none\" stroke=\"#5cc3e6\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w0\"/><path d=\"M538 20a56 56 0 0 1 0 56\" fill=\"none\" stroke=\"#5cc3e6\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w1\"/><path d=\"M544 14a68 68 0 0 1 0 68\" fill=\"none\" stroke=\"#5cc3e6\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"rb-wv rb-w2\"/><circle cx=\"710\" cy=\"48\" r=\"30\" fill=\"#26160d\" stroke=\"#7fb6ff\" stroke-width=\"3\"/><g transform=\"translate(694.4,32.4) scale(1.3)\" fill=\"none\" stroke=\"#7fb6ff\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7\"/></g><circle cx=\"910\" cy=\"48\" r=\"30\" fill=\"#26160d\" stroke=\"#8fd694\" stroke-width=\"3\"/><g transform=\"translate(894.4,32.4) scale(1.3)\" fill=\"none\" stroke=\"#8fd694\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/></g><circle cx=\"1110\" cy=\"48\" r=\"30\" fill=\"#26160d\" stroke=\"#ff5a6e\" stroke-width=\"3\"/><g transform=\"translate(1094.4,32.4) scale(1.3)\" fill=\"none\" stroke=\"#ff5a6e\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3c1 5 6 6 6 12a6 6 0 0 1-12 0c0-3 2-4 3-6 0 2 1 3 2 3 0-3-1-5 1-9z\"/></g></svg>";
+var RB_CSS="@keyframes rbflow{to{stroke-dashoffset:-48}}@keyframes rbwv{0%,100%{opacity:.08}50%{opacity:.85}}@keyframes rbflick{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.1) scaleX(.95)}}.rb{background:#1b110b;color:#fdebd3;border-radius:22px;overflow:hidden;margin:.4rem 0 1rem;font-family:Barlow,system-ui,sans-serif}.rb-top{background:#26160d;border-bottom:1px solid #4a2c18;padding:18px 24px 0}.rb-hint{font-size:16px;color:#e8cfb2}.rb-pipe{stroke-dasharray:10 14;animation:rbflow 1.6s linear infinite}.rb-wv{opacity:.1;animation:rbwv 2.4s ease-in-out infinite}.rb-w1{animation-delay:.3s}.rb-w2{animation-delay:.6s}.rb-fl{transform-box:fill-box;transform-origin:50% 100%;animation:rbflick .9s ease-in-out infinite}.rb-body{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;padding:22px}.rb-side{flex:0 1 310px;min-width:250px;background:#26160d;border:1px solid #4a2c18;border-radius:20px;padding:10px;display:flex;flex-direction:column;gap:2px;max-height:640px;overflow-y:auto}.rb-e{min-height:52px;border:0;border-radius:12px;background:transparent;color:#fdebd3;padding:0 12px;display:flex;align-items:center;gap:12px;text-align:left;font:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:background .15s}.rb-e:hover{background:#33200f}.rb-e.on{background:#4a2c18}.rb-ei{width:36px;height:36px;border-radius:10px;background:#33200f;border:2px solid;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.rb-en{flex:1;min-width:0;line-height:1.15}.rb-en small{display:block;font-size:12px;font-weight:500;color:#e8cfb2}.rb-n{font-size:14px;opacity:.85}.rb-main{flex:1 1 560px;min-width:0;display:flex;gap:12px;align-items:flex-start}.rb-card{flex:1;min-width:0;background:#26160d;border:1px solid #4a2c18;border-radius:20px;overflow:hidden}.rb-h{padding:18px 22px;border-bottom:2px solid;display:flex;align-items:center;gap:16px}.rb-hi{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.rb-ht{font-family:Barlow Condensed,sans-serif;font-size:36px;line-height:1;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:0}.rb-hs{font-size:15px;color:#e8cfb2;margin-top:4px}.rb-r{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid #3a2212;cursor:pointer;scroll-margin-top:90px;transition:background .15s}.rb-r:hover{background:#2f1c10}.rb-av{width:44px;height:44px;border-radius:50%;background:#33200f;border:2px solid;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:700;flex:0 0 auto}.rb-nm{flex:1;min-width:0}.rb-nm b{display:block;font-size:17px;font-weight:600}.rb-nm span{display:block;font-size:14px;color:#e8cfb2}.rb-t{font-size:15px;color:#e8cfb2;white-space:nowrap}.rb-b{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;text-decoration:none}.rb-l{display:flex;flex-direction:column;gap:2px;position:sticky;top:76px}.rb-l button{width:30px;height:28px;border:0;background:none;color:#ffb35c;font:inherit;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer}.rb-l button:hover{background:#33200f}.rb-e:focus-visible,.rb-l button:focus-visible,.rb-b:focus-visible{outline:3px solid #fdebd3;outline-offset:2px}.rb-vuoto{padding:22px;color:#e8cfb2}@media (prefers-reduced-motion:reduce){.rb-pipe,.rb-wv,.rb-fl{animation:none}}";
+var RB_COL={mm:'#ff8a1f',ct:'#ffc247',tlr:'#ff5a6e',man:'#7fb6ff',acq:'#5cc3e6',pub:'#8fd694',free:'#c4a6ff',alt:'#d9b48f'};
+var RB_TIPO={mm:'Committente',ct:'Appaltatore centrali',tlr:'Fornitore teleriscaldamento',man:'Manutenzione impianti',acq:'Acqua e Legionella',pub:'Ente pubblico',free:'Professionisti',alt:'Altri enti e aziende'};
+var RB_ICO={
+  mm:'<path d="M8 56V24l24-14 24 14v32z"/><path d="M32 28c1 6 9 8 9 16a9 9 0 0 1-18 0c0-4 3-6 4-9 0 3 2 4 3 4 0-4-1-7 2-11z" class="rb-fl"/>',
+  ct:'<path d="M8 56V30l16-9v9l16-9v9l16-9v35z"/><path d="M46 21V8h8v13"/><path d="M17 56V46h8v10M33 56V44h14v12"/>',
+  tlr:'<rect x="22" y="14" width="30" height="36" rx="5"/><path d="M30 22h14M30 30h14M30 38h14M2 24h20M2 42h20M52 24h10M52 42h10"/>',
+  man:'<path d="M4 40h18M42 40h18M22 30h20v20H22zM32 30V16M24 16h16"/>',
+  acq:'<path d="M32 8c9 13 15 19 15 29a15 15 0 0 1-30 0c0-10 6-16 15-29z"/>',
+  pub:'<path d="M8 24L32 10l24 14zM14 28v20M26 28v20M38 28v20M50 28v20M8 54h48"/>',
+  free:'<path d="M10 54l4-14L42 12l10 10-28 28zM36 18l10 10"/>',
+  alt:'<path d="M8 20h48v32H8zM24 20v-6h16v6M8 34h48"/>'
+};
+function rbKind(e){
+  e=String(e||'').trim();
+  if(e==='MM S.p.A.')return 'mm';
+  if(/^(Renovit|Consorzio Innova)$/.test(e))return 'ct';
+  if(/^A2A/.test(e))return 'tlr';
+  if(/^(Rentokil|Bioh)/.test(e))return 'acq';
+  if(/^(Comune di|ATS$|AMAT$|ALER$|Politecnico)/.test(e))return 'pub';
+  if(e==='Freelance')return 'free';
+  if(/^(Caitec|Devi Impianti|Fenis|Multimanutenzione|Operosa|Tecnoenergy|CPB Broggi|Carbotermo|Pro-Tec|Tesi|Isovit|Cipiemme|Assistenza Caldaie|Betasint|Iecotec|Unoenergy|Wegreenit)/.test(e))return 'man';
+  return 'alt';
+}
+function rbSvg(k,col,sz,sw){return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 64 64" fill="none" stroke="'+col+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+RB_ICO[k]+'</svg>'}
+function pmFont(){if(!document.getElementById('pm-font')){var l=document.createElement('link');l.id='pm-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2\x3ffamily=Barlow:wght@400;500;600\x26family=Barlow+Condensed:wght@600;700\x26display=swap';document.head.appendChild(l)}}
+function rubricaCont(rows){
+  pmFont();
+  var by={};
+  rows.forEach(function(r){var e=String(r.ente||'').trim()||'Senza ente';(by[e]=by[e]||[]).push(r)});
+  var names=Object.keys(by).sort(function(a,b){if(a==='MM S.p.A.')return -1;if(b==='MM S.p.A.')return 1;return by[b].length-by[a].length||a.localeCompare(b,'it')});
+  var cur=(enteRub&&by[enteRub])?enteRub:'';
+  var list=(cur?by[cur]:rows).slice().sort(function(a,b){return String(a.nome||'').localeCompare(String(b.nome||''),'it')});
+  var kc=cur?rbKind(cur):'mm',col=cur?RB_COL[kc]:'#ff8a1f';
+  var h='<style>'+RB_CSS+'</style><div class="rb"><div class="rb-top"><div class="rb-hint">Scegli un ente, poi tocca una persona per aprire la scheda.</div>'+RB_NET+'</div><div class="rb-body"><nav class="rb-side" aria-label="Enti">';
+  h+='<button type="button" class="rb-e'+(cur?'':' on')+'" data-e=""><span class="rb-ei" style="border-color:#ff8a1f">'+rbSvg('mm','#ff8a1f',22,3.2)+'</span><span class="rb-en">Tutti i contatti<small>Rubrica completa</small></span><span class="rb-n">'+rows.length+'</span></button>';
+  names.forEach(function(e){var k=rbKind(e),c=RB_COL[k];
+    h+='<button type="button" class="rb-e'+(e===cur?' on':'')+'" data-e="'+esc(e)+'"><span class="rb-ei" style="border-color:'+c+'">'+rbSvg(k,c,22,3.2)+'</span><span class="rb-en">'+esc(e)+'<small>'+RB_TIPO[k]+'</small></span><span class="rb-n">'+by[e].length+'</span></button>'});
+  h+='</nav><div class="rb-main"><div class="rb-card"><div class="rb-h" style="border-color:'+col+'"><span class="rb-hi" style="background:'+col+'">'+rbSvg(kc,'#1b110b',40,3)+'</span><div><h2 class="rb-ht" style="color:'+col+'">'+(cur?esc(cur):'Tutti i contatti')+'</h2><div class="rb-hs">'+(cur?RB_TIPO[kc]+' · ':'')+list.length+' persone</div></div></div>';
+  var lets={};
+  list.forEach(function(r){
+    var nm=String(r.nome||'').trim(),p=nm.split(/\s+/),ini=((p[0]||'').charAt(0)+(p.length>1?p[p.length-1].charAt(0):'')).toUpperCase()||'·';
+    var L=nm.charAt(0).toUpperCase();if(!lets[L])lets[L]=1;
+    var rk=rbKind(r.ente),c=cur?col:RB_COL[rk];
+    var tel=String(r.telefono||'').trim(),ml=String(r.email||'').trim();
+    h+='<div class="rb-r" data-id="'+r.id+'" data-i="'+esc(L)+'"><div class="rb-av" style="border-color:'+c+';color:'+c+'">'+esc(ini)+'</div><div class="rb-nm"><b>'+esc(nm||'(senza nome)')+'</b><span>'+esc([r.ruolo,cur?'':r.ente].filter(Boolean).join(' · '))+'</span></div>';
+    if(tel)h+='<span class="rb-t">'+esc(tel)+'</span><a class="rb-b" href="tel:'+esc(tel.replace(/[^0-9+]/g,''))+'" aria-label="Chiama" style="background:'+c+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1b110b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></a>';
+    if(ml)h+='<a class="rb-b" href="mailto:'+esc(ml)+'" aria-label="Scrivi" style="border:2px solid '+c+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></a>';
+    h+='</div>';
+  });
+  if(!list.length)h+='<div class="rb-vuoto">Nessun contatto con la ricerca attuale.</div>';
+  h+='</div><div class="rb-l" aria-label="Lettere">'+Object.keys(lets).sort().map(function(L){return '<button type="button" data-l="'+esc(L)+'">'+esc(L)+'</button>'}).join('')+'</div></div></div></div>';
+  return h;
+}
+function bindRubrica(){
+  document.querySelectorAll('.rb-e').forEach(function(b){b.onclick=function(){enteRub=b.dataset.e;disegna()}});
+  document.querySelectorAll('.rb-l button').forEach(function(b){b.onclick=function(){var t=document.querySelector('.rb-r[data-i="'+b.dataset.l+'"]');if(t)t.scrollIntoView({block:'start',behavior:'smooth'})}});
+  document.querySelectorAll('.rb-r').forEach(function(t){t.onclick=function(ev){
+    if(ev.target.closest('a'))return;
+    var m=MODULI.contatti,r=dati.find(function(x){return String(x.id)===t.dataset.id});
     if(r)(m.ro?dettaglio(r):m.vista?schedaCens(r):m.dossier?scheda(r):modulo(r));
   }});
 }
