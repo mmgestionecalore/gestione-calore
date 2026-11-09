@@ -515,7 +515,7 @@ function ctCard(r){
   var col=CT_COL[r.lotto]||'#ff8a1f',ini=ctD(r.data_inizio),fine=ctD(r.scadenza),oggi=ctOggi();
   var tp=(ini&&fine&&fine>ini)?Math.max(0,Math.min(1,(oggi-ini)/(fine-ini))):null;
   var sost=ctSost(r),bud=ctBud(r),cp=(sost!=null&&bud>0)?Math.max(0,Math.min(1,sost/bud)):null;
-  var rin=/rinnovat/i.test(r.stato||'')&&!(+r.budget_aggiuntivo);
+  var rin=false;
   var rt,rb,rf,mer='#c9a98a';
   if(rin){rt='Da completare: manca il budget dei trienni successivi';rb='#4a3a12';rf='#ffd985';mer='#ffc247'}
   else if(cp==null||tp==null){rt='Dati incompleti: controlla data inizio, scadenza e costi';rb='#3a2a20';rf='#d9b48f'}
