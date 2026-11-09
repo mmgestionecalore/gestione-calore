@@ -54,7 +54,7 @@ const MODULI={
  memoria:{nome:'Memoria operativa',tab:'memoria',ord:['aggiornato_il',false],campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'categoria',l:'Categoria',t:'text',list:1},{k:'tag',l:'Tag',t:'text',list:1},{k:'testo',l:'Testo',t:'long'}]},
  riferimenti:{nome:'Normativa e riferimenti',tab:'riferimenti',ord:['titolo',true],campi:[
-  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text',list:1},{k:'link',l:'Link',t:'text'},{k:'testo',l:'Testo / sintesi',t:'long'}]},
+  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text',list:1},{k:'ambito',l:'Ambito',t:'text',list:1},{k:'data_atto',l:'Data atto',t:'date'},{k:'file',l:'File nell\'archivio',t:'text'},{k:'link',l:'Link',t:'text'},{k:'testo',l:'Testo / sintesi',t:'long'}]},
  documenti:{nome:'Documenti',tab:'documenti',ord:['titolo',true],campi:[
   {k:'titolo',l:'Documento',t:'text',list:1},{k:'cartella',l:'Cartella',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},
   {k:'dimensione_kb',l:'Dimensione (KB)',t:'num',dec:0,list:1},{k:'modificato_il',l:'Modificato il',t:'date',list:1,nc:1},{k:'modificato_da',l:'Modificato da',t:'text',list:1},
@@ -285,6 +285,7 @@ async function apri(k){schedaCt=null;
   if(k==='oggi')return oggiVista();
   if(k==='hub')return hubVista();
   if(k==='contabilita')return contabVista();
+  if(k==='riferimenti')return normVista();
   const m=MODULI[k];
   const{data,error}=await leggiTutto(m);
   if(error){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(error.message)+'</p>';return}
@@ -298,6 +299,7 @@ async function altroVista(){
   document.querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>apri(b.dataset.alt));
 }
 function disegna(){
+  if(corrente==='riferimenti')return normDisegna();
   const m=MODULI[corrente],q=$('#search').value.toLowerCase();
   if(corrente==='impianti')arricchisciImp();
   let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q))||(corrente==='impianti'&&r.__txt.includes(q)));
@@ -745,6 +747,88 @@ function bindScheda(){
     disegna()}});
 }
 
+var normF={tipo:'',amb:''},normTxt={q:'',f:{}},normReq='',normTok=0,normTim=null;
+var NORM_ORD=[
+['2022/2023','Ord. 53 del 18/10/2022 e Ord. 55 del 26/10/2022','03/11/2022 – 07/04/2023','13 ore (5–23)','19 °C + 2 °C',['ords-53-2022.pdf','ords-55-2022.pdf']],
+['2023/2024','Ord. 65 del 05/10/2023','22/10/2023 – 08/04/2024','13 ore (5–23)','19 °C + 2 °C',['ords-65-2023.pdf']],
+['2024/2025','Ordinanza non presente nella cartella','—','—','—',[]],
+['2025/2026','Ord. 41 del 03/10/2025','15/10/2025 – 15/04/2026','13 ore (5–23)','19 °C + 2 °C',['ords-41-2025.pdf']],
+['2026/2027','Ord. 57 del 09/10/2026','15/10/2026 – 15/04/2027','8 ore fino al 30/10, poi 13 ore (5–23)','19 °C + 2 °C',['ords-57-2026.pdf']]
+];
+var NORM_CSS='<style>'+
+'.sc .nr-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-top:14px}'+
+'.sc .nr-c{background:#26160d;border:1px solid #4a2c18;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}'+
+'.sc .nr-t{font-family:"Barlow Condensed",sans-serif;font-size:22px;line-height:1.1;color:#fdebd3;font-weight:600}'+
+'.sc .nr-m{font-size:12px;color:#c9a98a}'+
+'.sc .nr-b{display:inline-block;padding:2px 10px;border-radius:12px;background:#3a2314;color:#ffb35c;font-size:12px;font-weight:600;margin-right:6px}'+
+'.sc .nr-x{font-size:14px;color:#f1dcc3;line-height:1.45}'+
+'.sc .nr-sn{font-size:13px;color:#e8cfb0;border-left:3px solid #ff8a1f;padding-left:10px}'+
+'.sc .nr-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}'+
+'.sc mark{background:#ff8a1f;color:#1b110b;border-radius:3px;padding:0 2px}'+
+'@media(max-width:640px){.sc .nr-g{grid-template-columns:1fr}}'+
+'</style>';
+async function normVista(){
+  $('#main').innerHTML='<p class="muted">Caricamento…</p>';
+  const m=MODULI.riferimenti;
+  const{data,error}=await leggiTutto(m);
+  if(error){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(error.message)+'</p>';return}
+  dati=data;normDisegna();
+}
+function normHl(s,q){var i=q?s.toLowerCase().indexOf(q):-1;if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
+async function normApri(file,btn){
+  const w=window.open('','_blank');
+  const r=await sb.storage.from('norme').createSignedUrl(file,600);
+  if(r.error||!r.data){if(w)w.close();if(btn){btn.textContent='Non disponibile';btn.disabled=true}return}
+  if(w)w.location=r.data.signedUrl;else window.location=r.data.signedUrl;
+}
+async function normCerca(q){
+  const tok=++normTok;
+  const r=await sb.from('riferimenti_testi').select('file').ilike('testo','%'+q.replace(/[%_]/g,' ')+'%');
+  if(tok!==normTok)return;
+  const files=(r.data||[]).map(function(x){return x.file}),f={};
+  for(const file of files.slice(0,12)){
+    const t=await sb.from('riferimenti_testi').select('testo').eq('file',file).maybeSingle();
+    if(tok!==normTok)return;
+    const tx=(t.data&&t.data.testo)||'',low=tx.toLowerCase();let i=0,n=0;const sn=[];
+    while((i=low.indexOf(q,i))>-1){n++;if(sn.length<3)sn.push(tx.slice(Math.max(0,i-90),i+q.length+90).replace(/\s+/g,' '));i+=q.length}
+    f[file]={n:n,sn:sn};
+  }
+  files.slice(12).forEach(function(file){f[file]={n:0,sn:[]}});
+  normTxt={q:q,f:f};
+  if(corrente==='riferimenti'&&($('#search').value||'').trim().toLowerCase()===q)normDisegna();
+}
+function normDisegna(){
+  const q=($('#search').value||'').trim().toLowerCase(),m=MODULI.riferimenti;
+  if(q.length>=3&&normTxt.q!==q&&normReq!==q){normReq=q;clearTimeout(normTim);normTim=setTimeout(function(){normCerca(q)},350)}
+  if(q.length<3){normTxt={q:'',f:{}};normReq='';normTok++}
+  const tipi=[...new Set(dati.map(function(r){return r.tipo}).filter(Boolean))].sort(),ambs=[...new Set(dati.map(function(r){return r.ambito}).filter(Boolean))].sort();
+  let rows=dati.filter(function(r){return(!normF.tipo||r.tipo===normF.tipo)&&(!normF.amb||r.ambito===normF.amb)});
+  const inTxt=function(r){return normTxt.q===q&&r.file&&normTxt.f[r.file]};
+  if(q)rows=rows.filter(function(r){return m.campi.some(function(c){return sv(r[c.k]).toLowerCase().includes(q)})||inTxt(r)});
+  rows.sort(function(a,b){return String(a.tipo||'').localeCompare(String(b.tipo||''),'it')||String(b.data_atto||'').localeCompare(String(a.data_atto||''))||String(a.titolo||'').localeCompare(String(b.titolo||''),'it')});
+  let h=SC_CSS+NORM_CSS+'<div class="sc">';
+  h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
+  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">Leggi, decreti, ordinanze, norme tecniche</div><h1 class="sc-t">Normativa e riferimenti</h1><div class="sc-s">'+dati.length+' schede · la ricerca in alto cerca anche dentro il testo dei documenti</div></div>';
+  h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Tipo:</span>'+tipi.map(function(t){return'<button type="button" class="sc-ch'+(normF.tipo===t?' on':'')+'" data-nt="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>';
+  h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Ambito:</span>'+ambs.map(function(t){return'<button type="button" class="sc-ch'+(normF.amb===t?' on':'')+'" data-na="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>';
+  if(!q&&(!normF.tipo||normF.tipo==='Ordinanza sindacale')&&!normF.amb){
+    h+=SC_PIPE+'<div class="sc-box sc-lg">'+scH('Ordinanze del Comune di Milano, per stagione termica')+'<div class="tw"><table class="scr"><thead><tr><th>Stagione</th><th>Atto</th><th>Periodo</th><th>Orario massimo</th><th>Temperatura</th><th>Originale</th></tr></thead><tbody>'+NORM_ORD.map(function(o){return'<tr><td><b>'+o[0]+'</b></td><td>'+esc(o[1])+'</td><td>'+esc(o[2])+'</td><td>'+esc(o[3])+'</td><td>'+esc(o[4])+'</td><td>'+(o[5].length?o[5].map(function(f,i){return'<button type="button" class="sc-ch" data-open="'+f+'">'+(o[5].length>1?'Ord. '+(i?'55':'53'):'Apri')+'</button>'}).join(' '):'')+'</td></tr>'}).join('')+'</tbody></table></div><p class="sc-note">Temperatura massima dell\'aria negli ambienti, con 2 °C di tolleranza. Per gli edifici industriali e artigianali e per le esclusioni valgono i limiti indicati in ciascuna ordinanza.</p></div>';
+  }
+  h+=SC_PIPE+'<div class="sc-box">'+scH('Schede ('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')');
+  if(q.length>=3&&normTxt.q!==q)h+='<p class="sc-note">Ricerca nel testo dei documenti in corso…</p>';
+  h+='<div class="nr-g">'+rows.map(function(r){
+    const tx=inTxt(r),sx=sv(r.testo);
+    return'<div class="nr-c"><div><span class="nr-b">'+esc(r.tipo||'Senza tipo')+'</span>'+(r.ambito?'<span class="nr-m">'+esc(r.ambito)+'</span>':'')+'</div><div class="nr-t">'+esc(r.titolo)+'</div><div class="nr-m">'+(r.data_atto?esc(fmtD(r.data_atto))+' · ':'')+esc(r.fonte||'')+'</div><div class="nr-x">'+esc(sx)+'</div>'+
+      (tx&&tx.sn.length?'<div class="nr-m">'+(tx.n?tx.n+' occorrenze nel testo':'')+'</div>'+tx.sn.map(function(s){return'<div class="nr-sn">…'+normHl(s,q)+'…</div>'}).join(''):'')+
+      '<div class="nr-a">'+(r.file?'<button type="button" class="sc-ch" data-open="'+esc(r.file)+'">Apri originale</button>':'')+(r.link?'<a class="sc-ch" href="'+esc(r.link)+'" target="_blank" rel="noopener">Link</a>':'')+'<button type="button" class="sc-ch" data-mod="'+r.id+'">Modifica</button></div></div>'}).join('')+'</div>'+(rows.length?'':'<p class="sc-note">Nessuna scheda trovata.</p>')+'</div></div>';
+  $('#main').innerHTML=h;
+  document.querySelectorAll('[data-nt]').forEach(function(b){b.onclick=function(){normF.tipo=normF.tipo===b.dataset.nt?'':b.dataset.nt;normDisegna()}});
+  document.querySelectorAll('[data-na]').forEach(function(b){b.onclick=function(){normF.amb=normF.amb===b.dataset.na?'':b.dataset.na;normDisegna()}});
+  document.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){normApri(b.dataset.open,b)}});
+  document.querySelectorAll('[data-mod]').forEach(function(b){b.onclick=function(){modulo(dati.find(function(x){return String(x.id)===b.dataset.mod}),'riferimenti',normVista)}});
+  $('#nrnew').onclick=function(){modulo({},'riferimenti',normVista)};
+  $('#nrexp').onclick=function(){esporta('riferimenti',dati)};
+}
 function cella(c,r){
   if(c.t==='dt')return esc(fmtDT(r[c.k]));
   if(corrente==='registro'&&c.k==='azione')return esc(AZIONI[r[c.k]]||r[c.k]);
