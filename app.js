@@ -349,7 +349,7 @@ function disegna(){
   document.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{vistaRubrica=b.dataset.ct==='rubrica';disegna()});
   if(corrente==='contatti'&&vistaRubrica)bindRubrica();
   document.querySelectorAll('[data-cc]').forEach(b=>b.onclick=()=>{vistaCruscotto=b.dataset.cc==='cruscotto';disegna()});
-  if(corrente==='contratti'&&schedaCt!=null)bindScheda();else if(corrente==='contratti'&&vistaCruscotto)bindCruscotto();
+  if(corrente==='contratti'&&schedaCt!=null){bindScheda();return}if(corrente==='contratti'&&vistaCruscotto)bindCruscotto();
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
