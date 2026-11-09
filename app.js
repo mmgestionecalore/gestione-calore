@@ -877,7 +877,7 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 'main.dk .chip{min-height:36px;padding:0 14px;border:2px solid #4a2c18;background:#26160d;color:#fdebd3;font-weight:600}main.dk .chip.on{background:#ff8a1f;border-color:#ff8a1f;color:#1b110b}main.dk .chip:hover{background:#33200f}'+
 'main.dk .tw{background:#26160d;border:1px solid #4a2c18;border-radius:20px;box-shadow:none}'+
 'main.dk table,main.dk thead,main.dk tbody,main.dk tr{background:transparent}'+
-'main.dk th,main.dk td{overflow-wrap:break-word}main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
+'main.dk .rb-e,main.dk .rb-e.on{color:#fdebd3}main.dk th,main.dk td{overflow-wrap:break-word}main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
 'main.dk .vrow{border-top:1px dashed #3a2314}main.dk .meter{background:#33200f;border:1px solid #4a2c18}'+
 'main.dk button.ghost{border:2px solid #4a2c18;color:#fdebd3}main.dk button.ghost:hover{background:#33200f}'+
 'main.dk td[data-l="Scadenza"],main.dk td[data-l="Data"],main.dk td[data-l="Data atto"]{white-space:nowrap;overflow-wrap:normal}main.dk .ho{position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:30px;align-items:center;border:1px solid #6b3a1c;border-radius:26px;padding:30px 34px;background:radial-gradient(circle at 92% 130%,rgba(255,138,31,.5),transparent 52%),linear-gradient(120deg,#5a2a10,#26160d 72%)}'+
