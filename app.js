@@ -913,10 +913,10 @@ function glOggi(){
   var t=dentro?'In corso: giorno '+S.n+' di '+S.tot:'Prossima accensione: '+fd(S.i);
   var sb=dentro?'Periodo di accensione dal '+fd(S.i)+' al '+fd(S.f):'Il periodo di accensione va dal '+fmtD(iso(S.i)).slice(0,5)+' al '+fmtD(iso(S.f)).slice(0,5);
   var num=dentro?S.aFine:S.aInizio,lab=dentro?(num===1?'giorno':'giorni')+' alla fine dell accensione':(num===1?'giorno':'giorni')+' alla prossima accensione';
-  return'<h1 style="position:absolute;left:-9999px">Oggi</h1><section class="ho'+(dentro?'':' fuori')+'"><div class="ho-d"><span>'+esc(wd)+'</span><b>'+now.getDate()+'</b><span>'+esc(mo)+'</span></div>'+
+  return'<section class="ho'+(dentro?'':' fuori')+'"><div class="ho-d"><span>'+esc(wd)+'</span><b>'+now.getDate()+'</b><span>'+esc(mo)+'</span></div>'+
     '<div><div class="ho-k">'+ico(dentro?'fiamma':'neve')+esc(k)+'</div><div class="ho-t">'+esc(t)+'</div><div class="ho-s">'+esc(sb)+'</div>'+
     '<div class="ho-p"><i style="width:'+pct+'%"></i><span class="ho-mk" style="left:'+pct+'%">'+SC_FL.replace('CLS','')+'</span></div><div class="ho-l"><span>'+(dentro?fd(S.i):'15/04')+'</span><span>'+pct+'%</span><span>'+(dentro?fd(S.f):'15/10')+'</span></div></div>'+
-    '<div class="ho-n"><b>'+num+'</b><span>'+lab+'</span></div></section>';
+    '<div class="ho-n"><b>'+num+'</b><span>'+lab+'</span></div><h1 style="position:absolute;left:-9999px">Oggi</h1></section>';
 }
 function glHead(m,rows){
   var K={attivita:'Attività e priorità',scadenze:'Calendario delle scadenze',memoria:'Know-how operativo',documenti:'Archivio documenti',registro:'Tracciato delle modifiche',impianti:'Parco impianti',censimento:'Schede tecniche',contatti:'Rubrica',contratti:'Contratti',sal:'Contabilità',quadro:'Contabilità',ordini:'Altro',segnalazioni:'Altro',programmazione:'Altro'};
