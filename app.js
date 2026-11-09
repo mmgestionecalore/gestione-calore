@@ -295,7 +295,7 @@ async function apri(k){schedaCt=null;
 async function altroVista(){
   const v=['ordini','segnalazioni','programmazione'];
   const cn=await Promise.all(v.map(k=>sb.from(MODULI[k].tab).select('*',{count:'exact',head:true})));
-  glSkin(true);$('#main').innerHTML=glBan('Sezioni di riserva','Altro','Sezioni che per ora contengono pochi o nessun dato')+'<div class="chips fb">'+v.map((k,i)=>'<button type="button" class="chip" data-alt="'+k+'">'+esc(MODULI[k].nome)+' <span class="muted">'+(cn[i].count??0)+'</span></button>').join('')+'</div>';
+  glSkin(true);$('#main').innerHTML=glHero({ic:'altro',bl:'Altro',kick:'Sezioni di riserva',title:'Altro',sub:'Sezioni che per ora contengono pochi o nessun dato',num:cn.reduce(function(a,x){return a+(x.count||0)},0),lab:'elementi in totale'})+'<div class="chips fb">'+v.map((k,i)=>'<button type="button" class="chip" data-alt="'+k+'">'+esc(MODULI[k].nome)+' <span class="muted">'+(cn[i].count??0)+'</span></button>').join('')+'</div>';
   document.querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>apri(b.dataset.alt));
 }
 function disegna(){
@@ -897,6 +897,10 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 'main.dk .ho-n{text-align:center;min-width:170px}main.dk .ho-n b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:104px;line-height:.9;font-weight:700;color:#ffc247}main.dk .ho.fuori .ho-n b{color:#9adcf2}main.dk .ho-n span{font-size:14px;color:#e8cfb2;text-transform:uppercase;letter-spacing:.08em}'+
 '@media(max-width:900px){main.dk .ho{grid-template-columns:auto minmax(0,1fr)}main.dk .ho-n{grid-column:1/-1;text-align:left;display:flex;align-items:baseline;gap:14px}main.dk .ho-n b{font-size:64px}}'+
 '@media(max-width:640px){main.dk .ho{grid-template-columns:1fr;padding:20px;gap:18px}main.dk .ho-d{flex-direction:row;gap:12px;min-width:0;padding:10px 14px;justify-content:center}main.dk .ho-d b{font-size:52px}main.dk .ho-t{font-size:36px}main.dk .ho-n b{font-size:56px}}'+
+'main.dk .ho-i{min-width:150px;gap:8px}main.dk .ho-i svg{width:68px;height:68px;stroke-width:1.5;color:#ff8a1f}main.dk .ho-i span{text-align:center}'+
+'main.dk .ho-bt{margin-top:16px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#ffb35c;font-weight:600}main.dk .ho-bt+.ho-p{margin-top:32px}main.dk .ho-p2{margin:8px 0 6px}main.dk .ho-bt+.ho-p2{margin-top:8px}'+
+'main.dk .ho-s2{margin-top:2px;color:#c9a98a;font-size:14px}'+
+'@media(max-width:640px){main.dk .ho-i svg{width:44px;height:44px}}'+
 'main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
 'main.dk details{background:#1b110b;border:1px solid #4a2c18;border-radius:12px;padding:8px 12px}'+
 '@media(max-width:640px){main.dk{padding:14px;width:calc(100% - 16px);margin:8px auto 32px}main.dk .hero{padding:18px}main.dk .hero .big{font-size:30px}main.dk .hero>.fl{display:none}main.dk .kpi b{font-size:36px}main.dk h3,main.dk .ch{font-size:21px}}'+
@@ -918,10 +922,42 @@ function glOggi(){
     '<div class="ho-p"><i style="width:'+pct+'%"></i><span class="ho-mk" style="left:'+pct+'%">'+SC_FL.replace('CLS','')+'</span></div><div class="ho-l"><span>'+(dentro?fd(S.i):'15/04')+'</span><span>'+pct+'%</span><span>'+(dentro?fd(S.f):'15/10')+'</span></div></div>'+
     '<div class="ho-n"><b>'+num+'</b><span>'+lab+'</span></div><h1 style="position:absolute;left:-9999px">Oggi</h1></section>';
 }
+function glHero(o){
+  var bars=(o.bars||[]).map(function(b,i){var p=Math.max(0,Math.min(100,Math.round(b.pct)));return(b.t?'<div class="ho-bt">'+esc(b.t)+'</div>':'')+'<div class="ho-p'+(i?' ho-p2':'')+'"><i style="width:'+p+'%"></i>'+(i?'':'<span class="ho-mk" style="left:'+p+'%">'+SC_FL.replace('CLS','')+'</span>')+'</div><div class="ho-l"><span>'+esc(b.l||'')+'</span><span>'+(b.m==null?p+'%':esc(b.m))+'</span><span>'+esc(b.r||'')+'</span></div>'}).join('');
+  var badge='<div class="ho-d ho-i">'+ico(o.ic)+'<span>'+esc(o.bl||'')+'</span></div>';
+  return'<section class="ho'+(o.fuori?' fuori':'')+'">'+badge+'<div><div class="ho-k">'+ico('fiamma')+esc(o.kick)+'</div><div class="ho-t">'+esc(o.title)+'</div><div class="ho-s">'+esc(o.sub||'')+'</div>'+(o.sub2?'<div class="ho-s ho-s2">'+esc(o.sub2)+'</div>':'')+bars+'</div><div class="ho-n"><b>'+o.num+'</b><span>'+esc(o.lab)+'</span></div><h1 style="position:absolute;left:-9999px">'+esc(o.title)+'</h1></section>';
+}
+function glHubHero(h,mioC,I,sl,qd,t){
+  var c=mioC.find(function(x){return x.data_inizio&&x.scadenza})||null,bars=[],num=I.length,lab='impianti';
+  if(c){var tot=Math.max(1,scGiorni(c.data_inizio,c.scadenza)),el=scGiorni(c.data_inizio,t);bars.push({t:'Tempo',pct:el/tot*100,l:fmtD(c.data_inizio),r:fmtD(c.scadenza)});num=Math.max(0,scGiorni(t,c.scadenza));lab='giorni alla scadenza del contratto'}
+  if(h.tipo==='gc'&&!sl.error&&!qd.error&&qd.data&&qd.data.length){var C=calcContab(sl.data||[],qd.data),P=C.per[C.attivo],L=P&&P[h.lotto];if(L){var tv=totV(L);if(tv.tetto)bars.push({t:'Costi · '+C.attivo,pct:tv.fatto/tv.tetto*100,l:eur(tv.fatto),m:fmtN(tv.fatto/tv.tetto*100,1)+'%',r:eur(tv.tetto)})}}
+  return glHero({ic:'hub',bl:h.nome,kick:'Hub contratto',title:h.tit,sub:h.sub,num:num,lab:lab,bars:bars});
+}
+function glMod(m,rows){
+  var A=dati,T=oggi(),n=rows.length,t=A.length,nm=m.pi?'Parco impianti':m.nome,k=corrente;
+  var o={ic:k,bl:nm,kick:'Gestione calore · MM',title:nm+(k==='censimento'?' · schede tecniche':''),num:t,lab:'elementi',sub:'',sub2:n!==t?'Mostrati '+n+' di '+t:''};
+  var top=function(key,x){var c={};A.forEach(function(r){var v=r[key];if(v)c[v]=(c[v]||0)+1});return Object.keys(c).sort(function(a,b){return c[b]-c[a]}).slice(0,x).map(function(v){return v+' '+c[v]}).join(' · ')};
+  if(k==='attivita'){var ap=A.filter(function(r){return r.stato!=='Fatto'}),sc=ap.filter(function(r){return r.scadenza&&r.scadenza<T}).length,f30=ap.filter(function(r){return r.scadenza&&r.scadenza>=T&&r.scadenza<=aggiungiGiorni(30)}).length,al=ap.filter(function(r){return r.priorita==='Alta'}).length;
+    o.kick='Attività e priorità';o.num=ap.length;o.lab='attività aperte';o.sub=sc+' scadute · '+f30+' entro 30 giorni · '+al+' con priorità alta';o.bars=[{t:'Completate',pct:t?(t-ap.length)/t*100:0,l:'0',m:(t-ap.length)+' su '+t,r:String(t)}]}
+  else if(k==='scadenze'){var ap2=A.filter(function(r){return!r.fatto}),late=ap2.filter(function(r){return r.data&&r.data<T}).length,fut=ap2.filter(function(r){return r.data&&r.data>=T}).sort(function(a,b){return a.data<b.data?-1:1}),n30=fut.filter(function(r){return r.data<=aggiungiGiorni(30)}).length;
+    o.kick='Calendario delle scadenze';o.sub=ap2.length+' aperte · '+late+' già scadute · '+n30+' entro 30 giorni';if(fut.length){o.num=scGiorni(T,fut[0].data);o.lab='giorni alla prossima scadenza';o.sub2=(o.sub2?o.sub2+' · ':'')+'Prossima: '+fut[0].titolo+' ('+fmtD(fut[0].data)+')'}else{o.num=ap2.length;o.lab='scadenze aperte'}}
+  else if(k==='memoria'){o.kick='Know-how operativo';o.lab='schede di know-how';o.sub=top('categoria',5)}
+  else if(k==='documenti'){var kb=0,fo={},last='';A.forEach(function(r){kb+=Number(r.dimensione_kb)||0;if(r.cartella)fo[r.cartella]=1;if(r.modificato_il&&r.modificato_il>last)last=r.modificato_il});
+    o.kick='Archivio documenti';o.lab='file archiviati';o.sub=fmtN(kb/1024,0)+' MB · '+Object.keys(fo).length+' cartelle'+(last?' · ultimo aggiornamento '+fmtD(String(last).slice(0,10)):'')}
+  else if(k==='registro'){var lim=new Date(Date.now()-7*864e5).toISOString(),r7=A.filter(function(r){return r.quando>=lim}).length,u=A[0];
+    o.kick='Tracciato delle modifiche';o.num=r7;o.lab='modifiche negli ultimi 7 giorni';o.sub=t+' modifiche registrate'+(u?' · ultima: '+String(u.utente||'').split('@')[0]+', '+fmtDT(u.quando):'')}
+  else if(k==='impianti'){var fz=A.filter(function(r){return r.stato==='In funzione'}).length,fe=A.filter(function(r){return/fermo|parziale/i.test(r.stato||'')}).length;
+    o.kick='Parco impianti';o.lab='impianti';o.sub=fz+' in funzione · '+fe+' fermi o parziali · '+top('lotto',3);o.bars=[{t:'In funzione',pct:t?fz/t*100:0,l:'0',m:fz+' su '+t,r:String(t)}]}
+  else if(k==='censimento'){o.kick='Schede tecniche';o.lab='schede';o.sub=A.filter(function(r){return r.criticita}).length+' con criticità segnalata · '+top('lotto',3)}
+  else if(k==='contatti'){o.kick='Rubrica';o.lab='contatti';o.sub=top('ente',4)}
+  else if(k==='contratti'){o.kick='Contratti';o.lab='contratti';var fu2=A.filter(function(r){return r.scadenza&&r.scadenza>=T}).sort(function(a,b){return a.scadenza<b.scadenza?-1:1});
+    if(fu2.length){o.num=scGiorni(T,fu2[0].scadenza);o.lab='giorni alla prossima scadenza contrattuale';o.sub='Prossima: '+fu2[0].nome+' ('+fmtD(fu2[0].scadenza)+')'}else o.sub=t+' contratti'}
+  return glHero(o);
+}
 function glHead(m,rows){
   var K={attivita:'Attività e priorità',scadenze:'Calendario delle scadenze',memoria:'Know-how operativo',documenti:'Archivio documenti',registro:'Tracciato delle modifiche',impianti:'Parco impianti',censimento:'Schede tecniche',contatti:'Rubrica',contratti:'Contratti',sal:'Contabilità',quadro:'Contabilità',ordini:'Altro',segnalazioni:'Altro',programmazione:'Altro'};
   var n=rows.length,t=dati.length,tit=(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'');
-  return'<div class="sc-top"><span class="sc-k">Gestione calore · MM</span><span class="grp">'+(m.ro?'':'<button class="sc-b" id="imp">Importa</button>')+'<button class="sc-b" id="exp">Esporta</button>'+(m.ro?'':'<button class="sc-b p" id="nuovo">+ Nuovo</button>')+'</span></div>'+glBan(K[corrente]||m.nome,tit,n+(n!==t?' di '+t:'')+' elementi');
+  return'<div class="sc-top"><span class="sc-k">Gestione calore · MM</span><span class="grp">'+(m.ro?'':'<button class="sc-b" id="imp">Importa</button>')+'<button class="sc-b" id="exp">Esporta</button>'+(m.ro?'':'<button class="sc-b p" id="nuovo">+ Nuovo</button>')+'</span></div>'+glMod(m,rows);
 }
 function cella(c,r){
   if(c.t==='dt')return esc(fmtDT(r[c.k]));
@@ -1232,7 +1268,7 @@ async function hubVista(){
      kp(ritardo?'ko':scH.length?'wa':'ok',scH.length,'Scadenze aperte',ritardo?ritardo+' già scadute':'')+
      kp('',atH.length,'Attività aperte','')+kp(sgH.length?'wa':'ok',sgH.length,'Segnalazioni aperte','')+'</div>';
   const tabs='<div class="chips" id="hubtabs">'+Object.keys(HUB).map(k=>'<button class="chip'+(k===hubSel?' on':'')+'" data-h="'+k+'">'+esc(HUB[k].nome)+'</button>').join('')+'</div>';
-  let H=glBan('Hub contratto',h.tit,esc(h.sub))+'<div style="margin:.2rem 0 .6rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap"><span class="hubtag">'+esc(h.nome)+'</span><span class="muted" style="font-size:13px">'+(ultTxt?'Dati aggiornati al '+ultTxt:'')+'</span><button class="ghost mini noprint" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
+  let H=glHubHero(h,mioC,I,sl,qd,t)+'<div style="margin:.2rem 0 .6rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap"><span class="hubtag">'+esc(h.nome)+'</span><span class="muted" style="font-size:13px">'+(ultTxt?'Dati aggiornati al '+ultTxt:'')+'</span><button class="ghost mini noprint" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
   const dvC=(me.data||[]).find(r=>/Da verificare/.test(r.titolo||'')&&(h.tipo==='leg'?/^Legionella/.test(r.titolo):h.tipo==='tlr'?/^TLR/.test(r.titolo):/^Gestione Calore/.test(r.titolo)));
   if(dvC){const righe=String(dvC.testo||'').split('\n').map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
     H+=sez('attivita','Da verificare <span class="muted" style="font-weight:400">('+righe.length+')</span>','<ul class="lst">'+righe.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><p class="muted" style="font-size:13px;margin:.5rem 0 0">'+link('memoria',dvC,'Apri la scheda per modificare o togliere le voci risolte')+'</p>');}
