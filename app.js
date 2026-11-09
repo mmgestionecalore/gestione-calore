@@ -878,7 +878,7 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 'main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
 'main.dk .vrow{border-top:1px dashed #3a2314}main.dk .meter{background:#33200f;border:1px solid #4a2c18}'+
 'main.dk button.ghost{border:2px solid #4a2c18;color:#fdebd3}main.dk button.ghost:hover{background:#33200f}'+
-'main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
+'main.dk td[data-l="Scadenza"],main.dk td[data-l="Data"],main.dk td[data-l="Data atto"]{white-space:nowrap;overflow-wrap:normal}main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
 'main.dk details{background:#1b110b;border:1px solid #4a2c18;border-radius:12px;padding:8px 12px}'+
 '@media(max-width:640px){main.dk{padding:14px;width:calc(100% - 16px);margin:8px auto 32px}main.dk .hero{padding:18px}main.dk .hero .big{font-size:30px}main.dk .hero>.fl{display:none}main.dk .kpi b{font-size:36px}main.dk h3,main.dk .ch{font-size:21px}}'+
 '@media print{main.dk{--bg:#fff;--bg2:#f3ece3;--fg:#000;--mut:#444;--card:#fff;--bd:#ccc;--ac:#000;background:#fff;color:#000;padding:0;width:auto;margin:0}main.dk .card,main.dk .kpi,main.dk .hero{background:#fff;color:#000;border-color:#ccc}main.dk .sc-ban{background:#fff;color:#000;border-color:#ccc}main.dk .sc-t,main.dk .sc-s,main.dk .sc-k,main.dk .kpi b,main.dk .hero .big,main.dk .hero .sub{color:#000}main.dk .ch,main.dk h3{color:#000}}';
