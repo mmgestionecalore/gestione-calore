@@ -878,7 +878,26 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 'main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
 'main.dk .vrow{border-top:1px dashed #3a2314}main.dk .meter{background:#33200f;border:1px solid #4a2c18}'+
 'main.dk button.ghost{border:2px solid #4a2c18;color:#fdebd3}main.dk button.ghost:hover{background:#33200f}'+
-'main.dk td[data-l="Scadenza"],main.dk td[data-l="Data"],main.dk td[data-l="Data atto"]{white-space:nowrap;overflow-wrap:normal}main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
+'main.dk td[data-l="Scadenza"],main.dk td[data-l="Data"],main.dk td[data-l="Data atto"]{white-space:nowrap;overflow-wrap:normal}main.dk .ho{position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:30px;align-items:center;border:1px solid #6b3a1c;border-radius:26px;padding:30px 34px;background:radial-gradient(circle at 92% 130%,rgba(255,138,31,.5),transparent 52%),linear-gradient(120deg,#5a2a10,#26160d 72%)}'+
+'main.dk .ho.fuori{background:radial-gradient(circle at 92% 130%,rgba(92,195,230,.35),transparent 52%),linear-gradient(120deg,#12323d,#26160d 72%)}'+
+'main.dk .ho:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,179,92,.06) 0 5px,transparent 5px 13px);pointer-events:none}'+
+'main.dk .ho>*{position:relative}'+
+'main.dk .ho-d{display:flex;flex-direction:column;align-items:center;min-width:150px;padding:14px 18px;border:3px solid #ff8a1f;border-radius:20px;background:rgba(27,17,11,.55);box-shadow:0 0 0 6px rgba(255,138,31,.12),0 0 28px rgba(255,138,31,.25)}'+
+'main.dk .ho.fuori .ho-d{border-color:#5cc3e6;box-shadow:0 0 0 6px rgba(92,195,230,.12),0 0 28px rgba(92,195,230,.25)}'+
+'main.dk .ho-d span{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#ffb35c;font-weight:600}'+
+'main.dk .ho-d b{font-family:"Barlow Condensed",sans-serif;font-size:92px;line-height:.9;font-weight:700;color:#fdebd3}'+
+'main.dk .ho-k{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#ffb35c;font-weight:600}main.dk .ho-k svg{width:16px;height:16px}'+
+'main.dk .ho-t{margin:6px 0 4px;font-family:"Barlow Condensed",sans-serif;font-size:56px;line-height:1;text-transform:uppercase;font-weight:700;letter-spacing:.01em}'+
+'main.dk .ho-s{font-size:16px;color:#e8cfb2}'+
+'main.dk .ho-p{position:relative;height:18px;border-radius:9px;background:#33200f;border:1px solid #4a2c18;margin:30px 0 6px}'+
+'main.dk .ho-p i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#ff5a1f,#ff8a1f 55%,#ffc247);box-shadow:0 0 16px rgba(255,138,31,.55);animation:scgr 1.3s ease-out both}'+
+'main.dk .ho.fuori .ho-p i{background:linear-gradient(90deg,#2a8fb5,#5cc3e6);box-shadow:0 0 16px rgba(92,195,230,.45)}'+
+'main.dk .ho-mk{position:absolute;top:-30px;width:34px;height:34px;margin-left:-17px;color:#ffc247;filter:drop-shadow(0 0 8px #ff8a1f);transform-origin:50% 100%;animation:scfl 2.6s ease-in-out infinite}main.dk .ho-mk svg{width:100%;height:100%}'+
+'main.dk .ho-l{display:flex;justify-content:space-between;font-size:12px;color:#c9a98a;letter-spacing:.06em}'+
+'main.dk .ho-n{text-align:center;min-width:170px}main.dk .ho-n b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:104px;line-height:.9;font-weight:700;color:#ffc247}main.dk .ho.fuori .ho-n b{color:#9adcf2}main.dk .ho-n span{font-size:14px;color:#e8cfb2;text-transform:uppercase;letter-spacing:.08em}'+
+'@media(max-width:900px){main.dk .ho{grid-template-columns:auto minmax(0,1fr)}main.dk .ho-n{grid-column:1/-1;text-align:left;display:flex;align-items:baseline;gap:14px}main.dk .ho-n b{font-size:64px}}'+
+'@media(max-width:640px){main.dk .ho{grid-template-columns:1fr;padding:20px;gap:18px}main.dk .ho-d{flex-direction:row;gap:12px;min-width:0;padding:10px 14px;justify-content:center}main.dk .ho-d b{font-size:52px}main.dk .ho-t{font-size:36px}main.dk .ho-n b{font-size:56px}}'+
+'main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
 'main.dk details{background:#1b110b;border:1px solid #4a2c18;border-radius:12px;padding:8px 12px}'+
 '@media(max-width:640px){main.dk{padding:14px;width:calc(100% - 16px);margin:8px auto 32px}main.dk .hero{padding:18px}main.dk .hero .big{font-size:30px}main.dk .hero>.fl{display:none}main.dk .kpi b{font-size:36px}main.dk h3,main.dk .ch{font-size:21px}}'+
 '@media print{main.dk{--bg:#fff;--bg2:#f3ece3;--fg:#000;--mut:#444;--card:#fff;--bd:#ccc;--ac:#000;background:#fff;color:#000;padding:0;width:auto;margin:0}main.dk .card,main.dk .kpi,main.dk .hero{background:#fff;color:#000;border-color:#ccc}main.dk .sc-ban{background:#fff;color:#000;border-color:#ccc}main.dk .sc-t,main.dk .sc-s,main.dk .sc-k,main.dk .kpi b,main.dk .hero .big,main.dk .hero .sub{color:#000}main.dk .ch,main.dk h3{color:#000}}';
@@ -886,6 +905,19 @@ function glFont(){if(!document.getElementById('pm-font')){var l=document.createE
 function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS;document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on)}
 function glBan(kick,title,sub){return'<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">'+esc(kick)+'</div><h1 class="sc-t">'+esc(title)+'</h1>'+(sub?'<div class="sc-s">'+sub+'</div>':'')+'</div>'}
 function glGen(){return!((corrente==='impianti'&&vistaMappa)||(corrente==='contatti'&&vistaRubrica)||(corrente==='contratti'&&(vistaCruscotto||schedaCt!=null)))}
+function glOggi(){
+  var S=stagione(new Date()),now=new Date(),fd=function(d){return fmtD(iso(d))},dentro=S.dentro;
+  var pct=Math.max(0,Math.min(100,Math.round((dentro?S.n/S.tot:S.perc)*100)));
+  var wd=now.toLocaleDateString('it-IT',{weekday:'long'}),mo=now.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+  var k=dentro?'Stagione termica '+S.i.getFullYear()+'/'+String(S.f.getFullYear()).slice(2)+' · zona E, Milano':'Fuori dal periodo di accensione · zona E, Milano';
+  var t=dentro?'In corso: giorno '+S.n+' di '+S.tot:'Prossima accensione: '+fd(S.i);
+  var sb=dentro?'Periodo di accensione dal '+fd(S.i)+' al '+fd(S.f):'Il periodo di accensione va dal '+fmtD(iso(S.i)).slice(0,5)+' al '+fmtD(iso(S.f)).slice(0,5);
+  var num=dentro?S.aFine:S.aInizio,lab=dentro?(num===1?'giorno':'giorni')+' alla fine dell accensione':(num===1?'giorno':'giorni')+' alla prossima accensione';
+  return'<h1 style="position:absolute;left:-9999px">Oggi</h1><section class="ho'+(dentro?'':' fuori')+'"><div class="ho-d"><span>'+esc(wd)+'</span><b>'+now.getDate()+'</b><span>'+esc(mo)+'</span></div>'+
+    '<div><div class="ho-k">'+ico(dentro?'fiamma':'neve')+esc(k)+'</div><div class="ho-t">'+esc(t)+'</div><div class="ho-s">'+esc(sb)+'</div>'+
+    '<div class="ho-p"><i style="width:'+pct+'%"></i><span class="ho-mk" style="left:'+pct+'%">'+SC_FL.replace('CLS','')+'</span></div><div class="ho-l"><span>'+(dentro?fd(S.i):'15/04')+'</span><span>'+pct+'%</span><span>'+(dentro?fd(S.f):'15/10')+'</span></div></div>'+
+    '<div class="ho-n"><b>'+num+'</b><span>'+lab+'</span></div></section>';
+}
 function glHead(m,rows){
   var K={attivita:'Attività e priorità',scadenze:'Calendario delle scadenze',memoria:'Know-how operativo',documenti:'Archivio documenti',registro:'Tracciato delle modifiche',impianti:'Parco impianti',censimento:'Schede tecniche',contatti:'Rubrica',contratti:'Contratti',sal:'Contabilità',quadro:'Contabilità',ordini:'Altro',segnalazioni:'Altro',programmazione:'Altro'};
   var n=rows.length,t=dati.length,tit=(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'');
@@ -1088,7 +1120,7 @@ async function oggiVista(){
   const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0">'+vuoto+'</p>')+'</div>';
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
   const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data),sl.data||[],qd.data):'';
-  glSkin(true);$('#main').innerHTML=glBan('Cruscotto del giorno','Oggi',esc(new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})))+'<div id="ris"></div><div id="home">'+hero+kpis+'<div class="grid">'+
+  glSkin(true);$('#main').innerHTML=glOggi()+'<div id="ris"></div><div id="home">'+kpis+'<div class="grid">'+
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
    blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
    
