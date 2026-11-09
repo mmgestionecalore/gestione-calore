@@ -660,14 +660,14 @@ function schedaCtHtml(r){
   h+='</span></div>';
   var st=ctStato(r),stl=st==='corso'?'In corso':(st==='chiuso'?'Terminato':'In firma');
   h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:'+col+'">'+esc(r.lotto||'')+' · '+stl+'</div><h1 class="sc-t">'+esc(r.nome||'')+'</h1><div class="sc-s">'+esc(r.fornitore||'')+(r.data_inizio?' · dal '+fmtD(r.data_inizio):'')+(r.scadenza?' · al '+fmtD(r.scadenza):'')+'</div></div>';
-  var oggi=new Date(),pt=null,gg=null;
+  var oggi=new Date();oggi.setHours(0,0,0,0);var pt=null,gg=null;
   if(r.data_inizio&&r.scadenza){var tot=scGiorni(r.data_inizio,r.scadenza),pas=Math.round((oggi-new Date(r.data_inizio+'T00:00:00'))/864e5);pt=tot>0?Math.max(0,Math.min(100,pas/tot*100)):null}
   if(r.scadenza)gg=Math.round((new Date(r.scadenza+'T00:00:00')-oggi)/864e5);
   var so=ctSost(r),bu=ctBud(r),pc=bu>0?so/bu*100:null,rit='';
   if(pc!==null&&pt!==null){var df=(pc-pt)/100;rit=df>.1?'<span class="sc-bd" style="background:#4a3a12;color:#ffd985">Spesa in anticipo</span>':(df<-.1?'<span class="sc-bd" style="background:#123344;color:#9fdcf5">Spesa sotto il ritmo</span>':'<span class="sc-bd" style="background:#1f3a22;color:#a9e4ad">In linea</span>')}
   h+=SC_PIPE+'<div class="sc-grid">';
   h+='<div class="sc-pl"><div class="sc-k">Tempi</div>'+(pt!==null?scGauge(pt)+'<div class="sc-n">'+Math.round(pt)+'% <small>trascorso</small></div><div class="sc-s" style="margin:0">'+(st==='chiuso'?'Contratto terminato':(gg>=0?'Mancano '+gg.toLocaleString('it-IT')+' giorni alla scadenza del '+fmtD(r.scadenza):'Scaduto da '+(-gg).toLocaleString('it-IT')+' giorni (scadenza '+fmtD(r.scadenza)+')'))+'</div>':'<div class="sc-s">Inserisci data inizio e scadenza per vedere i tempi.</div>')+'</div>';
-  h+='<div class="sc-pl"><div class="sc-k">Costi · contratto intero</div>'+(pc!==null?'<div class="sc-n">'+Math.round(pc)+'% <small>speso</small></div>'+scMeter(so,bu)+'<div class="sc-s" style="margin:0">'+eur(so)+' su '+eur(bu)+'</div>'+rit:'<div class="sc-n">'+eur(so)+'</div><div class="sc-s">Budget non inserito.</div>')+'</div>';
+  h+='<div class="sc-pl"><div class="sc-k">Costi · contratto intero</div>'+(pc!==null&&so>0?'<div class="sc-n">'+Math.round(pc)+'% <small>speso</small></div>'+scMeter(so,bu)+'<div class="sc-s" style="margin:0">'+eur(so)+' su '+eur(bu)+'</div>'+rit:'<div class="sc-n">'+(so>0?eur(so):'—')+'</div><div class="sc-s">'+(bu>0?'Budget '+eur(bu)+'. ':'Budget non inserito. ')+'Importo sostenuto non registrato.</div>')+'</div>';
   var C=null,L=null;
   if(has&&D){C=calcContab(D.sal,D.quadro);L=(C.per[C.attivo]||{})[k]}
   if(L){var T=totV(L),pq=T.tetto>0?T.fatto/T.tetto*100:0;
