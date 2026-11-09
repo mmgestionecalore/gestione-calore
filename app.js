@@ -499,7 +499,7 @@ function ctF(d){return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).sl
 function ctE(n){return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function ctOggi(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
 function ctStato(r){var s=r.stato||'';return /^in corso/i.test(s)?'corso':/^terminat|chius/i.test(s)?'chiuso':/firma|aggiudicat/i.test(s)?'firma':'corso'}
-function ctSost(r){if(r.importo_sostenuto!=null&&r.importo_sostenuto!=='')return +r.importo_sostenuto;if(salCt&&(r.lotto==='LOTTO 1'||r.lotto==='LOTTO 2'||r.lotto==='LOTTO TLR'))return salCt[r.lotto]||0;return null}
+function ctSost(r){if(r.importo_sostenuto!=null&&r.importo_sostenuto!=='')return +r.importo_sostenuto;if(salCt&&(r.lotto==='LOTTO 1'||r.lotto==='LOTTO 2'||r.lotto==='LOTTO TLR'))return salCt[r.lotto==='LOTTO TLR'?'TLR':r.lotto]||0;return null}
 function ctBud(r){return (+r.importo_attuale||+r.importo_base||0)+(+r.budget_aggiuntivo||0)}
 function caricaSalCt(){if(salCarico)return;salCarico=true;sb.from('sal').select('lotto,netto,stato').then(function(x){salCt={};(x.data||[]).forEach(function(y){if(y.stato==='Annullato')return;salCt[y.lotto]=(salCt[y.lotto]||0)+(+y.netto||0)});if(corrente==='contratti')disegna()})}
 function ctHero(rows){
