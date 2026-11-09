@@ -1140,7 +1140,7 @@ var SC_CSS2='<style>'+
 '.sc .muted,.sc .sub2{color:#c9a98a;font-size:13px}'+
 '.sc h3.ch{margin:0;display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed",sans-serif;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fdebd3}'+
 '.sc h3.ch svg{width:26px;height:26px;color:#ff8a1f}'+
-'.sc .tw{overflow-x:auto}'+
+'.sc .tw{overflow-x:auto;background:transparent!important;border:0!important;box-shadow:none!important}'+
 '.sc .sc-lg table td,.sc .sc-lg table th{text-align:left}'+
 '.sc .sc-lg table .n{text-align:right}'+
 '.sc .sc-lg table th.g{text-align:center;color:#ffb35c!important;border-left:1px solid #4a2c18!important}'+
