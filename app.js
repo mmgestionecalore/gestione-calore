@@ -601,7 +601,7 @@ var SC_CSS='<style>'+
 '.sc-hint{font-size:12px;color:#8a6a4e}'+
 '.sc-tw{overflow-x:auto}'+
 '.sc table{width:100%;border-collapse:collapse}'+
-'.sc table tr,.sc table td,.sc table th{background:transparent!important}'+'.sc table td,.sc table th{padding:9px 10px;text-align:right;font-size:15px;border:0!important;border-bottom:1px dashed #3a2314!important;white-space:nowrap;color:#fdebd3!important}'+
+'.sc table,.sc table thead,.sc table tbody,.sc table tr,.sc table td,.sc table th{background:transparent!important;box-shadow:none!important}'+'.sc table td,.sc table th{padding:9px 10px;text-align:right;font-size:15px;border:0!important;border-bottom:1px dashed #3a2314!important;white-space:nowrap;color:#fdebd3!important}'+
 '.sc table th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c9a98a!important;font-weight:600}'+
 '.sc td:first-child,.sc th:first-child,.sc td.l,.sc th.l{text-align:left}'+
 '.sc table tr.tot td{font-weight:700;color:#ffb35c!important}'+
