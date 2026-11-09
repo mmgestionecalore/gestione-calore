@@ -615,7 +615,7 @@ var SC_CSS='<style>'+
 '.sc-st{font-size:13px;font-weight:600;padding:2px 9px;border-radius:10px}'+
 '.sc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}'+
 '.sc-note{font-size:14px;color:#e8cfb2;margin:0}'+
-'@media(max-width:640px){.sc{padding:14px}.sc-t{font-size:32px;max-width:100%}.sc-ban>.sc-fl{display:none}.sc-vg{grid-template-columns:1fr}}'+
+'@media(max-width:640px){.sc{padding:14px}.sc-t{font-size:32px;max-width:100%}.sc-h{font-size:21px}.sc-h svg{width:20px;height:20px}.sc-ban>.sc-fl{display:none}.sc-vg{grid-template-columns:1fr}}'+
 '@media(prefers-reduced-motion:reduce){.sc *,.sc *:before{animation:none!important}}'+
 '</style>';
 function scKey(r){return r.lotto==='LOTTO TLR'?'TLR':r.lotto}
@@ -799,11 +799,11 @@ async function normCerca(q){
 }
 var NORM_FAM=[['Esercizio e orari','#ff8a1f'],['Contabilizzazione','#ffb35c'],['Appalti e contratti','#c792ea'],['Legionella e acque','#5fd0c4'],['IVA','#e8cfb0'],['Tubazioni','#4fa3d9'],['Gas e sicurezza','#f4d03f'],['Incentivi','#7bc47f']];
 var NORM_CSS2='<style>'+
-'.sc .fam{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}'+
+'.sc .fam{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}'+
 '.sc .ft{position:relative;text-align:left;background:#26160d;border:2px solid #4a2c18;border-radius:16px;padding:14px 16px 14px 24px;overflow:hidden;color:#fdebd3;min-height:96px;cursor:pointer;font-family:inherit}'+
 '.sc .ft:before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--c)}'+
 '.sc .ft .cn{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:700;line-height:.9;color:var(--c)}'+
-'.sc .ft .nm{font-family:"Barlow Condensed",sans-serif;font-size:19px;text-transform:uppercase;letter-spacing:.03em;line-height:1.05;margin-top:6px}'+
+'.sc .ft .nm{font-family:"Barlow Condensed",sans-serif;font-size:17px;text-transform:uppercase;letter-spacing:.03em;line-height:1.05;margin-top:6px;overflow-wrap:anywhere}'+
 '.sc .ft.on{border-color:var(--c);background:#33200f}.sc .ft:hover{border-color:var(--c)}'+
 '.sc .nr-c{position:relative;overflow:hidden;padding-left:28px}'+
 '.sc .nr-c:before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--c)}'+
