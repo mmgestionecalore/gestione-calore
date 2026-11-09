@@ -54,7 +54,7 @@ const MODULI={
  memoria:{nome:'Memoria operativa',tab:'memoria',ord:['aggiornato_il',false],campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'categoria',l:'Categoria',t:'text',list:1},{k:'tag',l:'Tag',t:'text',list:1},{k:'testo',l:'Testo',t:'long'}]},
  riferimenti:{nome:'Normativa e riferimenti',tab:'riferimenti',ord:['titolo',true],campi:[
-  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text',list:1},{k:'ambito',l:'Ambito',t:'text',list:1},{k:'data_atto',l:'Data atto',t:'date'},{k:'file',l:'File nell\'archivio',t:'text'},{k:'link',l:'Link',t:'text'},{k:'testo',l:'Testo / sintesi',t:'long'}]},
+  {k:'titolo',l:'Titolo',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},{k:'fonte',l:'Fonte',t:'text',list:1},{k:'ambito',l:'Ambito',t:'text',list:1},{k:'altri_ambiti',l:'Altri ambiti (separati da punto e virgola)',t:'text'},{k:'data_atto',l:'Data atto',t:'date'},{k:'file',l:'File nell\'archivio',t:'text'},{k:'link',l:'Link',t:'text'},{k:'testo',l:'Testo / sintesi',t:'long'}]},
  documenti:{nome:'Documenti',tab:'documenti',ord:['titolo',true],campi:[
   {k:'titolo',l:'Documento',t:'text',list:1},{k:'cartella',l:'Cartella',t:'text',list:1},{k:'tipo',l:'Tipo',t:'text',list:1},
   {k:'dimensione_kb',l:'Dimensione (KB)',t:'num',dec:0,list:1},{k:'modificato_il',l:'Modificato il',t:'date',list:1,nc:1},{k:'modificato_da',l:'Modificato da',t:'text',list:1},
@@ -797,33 +797,51 @@ async function normCerca(q){
   normTxt={q:q,f:f};
   if(corrente==='riferimenti'&&($('#search').value||'').trim().toLowerCase()===q)normDisegna();
 }
+var NORM_FAM=[['Esercizio e orari','#ff8a1f'],['Contabilizzazione','#ffb35c'],['Appalti e contratti','#c792ea'],['Legionella e acque','#5fd0c4'],['IVA','#e8cfb0'],['Tubazioni','#4fa3d9'],['Gas e sicurezza','#f4d03f'],['Incentivi','#7bc47f']];
+var NORM_CSS2='<style>'+
+'.sc .fam{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}'+
+'.sc .ft{position:relative;text-align:left;background:#26160d;border:2px solid #4a2c18;border-radius:16px;padding:14px 16px 14px 24px;overflow:hidden;color:#fdebd3;min-height:96px;cursor:pointer;font-family:inherit}'+
+'.sc .ft:before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--c)}'+
+'.sc .ft .cn{font-family:"Barlow Condensed",sans-serif;font-size:44px;font-weight:700;line-height:.9;color:var(--c)}'+
+'.sc .ft .nm{font-family:"Barlow Condensed",sans-serif;font-size:19px;text-transform:uppercase;letter-spacing:.03em;line-height:1.05;margin-top:6px}'+
+'.sc .ft.on{border-color:var(--c);background:#33200f}.sc .ft:hover{border-color:var(--c)}'+
+'.sc .nr-c{position:relative;overflow:hidden;padding-left:28px}'+
+'.sc .nr-c:before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--c)}'+
+'.sc .nr-c:hover{border-color:var(--c)}'+
+'.sc .nr-tg{display:flex;gap:6px;flex-wrap:wrap}'+
+'.sc .nr-tg button{min-height:26px;padding:0 10px;border-radius:13px;border:1px solid #4a2c18;background:#1b110b;color:#c9a98a;font-size:12px;cursor:pointer;font-family:inherit}'+
+'</style>';
+function normAmb(r){return[r.ambito].concat(String(r.altri_ambiti||'').split(';').map(function(x){return x.trim()})).filter(Boolean)}
+function normCol(a){var f=NORM_FAM.find(function(x){return x[0]===a});return f?f[1]:'#9a8f85'}
 function normDisegna(){
   const q=($('#search').value||'').trim().toLowerCase(),m=MODULI.riferimenti;
   if(q.length>=3&&normTxt.q!==q&&normReq!==q){normReq=q;clearTimeout(normTim);normTim=setTimeout(function(){normCerca(q)},350)}
   if(q.length<3){normTxt={q:'',f:{}};normReq='';normTok++}
-  const tipi=[...new Set(dati.map(function(r){return r.tipo}).filter(Boolean))].sort(),ambs=[...new Set(dati.map(function(r){return r.ambito}).filter(Boolean))].sort();
-  let rows=dati.filter(function(r){return(!normF.tipo||r.tipo===normF.tipo)&&(!normF.amb||r.ambito===normF.amb)});
+  const tipi=[...new Set(dati.map(function(r){return r.tipo}).filter(Boolean))].sort();
+  let rows=dati.filter(function(r){return(!normF.tipo||r.tipo===normF.tipo)&&(!normF.amb||normAmb(r).indexOf(normF.amb)>-1)});
   const inTxt=function(r){return normTxt.q===q&&r.file&&normTxt.f[r.file]};
   if(q)rows=rows.filter(function(r){return m.campi.some(function(c){return sv(r[c.k]).toLowerCase().includes(q)})||inTxt(r)});
-  rows.sort(function(a,b){return String(a.tipo||'').localeCompare(String(b.tipo||''),'it')||String(b.data_atto||'').localeCompare(String(a.data_atto||''))||String(a.titolo||'').localeCompare(String(b.titolo||''),'it')});
-  let h=SC_CSS+NORM_CSS+'<div class="sc">';
+  rows.sort(function(a,b){return String(a.ambito||'').localeCompare(String(b.ambito||''),'it')||String(b.data_atto||'').localeCompare(String(a.data_atto||''))||String(a.titolo||'').localeCompare(String(b.titolo||''),'it')});
+  let h=SC_CSS+NORM_CSS+NORM_CSS2+'<div class="sc">';
   h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
-  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">Leggi, decreti, ordinanze, norme tecniche</div><h1 class="sc-t">Normativa e riferimenti</h1><div class="sc-s">'+dati.length+' schede · la ricerca in alto cerca anche dentro il testo dei documenti</div></div>';
+  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">Leggi, decreti, ordinanze, norme tecniche</div><h1 class="sc-t">Normativa e riferimenti</h1><div class="sc-s">'+dati.length+' schede in '+NORM_FAM.length+' famiglie · la ricerca in alto cerca anche dentro il testo dei documenti</div></div>';
+  h+='<div class="fam"><button type="button" class="ft'+(normF.amb?'':' on')+'" style="--c:#9a8f85" data-na=""><div class="cn">'+dati.length+'</div><div class="nm">Tutte</div></button>'+NORM_FAM.map(function(f){var n=dati.filter(function(r){return normAmb(r).indexOf(f[0])>-1}).length;return'<button type="button" class="ft'+(normF.amb===f[0]?' on':'')+'" style="--c:'+f[1]+'" data-na="'+esc(f[0])+'"><div class="cn">'+n+'</div><div class="nm">'+esc(f[0])+'</div></button>'}).join('')+'</div>';
+  if(normF.amb&&!NORM_FAM.some(function(f){return f[0]===normF.amb}))h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Etichetta:</span><button type="button" class="sc-ch on" data-na="">'+esc(normF.amb)+' ×</button></div>';
   h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Tipo:</span>'+tipi.map(function(t){return'<button type="button" class="sc-ch'+(normF.tipo===t?' on':'')+'" data-nt="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>';
-  h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Ambito:</span>'+ambs.map(function(t){return'<button type="button" class="sc-ch'+(normF.amb===t?' on':'')+'" data-na="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>';
-  if(!q&&(!normF.tipo||normF.tipo==='Ordinanza sindacale')&&!normF.amb){
+  if(!q&&(!normF.tipo||normF.tipo==='Ordinanza sindacale')&&(!normF.amb||normF.amb==='Esercizio e orari')){
     h+=SC_PIPE+'<div class="sc-box sc-lg">'+scH('Ordinanze del Comune di Milano, per stagione termica')+'<div class="tw"><table class="scr"><thead><tr><th>Stagione</th><th>Atto</th><th>Periodo</th><th>Orario massimo</th><th>Temperatura</th><th>Originale</th></tr></thead><tbody>'+NORM_ORD.map(function(o){return'<tr><td><b>'+o[0]+'</b></td><td>'+esc(o[1])+'</td><td>'+esc(o[2])+'</td><td>'+esc(o[3])+'</td><td>'+esc(o[4])+'</td><td>'+(o[5].length?o[5].map(function(f,i){return'<button type="button" class="sc-ch" data-open="'+f+'">'+(o[5].length>1?'Ord. '+(i?'55':'53'):'Apri')+'</button>'}).join(' '):'')+'</td></tr>'}).join('')+'</tbody></table></div><p class="sc-note">Temperatura massima dell\'aria negli ambienti, con 2 °C di tolleranza. Per gli edifici industriali e artigianali e per le esclusioni valgono i limiti indicati in ciascuna ordinanza.</p></div>';
   }
-  h+=SC_PIPE+'<div class="sc-box">'+scH('Schede ('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')');
+  h+=SC_PIPE+'<div class="sc-box">'+scH((normF.amb||'Tutte le schede')+' ('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')');
   if(q.length>=3&&normTxt.q!==q)h+='<p class="sc-note">Ricerca nel testo dei documenti in corso…</p>';
   h+='<div class="nr-g">'+rows.map(function(r){
-    const tx=inTxt(r),sx=sv(r.testo);
-    return'<div class="nr-c"><div><span class="nr-b">'+esc(r.tipo||'Senza tipo')+'</span>'+(r.ambito?'<span class="nr-m">'+esc(r.ambito)+'</span>':'')+'</div><div class="nr-t">'+esc(r.titolo)+'</div><div class="nr-m">'+(r.data_atto?esc(fmtD(r.data_atto))+' · ':'')+esc(r.fonte||'')+'</div><div class="nr-x">'+esc(sx)+'</div>'+
+    const tx=inTxt(r),sx=sv(r.testo),alt=normAmb(r).slice(1);
+    return'<div class="nr-c" style="--c:'+normCol(r.ambito)+'"><div><span class="nr-b">'+esc(r.tipo||'Senza tipo')+'</span>'+(r.ambito?'<span class="nr-m">'+esc(r.ambito)+'</span>':'')+'</div><div class="nr-t">'+esc(r.titolo)+'</div><div class="nr-m">'+(r.data_atto?esc(fmtD(r.data_atto))+' · ':'')+esc(r.fonte||'')+'</div><div class="nr-x">'+esc(sx)+'</div>'+
+      (alt.length?'<div class="nr-tg">'+alt.map(function(a){return'<button type="button" data-na="'+esc(a)+'">'+esc(a)+'</button>'}).join('')+'</div>':'')+
       (tx&&tx.sn.length?'<div class="nr-m">'+(tx.n?tx.n+' occorrenze nel testo':'')+'</div>'+tx.sn.map(function(s){return'<div class="nr-sn">…'+normHl(s,q)+'…</div>'}).join(''):'')+
       '<div class="nr-a">'+(r.file?'<button type="button" class="sc-ch" data-open="'+esc(r.file)+'">Apri originale</button>':'')+(r.link?'<a class="sc-ch" href="'+esc(r.link)+'" target="_blank" rel="noopener">Link</a>':'')+'<button type="button" class="sc-ch" data-mod="'+r.id+'">Modifica</button></div></div>'}).join('')+'</div>'+(rows.length?'':'<p class="sc-note">Nessuna scheda trovata.</p>')+'</div></div>';
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-nt]').forEach(function(b){b.onclick=function(){normF.tipo=normF.tipo===b.dataset.nt?'':b.dataset.nt;normDisegna()}});
-  document.querySelectorAll('[data-na]').forEach(function(b){b.onclick=function(){normF.amb=normF.amb===b.dataset.na?'':b.dataset.na;normDisegna()}});
+  document.querySelectorAll('[data-na]').forEach(function(b){b.onclick=function(){var a=b.dataset.na;normF.amb=(a&&normF.amb===a)?'':a;normDisegna();window.scrollTo(0,0)}});
   document.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){normApri(b.dataset.open,b)}});
   document.querySelectorAll('[data-mod]').forEach(function(b){b.onclick=function(){modulo(dati.find(function(x){return String(x.id)===b.dataset.mod}),'riferimenti',normVista)}});
   $('#nrnew').onclick=function(){modulo({},'riferimenti',normVista)};
