@@ -1137,6 +1137,7 @@ function contabDisegna(){
   const P=C.per[ct.periodo]||{},nomi=Object.keys(P).sort(),primo=ct.periodo===C.periodi[0];
   let h='<div class="bar"><h2 class="hd"><span class="hico">'+ico('contabilita')+'</span><span>Contabilità <span class="muted">('+ctSal.length+' SAL)</span></span></h2><span class="grp"><button class="ghost" id="esq">Esporta SAL</button><button id="nsal">+ Nuovo SAL</button></span></div>';
   h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Importi netti, IVA esclusa, con gli oneri della sicurezza. «Contabilizzato» è la somma dei SAL emessi; il residuo è il tetto meno il contabilizzato e non tiene conto degli ordini già emessi che non sono ancora andati a SAL.</p>';
+  h+='<div class="chips" style="align-items:center"><span class="muted" style="font-size:13px">Dettaglio per contratto:</span>'+['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'].filter(function(n){return ctSal.some(function(s){return s.lotto===n})||ctQuadro.some(function(q){return q.lotto===n})}).map(function(n){return '<button type="button" class="chip" data-vai="'+n+'">'+esc(n.replace('LOTTO','Lotto'))+' → scheda</button>'}).join('')+'</div>';
   if(C.periodi.length>1)h+='<div class="chips">'+C.periodi.map(p=>'<button type="button" class="chip'+(p===ct.periodo?' on':'')+'" data-c="periodo" data-v="'+esc(p)+'">'+esc(p)+'</button>').join('')+'</div>';
   const avv=[];
   if(primo)for(const n of nomi){const L=P[n];if(L.ult&&L.ult.progressivo){const d=r2(L.fatto-L.ult.progressivo);if(Math.abs(d)>0.01)avv.push('<b>'+esc(n.replace('LOTTO','Lotto'))+'</b>: il progressivo riportato nell’ultimo SAL (n. '+L.ult.numero+') è '+eur(L.ult.progressivo)+', la somma dei SAL emessi è '+eur(L.fatto)+': differenza di '+eur(Math.abs(d))+'. Da verificare con la contabilità.')}}
@@ -1150,6 +1151,7 @@ function contabDisegna(){
   document.querySelectorAll('tr[data-qd]').forEach(t=>t.onclick=()=>modulo(ctQuadro.find(x=>String(x.id)===t.dataset.qd),'quadro',contabVista));
   $('#nsal').onclick=()=>modulo({periodo:ct.periodo,lotto:ct.lotto||'',stato:'Emesso'},'sal',contabVista);
   $('#esq').onclick=()=>esporta('sal',ctSal);
+  document.querySelectorAll('[data-vai]').forEach(function(b){b.onclick=async function(){await apri('contratti');var k=b.dataset.vai;var r=dati.find(function(x){return scKey(x)===k&&(k!=='LEGIONELLA'||/rentokil/i.test(x.fornitore||''))});if(r)apriSchedaCt(r)}});
   const nq=$('#nqd');if(nq)nq.onclick=()=>modulo({periodo:ct.periodo,lotto:ct.lotto||''},'quadro',contabVista);
 }
 function listaSal(){
