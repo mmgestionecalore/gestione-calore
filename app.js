@@ -498,7 +498,7 @@ function ctD(s){var p=String(s||'').slice(0,10).split('-');return p.length<3?nul
 function ctF(d){return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()}
 function ctE(n){return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function ctOggi(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
-function ctStato(r){var s=r.stato||'';return /^terminat|chius/i.test(s)?'chiuso':/firma|aggiudicat/i.test(s)?'firma':'corso'}
+function ctStato(r){var s=r.stato||'';return /^in corso/i.test(s)?'corso':/^terminat|chius/i.test(s)?'chiuso':/firma|aggiudicat/i.test(s)?'firma':'corso'}
 function ctSost(r){if(r.importo_sostenuto!=null&&r.importo_sostenuto!=='')return +r.importo_sostenuto;if(salCt&&(r.lotto==='LOTTO 1'||r.lotto==='LOTTO 2'||r.lotto==='LOTTO TLR'))return salCt[r.lotto]||0;return null}
 function ctBud(r){return (+r.importo_attuale||+r.importo_base||0)+(+r.budget_aggiuntivo||0)}
 function caricaSalCt(){if(salCarico)return;salCarico=true;sb.from('sal').select('lotto,netto,stato').then(function(x){salCt={};(x.data||[]).forEach(function(y){if(y.stato==='Annullato')return;salCt[y.lotto]=(salCt[y.lotto]||0)+(+y.netto||0)});if(corrente==='contratti')disegna()})}
@@ -510,7 +510,7 @@ function ctHero(rows){
   var mk='';[0,90,180,270,365].forEach(function(d){var an=d/365*180,i=pt(an,130),o=pt(an,168),t=pt(an,186);mk+='<line x1="'+i[0].toFixed(1)+'" y1="'+i[1].toFixed(1)+'" x2="'+o[0].toFixed(1)+'" y2="'+o[1].toFixed(1)+'" stroke="#fdebd3" stroke-width="3" stroke-linecap="round"/><text x="'+t[0].toFixed(1)+'" y="'+(t[1]+5).toFixed(1)+'" fill="#e8cfb2" font-size="15" text-anchor="middle">'+(d===365?'365+':d)+'</text>'});
   var col=CT_COL[best.r.lotto]||'#ff8a1f',z1=90/365*180,z2=180/365*180;
   var svg='<svg viewBox="0 0 400 240" role="img" aria-label="Manometro: prossima scadenza tra '+gg+' giorni"><path d="'+ctArc(200,200,150,0,180)+'" fill="none" stroke="#33200f" stroke-width="30"/><path d="'+ctArc(200,200,150,0,z1)+'" fill="none" stroke="#ff5a6e" stroke-width="22"/><path d="'+ctArc(200,200,150,z1,z2)+'" fill="none" stroke="#ffc247" stroke-width="22"/><path d="'+ctArc(200,200,150,z2,180)+'" fill="none" stroke="#8fd694" stroke-width="22"/>'+mk+'<g class="ct-nd" style="transform:rotate('+(a-90).toFixed(1)+'deg)"><path d="M196 200 L200 78 L204 200 Z" fill="#fdebd3"/></g><circle cx="200" cy="200" r="16" fill="#ff8a1f" stroke="#1b110b" stroke-width="4"/></svg>';
-  return '<div class="ct-hero"><div class="ct-hg">'+svg+'</div><div class="ct-hi"><div class="ct-k">Prossima scadenza</div><div class="ct-big">'+gg+' <small>'+(gg===1?'GIORNO':'GIORNI')+'</small></div><div class="ct-t" style="color:'+col+'">'+esc(best.r.nome)+'</div><div class="ct-m">'+esc(best.r.fornitore||'')+' · scade il '+ctF(best.f)+'</div></div></div>'}
+  return '<div class="ct-hero"><div class="ct-hg">'+svg+'</div><div class="ct-hi"><div class="ct-k">Prossima scadenza</div><div class="ct-big">'+gg.toLocaleString('it-IT')+' <small>'+(gg===1?'GIORNO':'GIORNI')+'</small></div><div class="ct-t" style="color:'+col+'">'+esc(best.r.nome)+'</div><div class="ct-m">'+esc(best.r.fornitore||'')+' · scade il '+ctF(best.f)+'</div></div></div>'}
 function ctCard(r){
   var col=CT_COL[r.lotto]||'#ff8a1f',ini=ctD(r.data_inizio),fine=ctD(r.scadenza),oggi=ctOggi();
   var tp=(ini&&fine&&fine>ini)?Math.max(0,Math.min(1,(oggi-ini)/(fine-ini))):null;
