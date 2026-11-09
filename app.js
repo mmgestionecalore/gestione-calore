@@ -276,7 +276,7 @@ async function leggiTutto(m){
 }
 
 /* ---------- elenchi ---------- */
-async function apri(k){
+async function apri(k){schedaCt=null;
   if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens=''}
   corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':(k==='altro'||(MODULI[k]&&MODULI[k].altro)?'altro':k))));
@@ -341,6 +341,7 @@ function disegna(){
   if(rows.length>limite)h+='<p><button class="ghost" id="piu">Mostra altri '+Math.min(LIM,rows.length-limite)+' (ne restano '+(rows.length-limite)+')</button></p>';
   if(corrente==='contatti'&&vistaRubrica)h=h.slice(0,h.indexOf('<div class="tw">'))+rubricaCont(rows);
   if(corrente==='contratti'&&vistaCruscotto)h=h.slice(0,h.indexOf('<div class="tw">'))+cruscottoCont(rows);
+  if(corrente==='contratti'&&schedaCt!=null){var _sr=dati.find(function(x){return String(x.id)===String(schedaCt)});if(_sr)h=schedaCtHtml(_sr);else schedaCt=null}
   if(corrente==='impianti'&&vistaMappa)h=h.slice(0,h.indexOf('<div class="tw">'))+mappaImp(rows);
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{const p=b.dataset.pi;if(p==='mappa'){vistaMappa=true;apri('impianti')}else{if(p==='impianti')vistaMappa=false;apri(p)}});
@@ -348,7 +349,7 @@ function disegna(){
   document.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{vistaRubrica=b.dataset.ct==='rubrica';disegna()});
   if(corrente==='contatti'&&vistaRubrica)bindRubrica();
   document.querySelectorAll('[data-cc]').forEach(b=>b.onclick=()=>{vistaCruscotto=b.dataset.cc==='cruscotto';disegna()});
-  if(corrente==='contratti'&&vistaCruscotto)bindCruscotto();
+  if(corrente==='contratti'&&schedaCt!=null)bindScheda();else if(corrente==='contratti'&&vistaCruscotto)bindCruscotto();
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
@@ -546,7 +547,203 @@ function cruscottoCont(rows){
   return h+'</div>'}
 function bindCruscotto(){
   document.querySelectorAll('[data-ctf]').forEach(function(b){b.onclick=function(){filtroCt=b.dataset.ctf;disegna()}});
-  document.querySelectorAll('.ct-c,.ct-sm').forEach(function(t){t.onclick=function(){var m=MODULI.contratti,r=dati.find(function(x){return String(x.id)===t.dataset.id});if(r)(m.ro?dettaglio(r):m.vista?schedaCens(r):m.dossier?scheda(r):modulo(r))}})}
+  document.querySelectorAll('.ct-c,.ct-sm').forEach(function(t){t.onclick=function(){var m=MODULI.contratti,r=dati.find(function(x){return String(x.id)===t.dataset.id});if(r)apriSchedaCt(r)}})}
+
+/* ---------- Scheda contratto (contabilità dentro il contratto) ---------- */
+var schedaCt=null,schedaD=null,schedaF={tipo:'',anno:'',nasc:true};
+var SC_FL='<svg class="CLS" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2s5.2 4.6 5.2 10.2A5.2 5.2 0 0 1 12 17.4a5.2 5.2 0 0 1-5.2-5.2c0-2.2 1-3.8 2.1-4.9.2 1.5 1 2.4 1.9 2.7C10.4 7.4 10.9 4.8 12 2zm0 18.5a3 3 0 0 1-3-3c.9.6 1.9.9 3 .9s2.1-.3 3-.9a3 3 0 0 1-3 3z"/></svg>';
+var SC_PIPE='<div class="sc-pipe" aria-hidden="true"><svg class="sc-valve" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="20" cy="20" r="12"/><circle cx="20" cy="20" r="3" fill="currentColor"/><path d="M20 8v9M20 23v9M8 20h9M23 20h9"/></svg></div>';
+var SC_CSS='<style>'+
+'.sc{background:#1b110b;color:#fdebd3;border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:20px;font-family:Barlow,system-ui,sans-serif}'+
+'.sc button{font-family:inherit;cursor:pointer}'+
+'.sc-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}'+
+'.sc-b{min-height:44px;padding:0 18px;border-radius:14px;border:2px solid #6b3a1c;background:transparent;color:#fdebd3;font-size:15px;font-weight:600}'+
+'.sc-b.p{background:#ff8a1f;border-color:#ff8a1f;color:#1b110b;font-weight:700}'+
+'.sc-b:focus-visible,.sc-ch:focus-visible{outline:3px solid #fdebd3;outline-offset:2px}'+
+'.sc-ban{position:relative;overflow:hidden;border-radius:22px;border:1px solid #4a2c18;padding:24px 26px;background:linear-gradient(120deg,#3d2112,#26160d 70%)}'+
+'.sc-ban:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,179,92,.06) 0 5px,transparent 5px 13px);pointer-events:none}'+
+'.sc-ban>*{position:relative}'+
+'.sc-ban>.sc-fl{position:absolute;right:22px;top:12px;width:88px;height:88px;color:#ff8a1f;transform-origin:50% 100%;animation:scfl 2.6s ease-in-out infinite}'+
+'@keyframes scfl{0%,100%{transform:scale(1)}50%{transform:scale(1.07,1.13)}}'+
+'.sc-k{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#c9a98a;font-weight:600}'+
+'.sc-t{margin:2px 0 0;font-family:"Barlow Condensed",sans-serif;font-size:46px;line-height:1;text-transform:uppercase;letter-spacing:.02em;max-width:calc(100% - 100px)}'+
+'.sc-s{font-size:15px;color:#e8cfb2;margin-top:4px}'+
+'.sc-pipe{position:relative;height:14px;border-radius:7px;background:linear-gradient(180deg,#a85a28,#5a3016 45%,#2a170c);box-shadow:0 2px 0 #120a05;margin:4px 0}'+
+'.sc-pipe:before{content:"";position:absolute;left:12px;right:12px;top:4px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,rgba(255,179,92,.55) 0 14px,rgba(255,179,92,.08) 14px 28px);animation:scfw 1.2s linear infinite}'+
+'@keyframes scfw{to{background-position:28px 0}}'+
+'.sc-valve{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;color:#ff8a1f;background:#1b110b;border-radius:50%;padding:2px}'+
+'.sc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}'+
+'.sc-pl{position:relative;border:2px solid #6b3a1c;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:9px;background:radial-gradient(circle at 10px 10px,#7a4522 3px,transparent 4px),radial-gradient(circle at calc(100% - 10px) 10px,#7a4522 3px,transparent 4px),radial-gradient(circle at 10px calc(100% - 10px),#7a4522 3px,transparent 4px),radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#7a4522 3px,transparent 4px),linear-gradient(160deg,#33200f,#26160d)}'+
+'.sc-pl.sc-dash{border-style:dashed}'+
+'.sc-pl[data-qd]{cursor:pointer}.sc-pl[data-qd]:hover{border-color:#ff8a1f}'+
+'.sc-n{font-family:"Barlow Condensed",sans-serif;font-size:42px;font-weight:700;line-height:1}'+
+'.sc-n small{font-size:18px;color:#e8cfb2;letter-spacing:.05em;text-transform:uppercase}'+
+'.sc-g{width:150px;max-width:100%;height:auto;align-self:center}'+
+'.sc-m{position:relative;height:16px;border-radius:8px;background:#33200f;overflow:hidden;border:1px solid #4a2c18}'+
+'.sc-m i{display:block;height:100%;background-image:linear-gradient(90deg,#5cc3e6,#ffc247 55%,#ff5a6e);animation:scgr 1.3s ease-out both}'+
+'@keyframes scgr{from{width:0}}'+
+'.sc-m:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(27,17,11,.6) calc(10% - 1px) 10%)}'+
+'.sc-tk{position:absolute;top:-2px;bottom:-2px;width:3px;background:#fdebd3;z-index:2}'+
+'.sc-bd{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:12px;align-self:flex-start}'+
+'.sc-h{margin:0;display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed",sans-serif;font-size:28px;text-transform:uppercase;letter-spacing:.03em}'+
+'.sc-h svg{width:26px;height:26px;color:#ff8a1f;flex:none}'+
+'.sc-box{background:#26160d;border:1px solid #4a2c18;border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}'+
+'.sc-per{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;align-items:baseline;border-bottom:1px dashed #4a2c18;padding-bottom:6px;margin-top:6px}'+
+'.sc-per b{font-family:"Barlow Condensed",sans-serif;font-size:22px;text-transform:uppercase;letter-spacing:.04em;color:#ffb35c}'+
+'.sc-per span{font-size:14px;color:#e8cfb2}'+
+'.sc-vg{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}'+
+'.sc-row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}'+
+'.sc-row b{font-size:17px}'+
+'.sc-v{font-size:14px;font-weight:600;color:#a9e4ad}.sc-v.neg{color:#ff8a98}'+
+'.sc-kv{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:#c9a98a}'+
+'.sc-kv span{display:flex;flex-direction:column}.sc-kv b{font-size:15px;color:#fdebd3;font-weight:600}'+
+'.sc-nt{font-size:13px;color:#c9a98a;border-top:1px dashed #3a2314;padding-top:8px}'+
+'.sc-hint{font-size:12px;color:#8a6a4e}'+
+'.sc-tw{overflow-x:auto}'+
+'.sc table{width:100%;border-collapse:collapse}'+
+'.sc td,.sc th{padding:9px 10px;text-align:right;font-size:15px;border-bottom:1px dashed #3a2314;white-space:nowrap;color:#fdebd3;background:none}'+
+'.sc th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#c9a98a;font-weight:600}'+
+'.sc td:first-child,.sc th:first-child,.sc td.l,.sc th.l{text-align:left}'+
+'.sc tr.tot td{font-weight:700;color:#ffb35c}'+
+'.sc tr.an td{opacity:.55;text-decoration:line-through}'+
+'.sc tr[data-sal]{cursor:pointer}.sc tr[data-sal]:hover td{background:#2f1c10}'+
+'.sc-chs{display:flex;gap:8px;flex-wrap:wrap}'+
+'.sc-ch{min-height:40px;padding:0 14px;border-radius:20px;border:2px solid #4a2c18;background:#26160d;color:#fdebd3;font-size:14px;font-weight:600}'+
+'.sc-ch.on{background:#ff8a1f;border-color:#ff8a1f;color:#1b110b}'+
+'.sc-st{font-size:13px;font-weight:600;padding:2px 9px;border-radius:10px}'+
+'.sc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}'+
+'.sc-note{font-size:14px;color:#e8cfb2;margin:0}'+
+'@media(max-width:640px){.sc{padding:14px}.sc-t{font-size:32px;max-width:100%}.sc-ban>.sc-fl{display:none}.sc-vg{grid-template-columns:1fr}}'+
+'@media(prefers-reduced-motion:reduce){.sc *,.sc *:before{animation:none!important}}'+
+'</style>';
+function scKey(r){return r.lotto==='LOTTO TLR'?'TLR':r.lotto}
+function scHaCont(r){var k=scKey(r);return k==='LOTTO 1'||k==='LOTTO 2'||k==='TLR'||(k==='LEGIONELLA'&&/rentokil/i.test(r.fornitore||''))}
+function scGiorni(a,b){return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5)}
+function apriSchedaCt(r){
+  schedaCt=r.id;schedaD=null;schedaF={tipo:'',anno:'',nasc:true};
+  if(!scHaCont(r)){schedaD={sal:[],quadro:[]};disegna();window.scrollTo(0,0);return}
+  disegna();window.scrollTo(0,0);caricaSchedaCt(r);
+}
+function caricaSchedaCt(r){
+  var k=scKey(r),id=r.id;
+  Promise.all([sb.from('sal').select('*').eq('lotto',k).order('numero',{ascending:false}),sb.from('quadro').select('*').eq('lotto',k)]).then(function(x){
+    if(schedaCt!==id)return;
+    schedaD={sal:x[0].data||[],quadro:x[1].data||[],err:(x[0].error||x[1].error)};disegna();
+  });
+}
+function scMeter(f,t,base){
+  var q=t>0?f/t*100:0,p=Math.max(0,Math.min(100,q));
+  var h='<div class="sc-m" role="img" aria-label="'+fmtN(q,1)+'% utilizzato"><i style="width:'+p.toFixed(1)+'%;background-size:'+(p>0?(10000/p).toFixed(1):100)+'% 100%"></i>';
+  if(base&&t>0&&base<t)h+='<b class="sc-tk" style="left:'+(base/t*100).toFixed(1)+'%" title="Importo base"></b>';
+  return h+'</div>';
+}
+function scGauge(p){
+  var a=Math.max(0,Math.min(100,p))*1.8-90,L=Math.PI*60,pp=Math.max(0,Math.min(100,p));
+  return '<svg class="sc-g" viewBox="0 0 140 88" role="img" aria-label="'+Math.round(p)+'% del tempo trascorso"><path d="M10 74A60 60 0 0 1 130 74" fill="none" stroke="#33200f" stroke-width="12"/><path d="M10 74A60 60 0 0 1 130 74" fill="none" stroke="#ffc247" stroke-width="12" stroke-dasharray="'+(L*pp/100).toFixed(1)+' '+L.toFixed(1)+'"/><g transform="rotate('+a.toFixed(1)+' 70 74)"><path d="M67.5 74L70 26L72.5 74z" fill="#fdebd3"/></g><circle cx="70" cy="74" r="7" fill="#ff8a1f" stroke="#1b110b" stroke-width="3"/></svg>';
+}
+function scH(t){return '<h2 class="sc-h">'+SC_FL.replace('CLS','')+esc(t)+'</h2>'}
+function scVoce(nome,x,q){
+  var res=r2(x.tetto-x.fatto),p=x.tetto>0?x.fatto/x.tetto*100:null,ag=(x.base&&x.tetto>x.base)?r2(x.tetto-x.base):0;
+  var sit=x.tetto?(res<0?'sforamento '+eur(-res):(x.n?'residuo '+eur(res):'non ancora contabilizzato')):'senza tetto nel quadro';
+  return '<div class="sc-pl'+(x.n?'':' sc-dash')+'"'+(q?' data-qd="'+esc(q.id)+'"':'')+'><div class="sc-row"><b>'+esc(nome)+'</b><span class="sc-v'+(res<0?' neg':'')+'">'+sit+'</span></div>'+scMeter(x.fatto,x.tetto,x.base)+
+    '<div class="sc-kv"><span>Importo base<b>'+eur(x.base)+'</b></span><span>Importo attuale<b>'+eur(x.tetto)+'</b></span>'+(ag>0?'<span>Aumento<b>+'+eur(ag)+'</b></span>':'')+'<span>Contabilizzato<b>'+eur(x.fatto)+(p!==null?' ('+fmtN(p,1)+'%)':'')+'</b></span><span>SAL<b>'+x.n+'</b></span></div>'+
+    (q&&q.note?'<div class="sc-nt">'+esc(q.note)+'</div>':'')+(q?'<div class="sc-hint">Tocca per correggere la voce</div>':'')+'</div>';
+}
+function scRif(s){
+  if(s.periodo_dal)return fmtD(s.periodo_dal)+' – '+(s.periodo_al?fmtD(s.periodo_al):'');
+  return (s.n_ordini?s.n_ordini+(s.n_ordini===1?' ordine':' ordini')+' · ':'')+(s.anno?'anno '+s.anno:'');
+}
+function schedaCtHtml(r){
+  var k=scKey(r),col=CT_COL[r.lotto]||'#ff8a1f',D=schedaD,has=scHaCont(r),h=SC_CSS+'<div class="sc">';
+  h+='<div class="sc-top"><button class="sc-b" id="scBack">← Torna ai contratti</button><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="scMod">Modifica contratto</button>';
+  if(has&&D)h+='<button class="sc-b" id="scEsp">Esporta SAL</button><button class="sc-b p" id="scNew">+ Nuovo SAL su questo contratto</button>';
+  h+='</span></div>';
+  var st=ctStato(r),stl=st==='corso'?'In corso':(st==='chiuso'?'Terminato':'In firma');
+  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:'+col+'">'+esc(r.lotto||'')+' · '+stl+'</div><h1 class="sc-t">'+esc(r.nome||'')+'</h1><div class="sc-s">'+esc(r.fornitore||'')+(r.data_inizio?' · dal '+fmtD(r.data_inizio):'')+(r.scadenza?' · al '+fmtD(r.scadenza):'')+'</div></div>';
+  var oggi=new Date(),pt=null,gg=null;
+  if(r.data_inizio&&r.scadenza){var tot=scGiorni(r.data_inizio,r.scadenza),pas=Math.round((oggi-new Date(r.data_inizio+'T00:00:00'))/864e5);pt=tot>0?Math.max(0,Math.min(100,pas/tot*100)):null}
+  if(r.scadenza)gg=Math.round((new Date(r.scadenza+'T00:00:00')-oggi)/864e5);
+  var so=ctSost(r),bu=ctBud(r),pc=bu>0?so/bu*100:null,rit='';
+  if(pc!==null&&pt!==null){var df=(pc-pt)/100;rit=df>.1?'<span class="sc-bd" style="background:#4a3a12;color:#ffd985">Spesa in anticipo</span>':(df<-.1?'<span class="sc-bd" style="background:#123344;color:#9fdcf5">Spesa sotto il ritmo</span>':'<span class="sc-bd" style="background:#1f3a22;color:#a9e4ad">In linea</span>')}
+  h+=SC_PIPE+'<div class="sc-grid">';
+  h+='<div class="sc-pl"><div class="sc-k">Tempi</div>'+(pt!==null?scGauge(pt)+'<div class="sc-n">'+Math.round(pt)+'% <small>trascorso</small></div><div class="sc-s" style="margin:0">'+(st==='chiuso'?'Contratto terminato':(gg>=0?'Mancano '+gg.toLocaleString('it-IT')+' giorni alla scadenza del '+fmtD(r.scadenza):'Scaduto da '+(-gg).toLocaleString('it-IT')+' giorni (scadenza '+fmtD(r.scadenza)+')'))+'</div>':'<div class="sc-s">Inserisci data inizio e scadenza per vedere i tempi.</div>')+'</div>';
+  h+='<div class="sc-pl"><div class="sc-k">Costi · contratto intero</div>'+(pc!==null?'<div class="sc-n">'+Math.round(pc)+'% <small>speso</small></div>'+scMeter(so,bu)+'<div class="sc-s" style="margin:0">'+eur(so)+' su '+eur(bu)+'</div>'+rit:'<div class="sc-n">'+eur(so)+'</div><div class="sc-s">Budget non inserito.</div>')+'</div>';
+  var C=null,L=null;
+  if(has&&D){C=calcContab(D.sal,D.quadro);L=(C.per[C.attivo]||{})[k]}
+  if(L){var T=totV(L),pq=T.tetto>0?T.fatto/T.tetto*100:0;
+    h+='<div class="sc-pl"><div class="sc-k">'+esc(C.attivo)+' · tetto</div><div class="sc-n">'+fmtN(pq,0)+'% <small>contabilizzato</small></div>'+scMeter(T.fatto,T.tetto)+'<div class="sc-s" style="margin:0">Residuo '+eur(r2(T.tetto-T.fatto))+' su '+eur(T.tetto)+'</div></div>';
+  }
+  h+='</div>';
+  if(!has){h+='<p class="sc-note">Per questo contratto non ci sono ancora SAL né quadro economico in app.</p>'}
+  else if(!D){h+='<p class="sc-note">Caricamento dei dati contabili…</p>'}
+  else{
+    if(D.err)h+='<p class="sc-note" style="color:#ff8a98">Errore nel caricamento: '+esc(D.err.message||'')+'</p>';
+    if(L){var T2=totV(L);
+      h+='<div class="sc-tiles"><div class="sc-pl"><div class="sc-k">Tetto</div><div class="sc-n">'+eur(T2.tetto)+'</div></div><div class="sc-pl"><div class="sc-k">Contabilizzato</div><div class="sc-n">'+eur(T2.fatto)+'</div></div><div class="sc-pl"><div class="sc-k">Residuo</div><div class="sc-n" style="color:#a9e4ad">'+eur(r2(T2.tetto-T2.fatto))+'</div></div></div>';
+    }
+    h+='<p class="sc-note">Importi netti, IVA esclusa, con gli oneri della sicurezza. «Contabilizzato» è la somma dei SAL emessi; il residuo è il tetto meno il contabilizzato e non tiene conto degli ordini già emessi che non sono ancora andati a SAL.</p>';
+    h+=SC_PIPE+'<div class="sc-box">'+scH('Quadro economico · tetti per voce ('+D.quadro.length+')')+'<p class="sc-note">Importo base: valore contrattuale. Importo attuale: dopo atti di sottomissione e variazioni. Da qui partono i residui.</p>';
+    var lab=function(v){return k==='TLR'&&v==='Canone'?'Utenze (quota consumo)':v};
+    C.periodi.forEach(function(p){
+      var Lp=(C.per[p]||{})[k];if(!Lp)return;var Tp=totV(Lp);
+      h+='<div class="sc-per"><b>'+esc(p)+'</b><span>Tetto '+eur(Tp.tetto)+' · contabilizzato '+eur(Tp.fatto)+' · residuo '+eur(r2(Tp.tetto-Tp.fatto))+'</span></div><div class="sc-vg">';
+      ordinaVoci(Lp).forEach(function(v){h+=scVoce(lab(v),Lp.voci[v],D.quadro.find(function(q){return q.voce===v&&(q.periodo||'—')===p}))});
+      h+='</div>';
+    });
+    var qs=D.quadro.filter(function(q){return q.voce===QUOTA}).sort(function(a,b){return String(a.periodo).localeCompare(String(b.periodo))});
+    h+='</div>';
+    var an={},tipi=[];
+    C.periodi.forEach(function(p){var Lp=(C.per[p]||{})[k];if(!Lp)return;Object.keys(Lp.anni).forEach(function(a){an[a]=an[a]||{};Object.keys(Lp.anni[a]).forEach(function(t){if(tipi.indexOf(t)<0)tipi.push(t);an[a][t]=(an[a][t]||0)+Lp.anni[a][t]})})});
+    var ord=['Canone','Extra-canone','Attività tecnico-ricognitive'];
+    tipi.sort(function(a,b){var x=ord.indexOf(a),y=ord.indexOf(b);return (x<0?9:x)-(y<0?9:y)});
+    var anni=Object.keys(an).sort(function(a,b){return a-b});
+    if(anni.length){
+      var tt={},gt=0;
+      h+=SC_PIPE+'<div class="sc-box">'+scH('Contabilizzato per anno')+'<div class="sc-tw"><table><thead><tr><th>Anno</th>'+tipi.map(function(t){return '<th>'+esc(t)+'</th>'}).join('')+'<th>Totale</th></tr></thead><tbody>';
+      anni.forEach(function(a){var rt=0;h+='<tr><td>'+(a==='0'?'—':esc(a))+'</td>'+tipi.map(function(t){var v=an[a][t]||0;rt+=v;tt[t]=(tt[t]||0)+v;return '<td>'+(v?eur(v):'—')+'</td>'}).join('')+'<td>'+eur(rt)+'</td></tr>';gt+=rt});
+      h+='<tr class="tot"><td>Totale</td>'+tipi.map(function(t){return '<td>'+eur(tt[t]||0)+'</td>'}).join('')+'<td>'+eur(gt)+'</td></tr></tbody></table></div>';
+      h+='<p class="sc-note">L’anno è quello indicato sul SAL: per il canone l’anno di budget, per gli extra-canone l’anno degli ordini. Il residuo della quota annua è calcolato sul solo canone.</p>';
+      if(qs.length){
+        h+='<div class="sc-per"><b>Quota annua del canone</b><span>Tetto annuo, canone contabilizzato nell’anno e residuo</span></div><div class="sc-tw"><table><thead><tr><th>Anno</th><th>Quota annua</th><th>Canone contabilizzato</th><th>Residuo</th></tr></thead><tbody>';
+        qs.forEach(function(q){var qa=Number(q.importo_attuale)||0,cf=(an[q.periodo]&&an[q.periodo]['Canone'])||0,rs=r2(qa-cf);h+='<tr data-qd="'+esc(q.id)+'" style="cursor:pointer"><td>'+esc(q.periodo)+'</td><td>'+eur(qa)+'</td><td>'+eur(cf)+'</td><td style="color:'+(rs<0?'#ff8a98':'#a9e4ad')+'">'+eur(rs)+'</td></tr>'});
+        h+='</tbody></table></div>';
+      }
+      h+='</div>';
+    }
+    var tutte=D.sal,nAnn=tutte.filter(function(s){return s.stato==='Annullato'}).length;
+    var rows=tutte.filter(function(s){return (!schedaF.tipo||s.tipo===schedaF.tipo)&&(!schedaF.anno||String(s.anno)===String(schedaF.anno))&&!(schedaF.nasc&&s.stato==='Annullato')});
+    var tp=[];tutte.forEach(function(s){if(tp.indexOf(s.tipo)<0)tp.push(s.tipo)});
+    tp.sort(function(a,b){var x=ord.indexOf(a),y=ord.indexOf(b);return (x<0?9:x)-(y<0?9:y)});
+    var ay=[];tutte.forEach(function(s){if(s.anno&&ay.indexOf(s.anno)<0)ay.push(s.anno)});ay.sort();
+    var chip=function(t,a,v,on,n){return '<button class="sc-ch'+(on?' on':'')+'" data-sf="'+a+'" data-v="'+esc(v)+'" aria-pressed="'+(on?'true':'false')+'">'+esc(t)+(n!==undefined?' <span style="opacity:.75">'+n+'</span>':'')+'</button>'};
+    h+=SC_PIPE+'<div class="sc-box">'+scH('SAL · '+(r.lotto||'')+' ('+rows.length+')')+'<div class="sc-chs">'+chip('Tutti','tipo','',!schedaF.tipo&&!schedaF.anno)+tp.map(function(t){return chip(t,'tipo',t,schedaF.tipo===t,tutte.filter(function(s){return s.tipo===t}).length)}).join('')+ay.map(function(a){return chip(String(a),'anno',String(a),String(schedaF.anno)===String(a),tutte.filter(function(s){return s.anno===a}).length)}).join('')+'<button class="sc-ch'+(schedaF.nasc?' on':'')+'" data-sf="nasc" data-v="" aria-pressed="'+(schedaF.nasc?'true':'false')+'">Nascondi annullati <span style="opacity:.75">'+nAnn+'</span></button></div>';
+    h+='<div class="sc-tw"><table><thead><tr><th>SAL</th><th class="l">Tipo</th><th class="l">Riferimento</th><th>Emissione</th><th>Netto</th><th>Totale con IVA</th><th>Progressivo</th><th class="l">Stato</th></tr></thead><tbody>';
+    var sn=0,sv=0;
+    rows.forEach(function(s){var an2=s.stato==='Annullato';if(!an2){sn+=Number(s.netto)||0;sv+=Number(s.totale)||0}
+      var tc=s.tipo==='Canone'?'#ffc247':(s.tipo==='Extra-canone'?'#ff8a1f':'#5cc3e6');
+      h+='<tr data-sal="'+esc(s.id)+'"'+(an2?' class="an"':'')+'><td>'+esc(s.numero)+'</td><td class="l"><span style="color:'+tc+';font-weight:600">'+esc(s.tipo||'')+'</span></td><td class="l">'+esc(scRif(s))+'</td><td>'+(s.emissione?fmtD(s.emissione):'—')+'</td><td>'+eur(Number(s.netto)||0)+'</td><td>'+eur(Number(s.totale)||0)+'</td><td>'+eur(Number(s.progressivo)||0)+'</td><td class="l"><span class="sc-st" style="background:'+(an2?'#3a2a20':'#1f3a22')+';color:'+(an2?'#d9b48f':'#a9e4ad')+'">'+esc(s.stato||'')+'</span></td></tr>';
+    });
+    h+='<tr class="tot"><td colspan="4" class="l">Totale SAL emessi nell’elenco</td><td>'+eur(r2(sn))+'</td><td>'+eur(r2(sv))+'</td><td></td><td></td></tr></tbody></table></div>';
+    h+='<p class="sc-note">Tocca un SAL per modificarlo.</p></div>';
+  }
+  return h+'</div>';
+}
+function bindScheda(){
+  var r=dati.find(function(x){return String(x.id)===String(schedaCt)});if(!r)return;
+  var D=schedaD,k=scKey(r),q=function(s){return document.querySelector(s)},dopo=function(){caricaSchedaCt(r)};
+  q('#scBack').onclick=function(){schedaCt=null;disegna();window.scrollTo(0,0)};
+  q('#scMod').onclick=function(){modulo(r,'contratti',dopo)};
+  if(!D)return;
+  var e=q('#scEsp');if(e)e.onclick=function(){esporta('sal',D.sal)};
+  var n=q('#scNew');if(n)n.onclick=function(){var C=calcContab(D.sal,D.quadro);modulo({periodo:C.attivo,lotto:k,stato:'Emesso'},'sal',dopo)};
+  document.querySelectorAll('[data-qd]').forEach(function(t){t.onclick=function(){var x=D.quadro.find(function(z){return String(z.id)===t.dataset.qd});if(x)modulo(x,'quadro',dopo)}});
+  document.querySelectorAll('[data-sal]').forEach(function(t){t.onclick=function(){var x=D.sal.find(function(z){return String(z.id)===t.dataset.sal});if(x)modulo(x,'sal',dopo)}});
+  document.querySelectorAll('[data-sf]').forEach(function(b){b.onclick=function(){var a=b.dataset.sf,v=b.dataset.v;
+    if(a==='nasc')schedaF.nasc=!schedaF.nasc;
+    else if(a==='tipo'){schedaF.tipo=(schedaF.tipo===v)?'':v;if(!v)schedaF.anno=''}
+    else if(a==='anno'){schedaF.anno=(String(schedaF.anno)===v)?'':v}
+    disegna()}});
+}
 
 function cella(c,r){
   if(c.t==='dt')return esc(fmtDT(r[c.k]));
