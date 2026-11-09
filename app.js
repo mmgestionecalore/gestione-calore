@@ -278,7 +278,7 @@ async function leggiTutto(m){
 /* ---------- elenchi ---------- */
 async function apri(k){schedaCt=null;
   if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens=''}
-  corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');
+  corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');glSkin(false);glFont();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':(k==='altro'||(MODULI[k]&&MODULI[k].altro)?'altro':k))));
   if(k!=='attivita')mostraFatte=false;
   if(k==='altro')return altroVista();
@@ -295,7 +295,7 @@ async function apri(k){schedaCt=null;
 async function altroVista(){
   const v=['ordini','segnalazioni','programmazione'];
   const cn=await Promise.all(v.map(k=>sb.from(MODULI[k].tab).select('*',{count:'exact',head:true})));
-  $('#main').innerHTML='<div class="bar"><h2 class="hd"><span class="hico">'+ico('altro')+'</span><span>Altro</span></h2></div><p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Sezioni che per ora contengono pochi o nessun dato.</p><div class="chips fb">'+v.map((k,i)=>'<button type="button" class="chip" data-alt="'+k+'">'+esc(MODULI[k].nome)+' <span class="muted">'+(cn[i].count??0)+'</span></button>').join('')+'</div>';
+  glSkin(true);$('#main').innerHTML=glBan('Sezioni di riserva','Altro','Sezioni che per ora contengono pochi o nessun dato')+'<div class="chips fb">'+v.map((k,i)=>'<button type="button" class="chip" data-alt="'+k+'">'+esc(MODULI[k].nome)+' <span class="muted">'+(cn[i].count??0)+'</span></button>').join('')+'</div>';
   document.querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>apri(b.dataset.alt));
 }
 function disegna(){
@@ -322,7 +322,7 @@ function disegna(){
   }
   if(sort)rows=[...rows].sort((a,b)=>{const x=a[sort.k]??'',y=b[sort.k]??'';return(x>y?1:x<y?-1:0)*sort.d});
   const cols=m.campi.filter(c=>c.list&&!(m.vista&&voceCens&&(c.k==='impianto'||c.k==='criticita'))).concat(m.vista&&voceCens?[{k:'__voce',l:voceCens,t:'text'}]:[]).concat(corrente==='impianti'?[{k:'__tag',l:'Tag',t:'text'},{k:'__crit',l:'Criticità principale',t:'text'}]:[]);
-  let h='<div class="bar"><h2 class="hd"><span class="hico">'+ico(corrente)+'</span><span>'+esc(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'')+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
+  let h=glGen()?glHead(m,rows):'<div class="bar"><h2 class="hd"><span class="hico">'+ico(corrente)+'</span><span>'+esc(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'')+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
   if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'&&vistaMappa?' on':'')+'" data-pi="mappa">Mappa</button><button type="button" class="chip'+(corrente==='impianti'&&!vistaMappa?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
   if(corrente==='contatti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaRubrica?' on':'')+'" data-ct="rubrica">Rubrica</button><button type="button" class="chip'+(vistaRubrica?'':' on')+'" data-ct="elenco">Elenco</button></div>';
   if(corrente==='contratti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaCruscotto?' on':'')+'" data-cc="cruscotto">Cruscotto</button><button type="button" class="chip'+(vistaCruscotto?'':' on')+'" data-cc="elenco">Elenco</button></div>';
@@ -345,7 +345,7 @@ function disegna(){
   if(corrente==='contratti'&&vistaCruscotto)h=h.slice(0,h.indexOf('<div class="tw">'))+cruscottoCont(rows);
   if(corrente==='contratti'&&schedaCt!=null){var _sr=dati.find(function(x){return String(x.id)===String(schedaCt)});if(_sr)h=schedaCtHtml(_sr);else schedaCt=null}
   if(corrente==='impianti'&&vistaMappa)h=h.slice(0,h.indexOf('<div class="tw">'))+mappaImp(rows);
-  $('#main').innerHTML=h;
+  glSkin(glGen());$('#main').innerHTML=h;
   document.querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{const p=b.dataset.pi;if(p==='mappa'){vistaMappa=true;apri('impianti')}else{if(p==='impianti')vistaMappa=false;apri(p)}});
   if(corrente==='impianti'&&vistaMappa)bindMappa();
   document.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{vistaRubrica=b.dataset.ct==='rubrica';disegna()});
@@ -847,6 +847,50 @@ function normDisegna(){
   $('#nrnew').onclick=function(){modulo({},'riferimenti',normVista)};
   $('#nrexp').onclick=function(){esporta('riferimenti',dati)};
 }
+/* ---------- Restyling uniforme: tema scuro per Oggi, Hub, elenchi e Altro ---------- */
+var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
+'main.dk,dialog#dlg{--bg:#1b110b;--bg2:#33200f;--fg:#fdebd3;--mut:#c9a98a;--card:#26160d;--bd:#4a2c18;--ac:#ff8a1f;--ok:#7bdc8a;--ko:#ff8a98;--wa:#ffc247;--in:#5cc3e6;--btn1:#ff8a1f;--btn2:#ff9c3a;--onbtn:#1b110b;--hov:rgba(255,138,31,.1);--sh:none;--r:16px;color-scheme:dark}'+
+'dialog#dlg{background:#26160d;color:#fdebd3;border:2px solid #6b3a1c;border-radius:20px}dialog#dlg::backdrop{background:rgba(10,5,2,.7)}'+
+'main.dk{background:#1b110b;color:#fdebd3;border-radius:22px;padding:22px;margin:14px auto 40px;width:calc(100% - 24px);font-family:Barlow,system-ui,sans-serif}'+
+'main.dk>*+*{margin-top:18px}main.dk>.card{margin-top:18px!important}'+
+'main.dk a{color:#ffb35c}main.dk .muted{color:#c9a98a}'+
+'main.dk h3,main.dk .ch{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#fdebd3}'+
+'main.dk .ch .ic{width:22px;height:22px;color:#ff8a1f}'+
+'main.dk .card{background:#26160d;border:1px solid #4a2c18;border-radius:20px;padding:18px 20px;box-shadow:none;transition:none}'+
+'main.dk .hero{position:relative;overflow:hidden;border:1px solid #4a2c18;border-radius:22px;padding:24px 26px;background:linear-gradient(120deg,#5a2a10,#26160d 72%);box-shadow:none;transform:none}'+
+'main.dk .hero:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,179,92,.06) 0 5px,transparent 5px 13px);pointer-events:none}'+
+'main.dk .hero.fuori{background:linear-gradient(120deg,#12323d,#26160d 72%)}'+
+'main.dk .hero>*{position:relative}main.dk .hero>.fl{position:absolute;right:22px;top:12px;bottom:auto;width:88px;height:88px;opacity:.9;color:#ff8a1f}'+
+'main.dk .hero .kick{color:#ffb35c;font-size:12px;letter-spacing:.12em}'+
+'main.dk .hero .big{font-family:"Barlow Condensed",sans-serif;font-size:42px;line-height:1;text-transform:uppercase;letter-spacing:.02em;margin:4px 0}'+
+'main.dk .hero .sub{color:#e8cfb2;font-size:15px}'+
+'main.dk .hero .prog{height:14px;background:#33200f;border:1px solid #4a2c18}main.dk .hero .prog i{background:linear-gradient(90deg,#ff8a1f,#ffc247);box-shadow:none}'+
+'main.dk .kpi{--kc:#6b3a1c;background:#26160d;border:2px solid #4a2c18;border-left:9px solid var(--kc);border-radius:16px;padding:14px 18px;box-shadow:none;animation:none;transform:none}'+
+'main.dk .kpi.ok{--kc:#7bdc8a}main.dk .kpi.wa{--kc:#ffc247}main.dk .kpi.ko{--kc:#ff5a6e}'+
+'main.dk .kpi b{font-family:"Barlow Condensed",sans-serif;font-size:46px;font-weight:700;color:#fdebd3}main.dk .kpi.wa b{color:#ffc247}main.dk .kpi.ko b{color:#ff8a98}'+
+'main.dk .kpi span{font-size:14px;color:#e8cfb2}main.dk .kpi small{color:#c9a98a}'+
+'main.dk .st{font-size:13px}main.dk .st.ok{background:rgba(123,220,138,.14);color:#a9e4ad;border-color:rgba(123,220,138,.35)}main.dk .st.ko{background:rgba(255,138,152,.14);color:#ffb3bd;border-color:rgba(255,138,152,.35)}main.dk .st.wa{background:rgba(255,194,71,.14);color:#ffd27a;border-color:rgba(255,194,71,.35)}main.dk .st.in{background:rgba(92,195,230,.14);color:#9adcf2;border-color:rgba(92,195,230,.35)}main.dk .st.off{background:rgba(255,255,255,.07);color:#c9a98a;border-color:#4a2c18}'+
+'main.dk .ev li{border-top:1px dashed #3a2314}main.dk .ev li:hover{background:#2f1c10}main.dk .ev .dt{color:#ffb35c}main.dk .ev .dt.late{color:#ff8a98}'+
+'main.dk .cnt a{background:#1b110b;border:2px solid #4a2c18;border-radius:14px}main.dk .cnt a:hover{border-color:#ff8a1f}main.dk .cnt a b{font-family:"Barlow Condensed",sans-serif;font-size:32px}'+
+'main.dk .chip{min-height:36px;padding:0 14px;border:2px solid #4a2c18;background:#26160d;color:#fdebd3;font-weight:600}main.dk .chip.on{background:#ff8a1f;border-color:#ff8a1f;color:#1b110b}main.dk .chip:hover{background:#33200f}'+
+'main.dk .tw{background:#26160d;border:1px solid #4a2c18;border-radius:20px;box-shadow:none}'+
+'main.dk table,main.dk thead,main.dk tbody,main.dk tr{background:transparent}'+
+'main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
+'main.dk .vrow{border-top:1px dashed #3a2314}main.dk .meter{background:#33200f;border:1px solid #4a2c18}'+
+'main.dk button.ghost{border:2px solid #4a2c18;color:#fdebd3}main.dk button.ghost:hover{background:#33200f}'+
+'main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
+'main.dk details{background:#1b110b;border:1px solid #4a2c18;border-radius:12px;padding:8px 12px}'+
+'@media(max-width:640px){main.dk{padding:14px;width:calc(100% - 16px);margin:8px auto 32px}main.dk .hero{padding:18px}main.dk .hero .big{font-size:30px}main.dk .hero>.fl{display:none}main.dk .kpi b{font-size:36px}main.dk h3,main.dk .ch{font-size:21px}}'+
+'@media print{main.dk{--bg:#fff;--bg2:#f3ece3;--fg:#000;--mut:#444;--card:#fff;--bd:#ccc;--ac:#000;background:#fff;color:#000;padding:0;width:auto;margin:0}main.dk .card,main.dk .kpi,main.dk .hero{background:#fff;color:#000;border-color:#ccc}main.dk .sc-ban{background:#fff;color:#000;border-color:#ccc}main.dk .sc-t,main.dk .sc-s,main.dk .sc-k,main.dk .kpi b,main.dk .hero .big,main.dk .hero .sub{color:#000}main.dk .ch,main.dk h3{color:#000}}';
+function glFont(){if(!document.getElementById('pm-font')){var l=document.createElement('link');l.id='pm-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2'+String.fromCharCode(63)+'family=Barlow:wght@400;500;600'+String.fromCharCode(38)+'family=Barlow+Condensed:wght@600;700'+String.fromCharCode(38)+'display=swap';document.head.appendChild(l)}}
+function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS;document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on)}
+function glBan(kick,title,sub){return'<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">'+esc(kick)+'</div><h1 class="sc-t">'+esc(title)+'</h1>'+(sub?'<div class="sc-s">'+sub+'</div>':'')+'</div>'}
+function glGen(){return!((corrente==='impianti'&&vistaMappa)||(corrente==='contatti'&&vistaRubrica)||(corrente==='contratti'&&(vistaCruscotto||schedaCt!=null)))}
+function glHead(m,rows){
+  var K={attivita:'Attività e priorità',scadenze:'Calendario delle scadenze',memoria:'Know-how operativo',documenti:'Archivio documenti',registro:'Tracciato delle modifiche',impianti:'Parco impianti',censimento:'Schede tecniche',contatti:'Rubrica',contratti:'Contratti',sal:'Contabilità',quadro:'Contabilità',ordini:'Altro',segnalazioni:'Altro',programmazione:'Altro'};
+  var n=rows.length,t=dati.length,tit=(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'');
+  return'<div class="sc-top"><span class="sc-k">Gestione calore · MM</span><span class="grp">'+(m.ro?'':'<button class="sc-b" id="imp">Importa</button>')+'<button class="sc-b" id="exp">Esporta</button>'+(m.ro?'':'<button class="sc-b p" id="nuovo">+ Nuovo</button>')+'</span></div>'+glBan(K[corrente]||m.nome,tit,n+(n!==t?' di '+t:'')+' elementi');
+}
 function cella(c,r){
   if(c.t==='dt')return esc(fmtDT(r[c.k]));
   if(corrente==='registro'&&c.k==='azione')return esc(AZIONI[r[c.k]]||r[c.k]);
@@ -1044,7 +1088,7 @@ async function oggiVista(){
   const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0">'+vuoto+'</p>')+'</div>';
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
   const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data),sl.data||[],qd.data):'';
-  $('#main').innerHTML='<h2 class="hd" style="margin-bottom:.9rem"><span class="hico">'+ico('oggi')+'</span><span>Oggi <span class="muted">· '+esc(new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</span></span></h2><div id="ris"></div><div id="home">'+hero+kpis+'<div class="grid">'+
+  glSkin(true);$('#main').innerHTML=glBan('Cruscotto del giorno','Oggi',esc(new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})))+'<div id="ris"></div><div id="home">'+hero+kpis+'<div class="grid">'+
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
    blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
    
@@ -1089,7 +1133,7 @@ const HUB_REGOLE={
 };
 async function hubVista(){
   const h=HUB[hubSel]||HUB.l1,t=oggi(),reg={};
-  $('#main').innerHTML='<p class="muted">Carico l’hub…</p>';
+  glSkin(true);$('#main').innerHTML='<p class="muted">Carico l’hub…</p>';
   const vuoto=Promise.resolve({data:[],error:null,count:null});
   const[co,sc,at,im,me,ctt,sg,sl,qd]=await Promise.all([
     sb.from('contratti').select('*').order('nome'),
@@ -1156,7 +1200,7 @@ async function hubVista(){
      kp(ritardo?'ko':scH.length?'wa':'ok',scH.length,'Scadenze aperte',ritardo?ritardo+' già scadute':'')+
      kp('',atH.length,'Attività aperte','')+kp(sgH.length?'wa':'ok',sgH.length,'Segnalazioni aperte','')+'</div>';
   const tabs='<div class="chips" id="hubtabs">'+Object.keys(HUB).map(k=>'<button class="chip'+(k===hubSel?' on':'')+'" data-h="'+k+'">'+esc(HUB[k].nome)+'</button>').join('')+'</div>';
-  let H='<h2 class="hd" style="margin-bottom:.4rem"><span class="hico">'+ico('hub')+'</span><span>'+esc(h.tit)+' <span class="muted">· '+esc(h.sub)+'</span></span></h2><div style="margin:.2rem 0 .6rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap"><span class="hubtag">'+esc(h.nome)+'</span><span class="muted" style="font-size:13px">'+(ultTxt?'Dati aggiornati al '+ultTxt:'')+'</span><button class="ghost mini noprint" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
+  let H=glBan('Hub contratto',h.tit,esc(h.sub))+'<div style="margin:.2rem 0 .6rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap"><span class="hubtag">'+esc(h.nome)+'</span><span class="muted" style="font-size:13px">'+(ultTxt?'Dati aggiornati al '+ultTxt:'')+'</span><button class="ghost mini noprint" id="stampaHub">Stampa / salva PDF</button></div>'+tabs+kpis;
   const dvC=(me.data||[]).find(r=>/Da verificare/.test(r.titolo||'')&&(h.tipo==='leg'?/^Legionella/.test(r.titolo):h.tipo==='tlr'?/^TLR/.test(r.titolo):/^Gestione Calore/.test(r.titolo)));
   if(dvC){const righe=String(dvC.testo||'').split('\n').map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
     H+=sez('attivita','Da verificare <span class="muted" style="font-weight:400">('+righe.length+')</span>','<ul class="lst">'+righe.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><p class="muted" style="font-size:13px;margin:.5rem 0 0">'+link('memoria',dvC,'Apri la scheda per modificare o togliere le voci risolte')+'</p>');}
@@ -1173,7 +1217,7 @@ async function hubVista(){
   if(sgH.length)H+=sez('segnalazioni','Segnalazioni aperte <span class="muted" style="font-weight:400">('+sgH.length+')</span>','<ul class="ev">'+sgH.map(r=>'<li><span class="dt">'+fmtD(r.data)+'</span><span class="tx">'+link('segnalazioni',r,'<b>'+esc(r.impianto||'')+'</b> – '+esc(r.oggetto||''))+'</span></li>').join('')+'</ul>');
   H+=sez('memoria','Know-how e schede <span class="muted" style="font-weight:400">('+memH.length+')</span>',khH?'<div class="grid">'+khH+'</div>':vuotoP('Nessuna scheda.'),'<a href="#" id="vaM" style="margin-left:auto;font-size:13px">Memoria operativa →</a>');
   H+=sez('documenti','Documenti e fonti','<ul class="lst"><li>Documenti di gara e di esecuzione: sezione Documenti (SharePoint) e scheda «Dove trovare i documenti».</li><li>Normativa e riferimenti: sezione «Normativa e riferimenti».</li><li>Modifiche recenti: sezione Registro modifiche.</li></ul>');
-  $('#main').innerHTML=H;$('#main').dataset.hub=hubSel;
+  glSkin(true);$('#main').innerHTML=H;$('#main').dataset.hub=hubSel;
   document.querySelectorAll('#hubtabs .chip').forEach(b=>b.onclick=()=>{hubSel=b.dataset.h;try{localStorage.setItem('hub',hubSel)}catch(e){}hubVista()});
   const go=(id,k)=>{const e=$(id);if(e)e.onclick=ev=>{ev.preventDefault();apri(k)}};const sp=$('#stampaHub');if(sp)sp.onclick=()=>window.print();go('#vaC','contratti');go('#vaI','impianti');go('#vaB','contabilita');go('#vaM','memoria');
   const nu=(id,tb,pre)=>{const e=$(id);if(e)e.onclick=()=>{corrente='hub';modulo(pre,tb,()=>apri('hub'))}};
