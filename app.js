@@ -670,7 +670,6 @@ function schedaCtHtml(r){
   var so=ctSost(r),bu=ctBud(r),pc=bu>0?so/bu*100:null,rit='';
   if(pc!==null&&pt!==null){var df=(pc-pt)/100;rit=df>.1?'<span class="sc-bd" style="background:#4a3a12;color:#ffd985">Spesa in anticipo</span>':(df<-.1?'<span class="sc-bd" style="background:#123344;color:#9fdcf5">Spesa sotto il ritmo</span>':'<span class="sc-bd" style="background:#1f3a22;color:#a9e4ad">In linea</span>')}
   h+=SC_PIPE+'<div class="sc-grid">';
-  h+='<div class="sc-pl"><div class="sc-k">Tempi</div>'+(pt!==null?scGauge(pt)+'<div class="sc-n">'+Math.round(pt)+'% <small>trascorso</small></div><div class="sc-s" style="margin:0">'+(st==='chiuso'?'Contratto terminato':(gg>=0?'Mancano '+gg.toLocaleString('it-IT')+' giorni alla scadenza del '+fmtD(r.scadenza):'Scaduto da '+(-gg).toLocaleString('it-IT')+' giorni (scadenza '+fmtD(r.scadenza)+')'))+'</div>':'<div class="sc-s">Inserisci data inizio e scadenza per vedere i tempi.</div>')+'</div>';
   h+='<div class="sc-pl"><div class="sc-k">Costi · contratto intero</div>'+(pc!==null&&so>0?'<div class="sc-n">'+Math.round(pc)+'% <small>speso</small></div>'+scMeter(so,bu)+'<div class="sc-s" style="margin:0">'+eur(so)+' su '+eur(bu)+'</div>'+rit:'<div class="sc-n">'+(so>0?eur(so):'—')+'</div><div class="sc-s">'+(bu>0?'Budget '+eur(bu)+'. ':'Budget non inserito. ')+'Importo sostenuto non registrato.</div>')+'</div>';
   var C=null,L=null;
   if(has&&D){C=calcContab(D.sal,D.quadro);L=(C.per[C.attivo]||{})[k]}
@@ -878,7 +877,7 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 'main.dk .chip{min-height:36px;padding:0 14px;border:2px solid #4a2c18;background:#26160d;color:#fdebd3;font-weight:600}main.dk .chip.on{background:#ff8a1f;border-color:#ff8a1f;color:#1b110b}main.dk .chip:hover{background:#33200f}'+
 'main.dk .tw{background:#26160d;border:1px solid #4a2c18;border-radius:20px;box-shadow:none}'+
 'main.dk table,main.dk thead,main.dk tbody,main.dk tr{background:transparent}'+
-'main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
+'main.dk th,main.dk td{overflow-wrap:break-word}main.dk th{background:#33200f;color:#c9a98a}main.dk th,main.dk td{border-bottom:1px dashed #3a2314}main.dk tr.row:hover td{background:#2f1c10}main.dk tr.sez td{background:#33200f;color:#ffb35c;font-weight:700}'+
 'main.dk .vrow{border-top:1px dashed #3a2314}main.dk .meter{background:#33200f;border:1px solid #4a2c18}'+
 'main.dk button.ghost{border:2px solid #4a2c18;color:#fdebd3}main.dk button.ghost:hover{background:#33200f}'+
 'main.dk td[data-l="Scadenza"],main.dk td[data-l="Data"],main.dk td[data-l="Data atto"]{white-space:nowrap;overflow-wrap:normal}main.dk .ho{position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:30px;align-items:center;border:1px solid #6b3a1c;border-radius:26px;padding:30px 34px;background:radial-gradient(circle at 92% 130%,rgba(255,138,31,.5),transparent 52%),linear-gradient(120deg,#5a2a10,#26160d 72%)}'+
@@ -911,7 +910,7 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 function glFont(){if(!document.getElementById('pm-font')){var l=document.createElement('link');l.id='pm-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2'+String.fromCharCode(63)+'family=Barlow:wght@400;500;600'+String.fromCharCode(38)+'family=Barlow+Condensed:wght@600;700'+String.fromCharCode(38)+'display=swap';document.head.appendChild(l)}}
 function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS+GL_CSS.split('main.dk .ho').join('.ho')+'.ho{color:#fdebd3;margin:0 0 18px}';document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on)}
 function glBan(kick,title,sub){return'<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">'+esc(kick)+'</div><h1 class="sc-t">'+esc(title)+'</h1>'+(sub?'<div class="sc-s">'+sub+'</div>':'')+'</div>'}
-function glGen(){return!((corrente==='impianti'&&vistaMappa)||(corrente==='contatti'&&vistaRubrica)||(corrente==='contratti'&&(vistaCruscotto||schedaCt!=null)))}
+function glGen(){return!(corrente==='contratti'&&schedaCt!=null)}
 function glOggi(){
   var S=stagione(new Date()),now=new Date(),fd=function(d){return fmtD(iso(d))},dentro=S.dentro;
   var pct=Math.max(0,Math.min(100,Math.round((dentro?S.n/S.tot:S.perc)*100)));
