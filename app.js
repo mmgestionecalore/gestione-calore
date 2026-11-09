@@ -1131,28 +1131,43 @@ function cardLotto(nome,L){
   for(const v of ordinaVoci(L))h+=vriga(v,L.voci[v]);
   return h+'</section>';
 }
+var SC_CSS2='<style>'+
+'.sc .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0}'+
+'.sc .chip{min-height:40px;padding:0 14px;border-radius:20px;border:2px solid #4a2c18;background:#26160d;color:#fdebd3;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'+
+'.sc .chip.on{background:#ff8a1f;border-color:#ff8a1f;color:#1b110b}'+
+'.sc .chip span{opacity:.75}'+
+'.sc .sep{width:1px;height:24px;background:#4a2c18;display:inline-block}'+
+'.sc .muted,.sc .sub2{color:#c9a98a;font-size:13px}'+
+'.sc h3.ch{margin:0;display:flex;align-items:center;gap:10px;font-family:"Barlow Condensed",sans-serif;font-size:28px;text-transform:uppercase;letter-spacing:.03em;color:#fdebd3}'+
+'.sc h3.ch svg{width:26px;height:26px;color:#ff8a1f}'+
+'.sc .tw{overflow-x:auto}'+
+'.sc .sc-lg table td,.sc .sc-lg table th{text-align:left}'+
+'.sc .sc-lg table .n{text-align:right}'+
+'.sc .sc-lg table th.g{text-align:center;color:#ffb35c!important;border-left:1px solid #4a2c18!important}'+
+'.sc .sc-lg table .gl{border-left:1px dashed #4a2c18!important}'+
+'.sc .sc-lg table td.late{color:#ff8a98!important}'+
+'.sc .sc-lg table tfoot td{font-weight:700;color:#ffb35c!important}'+
+'.sc .sc-lg table tr.row{cursor:pointer}.sc .sc-lg table tr.row:hover td{background:#2f1c10!important}'+
+'</style>';
 function contabDisegna(){
   const C=calcContab(ctSal,ctQuadro);
   if(!ct.periodo||!C.periodi.includes(ct.periodo))ct.periodo=C.attivo;
   const P=C.per[ct.periodo]||{},nomi=Object.keys(P).sort(),primo=ct.periodo===C.periodi[0];
-  let h='<div class="bar"><h2 class="hd"><span class="hico">'+ico('contabilita')+'</span><span>Contabilità <span class="muted">('+ctSal.length+' SAL)</span></span></h2><span class="grp"><button class="ghost" id="esq">Esporta SAL</button><button id="nsal">+ Nuovo SAL</button></span></div>';
-  h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Importi netti, IVA esclusa, con gli oneri della sicurezza. «Contabilizzato» è la somma dei SAL emessi; il residuo è il tetto meno il contabilizzato e non tiene conto degli ordini già emessi che non sono ancora andati a SAL.</p>';
-  h+='<div class="chips" style="align-items:center"><span class="muted" style="font-size:13px">Dettaglio per contratto:</span>'+['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'].filter(function(n){return ctSal.some(function(s){return s.lotto===n})||ctQuadro.some(function(q){return q.lotto===n})}).map(function(n){return '<button type="button" class="chip" data-vai="'+n+'">'+esc(n.replace('LOTTO','Lotto'))+' → scheda</button>'}).join('')+'</div>';
-  if(C.periodi.length>1)h+='<div class="chips">'+C.periodi.map(p=>'<button type="button" class="chip'+(p===ct.periodo?' on':'')+'" data-c="periodo" data-v="'+esc(p)+'">'+esc(p)+'</button>').join('')+'</div>';
-  const avv=[];
-  if(primo)for(const n of nomi){const L=P[n];if(L.ult&&L.ult.progressivo){const d=r2(L.fatto-L.ult.progressivo);if(Math.abs(d)>0.01)avv.push('<b>'+esc(n.replace('LOTTO','Lotto'))+'</b>: il progressivo riportato nell’ultimo SAL (n. '+L.ult.numero+') è '+eur(L.ult.progressivo)+', la somma dei SAL emessi è '+eur(L.fatto)+': differenza di '+eur(Math.abs(d))+'. Da verificare con la contabilità.')}}
-  h+=avv.map(x=>'<div class="warn">'+x+'</div>').join('');
-  h+=nomi.length?'<div class="lotti">'+nomi.map(n=>cardLotto(n,P[n])).join('')+'</div>'+tabAnni(P,nomi,C.quote,primo):'<p class="muted">Nessun dato per questo periodo.</p>';
-  h+=listaSal();
-  h+=tabQuadro();
+  let h=SC_CSS+SC_CSS2+'<div class="sc">';
+  h+='<div class="sc-top"><span class="sc-k">Confronto tra i lotti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nqd">+ Voce di quadro</button><button class="sc-b" id="esq">Esporta SAL</button><button class="sc-b p" id="nsal">+ Nuovo SAL</button></span></div>';
+  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">Tutti i lotti</div><h1 class="sc-t">Contabilità</h1><div class="sc-s">'+ctSal.length+' SAL · importi netti, IVA esclusa, con gli oneri della sicurezza</div></div>';
+  h+='<p class="sc-note">«Contabilizzato» è la somma dei SAL emessi; il residuo è il tetto meno il contabilizzato e non tiene conto degli ordini già emessi che non sono ancora andati a SAL. Quadro economico, tetti per voce e dettaglio di ogni contratto sono nella scheda del contratto.</p>';
+  h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Scheda del contratto:</span>'+['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'].filter(function(n){return ctSal.some(function(s){return s.lotto===n})||ctQuadro.some(function(q){return q.lotto===n})}).map(function(n){return '<button type="button" class="sc-ch" data-vai="'+n+'">'+esc(n.replace('LOTTO','Lotto'))+' →</button>'}).join('')+'</div>';
+  if(C.periodi.length>1)h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Periodo:</span>'+C.periodi.map(function(p){return '<button type="button" class="sc-ch'+(p===ct.periodo?' on':'')+'" data-c="periodo" data-v="'+esc(p)+'">'+esc(p)+'</button>'}).join('')+'</div>';
+  h+=SC_PIPE+'<div class="sc-box sc-lg">'+scH('Contabilizzato per anno, lotti a confronto')+(nomi.length?tabAnni(P,nomi,C.quote,primo):'<p class="sc-note">Nessun dato per questo periodo.</p>')+'</div>';
+  h+=SC_PIPE+'<div class="sc-box sc-lg">'+listaSal()+'</div></div>';
   $('#main').innerHTML=h;
-  document.querySelectorAll('.chip[data-c]').forEach(b=>b.onclick=()=>{const g=b.dataset.c,v=b.dataset.v;if(g==='ann')ct.ann=!ct.ann;else if(g==='periodo')ct.periodo=v;else ct[g]=ct[g]===v?'':v;contabDisegna()});
+  document.querySelectorAll('.chip[data-c],.sc-ch[data-c]').forEach(b=>b.onclick=()=>{const g=b.dataset.c,v=b.dataset.v;if(g==='ann')ct.ann=!ct.ann;else if(g==='periodo')ct.periodo=v;else ct[g]=ct[g]===v?'':v;contabDisegna()});
   document.querySelectorAll('tr[data-sal]').forEach(t=>t.onclick=()=>modulo(ctSal.find(x=>String(x.id)===t.dataset.sal),'sal',contabVista));
-  document.querySelectorAll('tr[data-qd]').forEach(t=>t.onclick=()=>modulo(ctQuadro.find(x=>String(x.id)===t.dataset.qd),'quadro',contabVista));
   $('#nsal').onclick=()=>modulo({periodo:ct.periodo,lotto:ct.lotto||'',stato:'Emesso'},'sal',contabVista);
   $('#esq').onclick=()=>esporta('sal',ctSal);
+  $('#nqd').onclick=()=>modulo({periodo:ct.periodo,lotto:ct.lotto||''},'quadro',contabVista);
   document.querySelectorAll('[data-vai]').forEach(function(b){b.onclick=async function(){await apri('contratti');var k=b.dataset.vai;var r=dati.find(function(x){return scKey(x)===k&&(k!=='LEGIONELLA'||/rentokil/i.test(x.fornitore||''))});if(r)apriSchedaCt(r)}});
-  const nq=$('#nqd');if(nq)nq.onclick=()=>modulo({periodo:ct.periodo,lotto:ct.lotto||''},'quadro',contabVista);
 }
 function listaSal(){
   const q=($('#search').value||'').toLowerCase();
