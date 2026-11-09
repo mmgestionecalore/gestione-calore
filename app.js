@@ -79,8 +79,8 @@ const IC={
  oggi:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  attivita:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
  scadenze:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
- impianti:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
- censimento:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+ impianti:'<rect x="6" y="3" width="12" height="18" rx="3"/><path d="M12 9c.5 1.5 2.2 2.2 2.2 4a2.2 2.2 0 0 1-4.4 0c0-.9.4-1.6 1-2.2.2.6.5.9 1.2 1"/><path d="M6 7h12M9 21v1.5M15 21v1.5"/>',
+ censimento:'<path d="M3 8l9 4-9 4zM21 8l-9 4 9 4z"/><path d="M12 12V5M8.5 5h7"/>',
  contratti:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
  contabilita:'<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>',
  ordini:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
@@ -339,7 +339,7 @@ function disegna(){
     h+='<tr class="row" data-id="'+r.id+'">'+cols.map(c=>'<td'+(m.vista?' class="k-'+c.k.replace(/[^a-z]/gi,'')+'"':c.t==='num'?' class="n"':'')+' data-l="'+esc(c.l)+'">'+cella(c,r)+'</td>').join('')+'</tr>';
   }
   h+='</tbody></table></div>';
-  if(!rows.length)h+='<p class="muted">Nessun elemento.</p>';
+  if(!rows.length)h+=glVuoto('Nessun elemento','Prova a cambiare la ricerca o i filtri');
   if(rows.length>limite)h+='<p><button class="ghost" id="piu">Mostra altri '+Math.min(LIM,rows.length-limite)+' (ne restano '+(rows.length-limite)+')</button></p>';
   if(corrente==='contatti'&&vistaRubrica)h=h.slice(0,h.indexOf('<div class="tw">'))+rubricaCont(rows);
   if(corrente==='contratti'&&vistaCruscotto)h=h.slice(0,h.indexOf('<div class="tw">'))+cruscottoCont(rows);
@@ -384,7 +384,7 @@ function mappaImp(rows){
   list.forEach(function(r){
     h+='<button type="button" class="pm-n" data-id="'+r.id+'" aria-label="'+esc(r.indirizzo||'Impianto')+'" style="--g:'+cur[4]+'88"><span class="pm-b">'+icoImp(cur[3],cur[4],44)+'</span><span class="pm-t">'+esc(r.indirizzo||'Senza indirizzo')+'</span></button>';
   });
-  if(!list.length)h+='<p class="pm-vuoto">Nessun impianto in questo lotto con la ricerca attuale.</p>';
+  if(!list.length)h+=glVuoto('Nessun impianto','Nessun impianto in questo lotto con la ricerca attuale');
   return h+'</div></div></div>';
 }
 function bindMappa(){
@@ -448,7 +448,7 @@ function rubricaCont(rows){
     if(ml)h+='<a class="rb-b" href="mailto:'+esc(ml)+'" aria-label="Scrivi" style="border:2px solid '+c+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></a>';
     h+='</div>';
   });
-  if(!list.length)h+='<div class="rb-vuoto">Nessun contatto con la ricerca attuale.</div>';
+  if(!list.length)h+=glVuoto('Nessun contatto','Nessun contatto con la ricerca attuale');
   h+='</div><div class="rb-l" aria-label="Lettere">'+Object.keys(lets).sort().map(function(L){return '<button type="button" data-l="'+esc(L)+'">'+esc(L)+'</button>'}).join('')+'</div></div></div></div>';
   return h;
 }
@@ -545,7 +545,7 @@ function cruscottoCont(rows){
   Object.keys(CT_FILT).forEach(function(n){var on=n===filtroCt,c=n==='Tutti'?'#fdebd3':CT_COL[CT_FILT[n]];h+='<button type="button" data-ctf="'+n+'" class="'+(on?'on':'')+'" style="'+(on?'background:'+c+';border-color:'+c:'border-color:#4a2c18')+'"><i style="background:'+(on?'#1b110b':c)+'"></i>'+n+'</button>'});
   h+='</div><div class="ct-g">'+corso.map(ctCard).join('')+'</div>';
   if(altri.length)h+='<div class="ct-g">'+altri.map(function(r){return ctSm(r,ctStato(r))}).join('')+'</div>';
-  if(!rr.length)h+='<p class="ct-m">Nessun contratto trovato.</p>';
+  if(!rr.length)h+=glVuoto('Nessun contratto','Nessun contratto con i filtri attuali');
   return h+'</div>'}
 function bindCruscotto(){
   document.querySelectorAll('[data-ctf]').forEach(function(b){b.onclick=function(){filtroCt=b.dataset.ctf;disegna()}});
@@ -663,7 +663,7 @@ function schedaCtHtml(r){
   var st=ctStato(r),stl=st==='corso'?'In corso':(st==='chiuso'?'Terminato':'In firma');
   var t0=iso(new Date()),hb=[],hn='—',hl='contratto senza scadenza';
   if(r.data_inizio&&r.scadenza){var htot=Math.max(1,scGiorni(r.data_inizio,r.scadenza));hb.push({t:'Tempo',pct:scGiorni(r.data_inizio,t0)/htot*100,l:fmtD(r.data_inizio),r:fmtD(r.scadenza)});hn=Math.max(0,scGiorni(t0,r.scadenza));hl='giorni alla scadenza'}
-  h+=glHero({ic:'contratti',bl:r.lotto||'Contratto',kick:(r.lotto||'')+' · '+stl,title:r.nome||'',sub:r.fornitore||'',num:hn,lab:hl,bars:hb});
+  h+=glHero({ic:'contratti',bl:r.lotto||'Contratto',kick:(r.lotto||'')+' · '+stl,title:r.nome||'',sub:r.fornitore||'',num:hn,lab:hl,nopipe:true,g:hb.length?{p:100-scGiorni(r.data_inizio,t0)/htot*100,m:'rest'}:null,bars:hb});
   var oggi=new Date();oggi.setHours(0,0,0,0);var pt=null,gg=null;
   if(r.data_inizio&&r.scadenza){var tot=scGiorni(r.data_inizio,r.scadenza),pas=Math.round((oggi-new Date(r.data_inizio+'T00:00:00'))/864e5);pt=tot>0?Math.max(0,Math.min(100,pas/tot*100)):null}
   if(r.scadenza)gg=Math.round((new Date(r.scadenza+'T00:00:00')-oggi)/864e5);
@@ -906,9 +906,18 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 'main.dk .sc-top .grp{display:flex;gap:10px;flex-wrap:wrap}'+
 'main.dk details{background:#1b110b;border:1px solid #4a2c18;border-radius:12px;padding:8px 12px}'+
 '@media(max-width:640px){main.dk{padding:14px;width:calc(100% - 16px);margin:8px auto 32px}main.dk .hero{padding:18px}main.dk .hero .big{font-size:30px}main.dk .hero>.fl{display:none}main.dk .kpi b{font-size:36px}main.dk h3,main.dk .ch{font-size:21px}}'+
+'main.dk .ho-g,.ho-g{display:block;width:190px;margin:0 auto 6px;overflow:visible}.ho.fuori .ho-gf{stroke:#5cc3e6}.ho-nd{transform-origin:70px 74px;animation:hoNd 1.5s cubic-bezier(.2,.8,.2,1) both}@keyframes hoNd{from{transform:rotate(-90deg)}}'+
+'.ho.fuori .ho-mk{color:#9adcf2;filter:drop-shadow(0 0 8px #5cc3e6)}.ho.fuori .ho-k{color:#9adcf2}.ho.fuori .ho-t{color:#eaf7fd}'+
+'main.dk .st:before,.sc .st:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;background:currentColor;box-shadow:0 0 0 2px rgba(0,0,0,.35),0 0 9px currentColor}main.dk .st.ok:before{animation:ledp 2.4s ease-in-out infinite}main.dk .st.off:before{box-shadow:0 0 0 2px rgba(0,0,0,.35);opacity:.45}@keyframes ledp{50%{opacity:.5}}'+
+'main.dk th{background:linear-gradient(180deg,#4a2c18,#33200f);color:#ffc98a;text-transform:uppercase;letter-spacing:.1em;font-size:12px;border-bottom:2px solid #6b3a1c;text-shadow:0 1px 0 #1b110b}main.dk td{font-variant-numeric:tabular-nums}'+
+'main.dk .vuoto,.vuoto{display:flex;flex-direction:column;align-items:center;gap:6px;padding:34px 16px;text-align:center;color:#c9a98a}.vuoto svg{width:84px;height:84px;color:#6b3a1c}.vuoto b{font-family:"Barlow Condensed",sans-serif;font-size:26px;letter-spacing:.04em;text-transform:uppercase;color:#fdebd3}.vuoto span{font-size:14px}'+
+'body.fz main.dk .sc-b.p,body.fz main.dk .chip.on,body.fz main.dk .sc-ch.on{background:#5cc3e6;border-color:#5cc3e6;color:#0e2630}body.fz main.dk button#nuovo{background:#5cc3e6;color:#0e2630}'+
+'@media(max-width:900px){main.dk .ho-n .ho-g,.ho-n .ho-g{width:100px;margin:0}.ho-n{align-items:center!important}}'+
+'@media(max-width:640px){#nav{position:fixed;left:0;right:0;bottom:0;z-index:30;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#2d170c,#1b110b);border-top:2px solid #ff8a1f;border-bottom:0;box-shadow:0 -8px 24px rgba(0,0,0,.45);scrollbar-width:none}#nav::-webkit-scrollbar{display:none}#nav button{flex-direction:column;gap:3px;min-width:68px;padding:6px 8px;border-radius:12px;color:#c9a98a;font-size:11px;letter-spacing:.04em}#nav button .ic{width:22px;height:22px;opacity:1}#nav button.on{background:#ff8a1f;color:#1b110b;box-shadow:0 0 14px rgba(255,138,31,.5)}#app{padding-bottom:84px}.toast{bottom:92px}}'+
+'@media print{body:before{content:"Gestione Calore · MM — Impianti termici";display:block;font:700 14pt Barlow,sans-serif;border-bottom:2px solid #000;margin-bottom:8pt;padding-bottom:4pt}.ho{background:#fff!important;color:#000!important;border:2px solid #000!important}.ho *{color:#000!important;text-shadow:none!important}.ho-p{background:#eee!important;border-color:#000!important}.ho-p i{background:#555!important;box-shadow:none!important;animation:none!important}.ho-mk,.sc-pipe,.ho-g{display:none!important}#nav,header{display:none!important}}'+
 '@media print{main.dk{--bg:#fff;--bg2:#f3ece3;--fg:#000;--mut:#444;--card:#fff;--bd:#ccc;--ac:#000;background:#fff;color:#000;padding:0;width:auto;margin:0}main.dk .card,main.dk .kpi,main.dk .hero{background:#fff;color:#000;border-color:#ccc}main.dk .sc-ban{background:#fff;color:#000;border-color:#ccc}main.dk .sc-t,main.dk .sc-s,main.dk .sc-k,main.dk .kpi b,main.dk .hero .big,main.dk .hero .sub{color:#000}main.dk .ch,main.dk h3{color:#000}}';
 function glFont(){if(!document.getElementById('pm-font')){var l=document.createElement('link');l.id='pm-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2'+String.fromCharCode(63)+'family=Barlow:wght@400;500;600'+String.fromCharCode(38)+'family=Barlow+Condensed:wght@600;700'+String.fromCharCode(38)+'display=swap';document.head.appendChild(l)}}
-function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS+GL_CSS.split('main.dk .ho').join('.ho')+'.ho{color:#fdebd3;margin:0 0 18px}';document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on)}
+function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS+GL_CSS.split('main.dk .ho').join('.ho')+'.ho{color:#fdebd3;margin:0 0 18px}';document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on);document.body.classList.toggle('fz',!stagione(new Date()).dentro)}
 function glBan(kick,title,sub){return'<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">'+esc(kick)+'</div><h1 class="sc-t">'+esc(title)+'</h1>'+(sub?'<div class="sc-s">'+sub+'</div>':'')+'</div>'}
 function glGen(){return!(corrente==='contratti'&&schedaCt!=null)}
 function glOggi(){
@@ -922,38 +931,46 @@ function glOggi(){
   return'<section class="ho'+(dentro?'':' fuori')+'"><div class="ho-d"><span>'+esc(wd)+'</span><b>'+now.getDate()+'</b><span>'+esc(mo)+'</span></div>'+
     '<div><div class="ho-k">'+ico(dentro?'fiamma':'neve')+esc(k)+'</div><div class="ho-t">'+esc(t)+'</div><div class="ho-s">'+esc(sb)+'</div>'+
     '<div class="ho-p"><i style="width:'+pct+'%"></i><span class="ho-mk" style="left:'+pct+'%">'+SC_FL.replace('CLS','')+'</span></div><div class="ho-l"><span>'+(dentro?fd(S.i):'15/04')+'</span><span>'+pct+'%</span><span>'+(dentro?fd(S.f):'15/10')+'</span></div></div>'+
-    '<div class="ho-n"><b>'+num+'</b><span>'+lab+'</span></div><h1 style="position:absolute;left:-9999px">Oggi</h1></section>';
+    '<div class="ho-n">'+glGauge(dentro?100-pct:pct,dentro?'rest':'pct')+'<b>'+num+'</b><span>'+lab+'</span></div><h1 style="position:absolute;left:-9999px">Oggi</h1></section>'+SC_PIPE;
 }
+function glGauge(p,m){
+  p=Math.max(0,Math.min(100,p));var a=p*1.8-90,L=Math.PI*52,col='#ffc247';
+  if(m==='giorni')col=p<25?'#ff5a5a':(p<50?'#ffc247':'#7bdc8a');else if(m==='rest')col=p<10?'#ff5a5a':(p<25?'#ffc247':'#7bdc8a');
+  var tk='';for(var i=0;i<=10;i++){var t=(-180+i*18)*Math.PI/180,r2=i%5?65:68;tk+='M'+(70+Math.cos(t)*60).toFixed(1)+' '+(74+Math.sin(t)*60).toFixed(1)+'L'+(70+Math.cos(t)*r2).toFixed(1)+' '+(74+Math.sin(t)*r2).toFixed(1)}
+  return'<svg class="ho-g" viewBox="0 0 140 88" role="img" aria-label="Manometro '+Math.round(p)+'%"><path d="M18 74A52 52 0 0 1 122 74" fill="none" stroke="#33200f" stroke-width="10"/><path class="ho-gf" d="M18 74A52 52 0 0 1 122 74" fill="none" stroke="'+col+'" stroke-width="10" stroke-dasharray="'+(L*p/100).toFixed(1)+' '+L.toFixed(1)+'"/><path d="'+tk+'" stroke="#c9a98a" stroke-width="1.6" fill="none"/><g class="ho-nd" style="transform:rotate('+a.toFixed(1)+'deg)"><path d="M68 76L70 30L72 76z" fill="#fdebd3"/></g><circle cx="70" cy="74" r="7" fill="#ff8a1f" stroke="#1b110b" stroke-width="3"/></svg>';
+}
+function glVuoto(t,s){return'<div class="vuoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M12 10v3M6 7h12M9 21v1.5M15 21v1.5"/><circle cx="12" cy="15.5" r=".6" fill="currentColor"/></svg><b>'+esc(t)+'</b>'+(s?'<span>'+esc(s)+'</span>':'')+'</div>'}
 function glHero(o){
   var bars=(o.bars||[]).map(function(b,i){var p=Math.max(0,Math.min(100,Math.round(b.pct)));return(b.t?'<div class="ho-bt">'+esc(b.t)+'</div>':'')+'<div class="ho-p'+(i?' ho-p2':'')+'"><i style="width:'+p+'%"></i>'+(i?'':'<span class="ho-mk" style="left:'+p+'%">'+SC_FL.replace('CLS','')+'</span>')+'</div><div class="ho-l"><span>'+esc(b.l||'')+'</span><span>'+(b.m==null?p+'%':esc(b.m))+'</span><span>'+esc(b.r||'')+'</span></div>'}).join('');
   var badge='<div class="ho-d ho-i">'+ico(o.ic)+'<span>'+esc(o.bl||'')+'</span></div>';
-  return'<section class="ho'+(o.fuori?' fuori':'')+'">'+badge+'<div><div class="ho-k">'+ico('fiamma')+esc(o.kick)+'</div><div class="ho-t">'+esc(o.title)+'</div><div class="ho-s">'+esc(o.sub||'')+'</div>'+(o.sub2?'<div class="ho-s ho-s2">'+esc(o.sub2)+'</div>':'')+bars+'</div><div class="ho-n"><b>'+o.num+'</b><span>'+esc(o.lab)+'</span></div><h1 style="position:absolute;left:-9999px">'+esc(o.title)+'</h1></section>';
+  var fz=o.fuori!=null?o.fuori:!stagione(new Date()).dentro;
+  return'<section class="ho'+(fz?' fuori':'')+'">'+badge+'<div><div class="ho-k">'+ico('fiamma')+esc(o.kick)+'</div><div class="ho-t">'+esc(o.title)+'</div><div class="ho-s">'+esc(o.sub||'')+'</div>'+(o.sub2?'<div class="ho-s ho-s2">'+esc(o.sub2)+'</div>':'')+bars+'</div><div class="ho-n">'+(o.g?glGauge(o.g.p,o.g.m):'')+'<b>'+o.num+'</b><span>'+esc(o.lab)+'</span></div><h1 style="position:absolute;left:-9999px">'+esc(o.title)+'</h1></section>'+(o.nopipe?'':SC_PIPE);
 }
 function glHubHero(h,mioC,I,sl,qd,t){
-  var c=mioC.find(function(x){return x.data_inizio&&x.scadenza})||null,bars=[],num=I.length,lab='impianti';
-  if(c){var tot=Math.max(1,scGiorni(c.data_inizio,c.scadenza)),el=scGiorni(c.data_inizio,t);bars.push({t:'Tempo',pct:el/tot*100,l:fmtD(c.data_inizio),r:fmtD(c.scadenza)});num=Math.max(0,scGiorni(t,c.scadenza));lab='giorni alla scadenza del contratto'}
+  var c=mioC.find(function(x){return x.data_inizio&&x.scadenza})||null,bars=[],num=I.length,lab='impianti',gg0=null;
+  if(c){var tot=Math.max(1,scGiorni(c.data_inizio,c.scadenza)),el=scGiorni(c.data_inizio,t);bars.push({t:'Tempo',pct:el/tot*100,l:fmtD(c.data_inizio),r:fmtD(c.scadenza)});num=Math.max(0,scGiorni(t,c.scadenza));lab='giorni alla scadenza del contratto';gg0={p:100-el/tot*100,m:'rest'}}
   if(h.tipo==='gc'&&!sl.error&&!qd.error&&qd.data&&qd.data.length){var C=calcContab(sl.data||[],qd.data),P=C.per[C.attivo],L=P&&P[h.lotto];if(L){var tv=totV(L);if(tv.tetto)bars.push({t:'Costi · '+C.attivo,pct:tv.fatto/tv.tetto*100,l:eur(tv.fatto),m:fmtN(tv.fatto/tv.tetto*100,1)+'%',r:eur(tv.tetto)})}}
-  return glHero({ic:'hub',bl:h.nome,kick:'Hub contratto',title:h.tit,sub:h.sub,num:num,lab:lab,bars:bars});
+  return glHero({ic:'hub',bl:h.nome,kick:'Hub contratto',title:h.tit,sub:h.sub,num:num,lab:lab,bars:bars,g:gg0});
 }
 function glMod(m,rows){
   var A=dati,T=oggi(),n=rows.length,t=A.length,nm=m.pi?'Parco impianti':m.nome,k=corrente;
   var o={ic:k,bl:nm,kick:'Gestione calore · MM',title:nm+(k==='censimento'?' · schede tecniche':''),num:t,lab:'elementi',sub:'',sub2:n!==t?'Mostrati '+n+' di '+t:''};
   var top=function(key,x){var c={};A.forEach(function(r){var v=r[key];if(v)c[v]=(c[v]||0)+1});return Object.keys(c).sort(function(a,b){return c[b]-c[a]}).slice(0,x).map(function(v){return v+' '+c[v]}).join(' · ')};
   if(k==='attivita'){var ap=A.filter(function(r){return r.stato!=='Fatto'}),sc=ap.filter(function(r){return r.scadenza&&r.scadenza<T}).length,f30=ap.filter(function(r){return r.scadenza&&r.scadenza>=T&&r.scadenza<=aggiungiGiorni(30)}).length,al=ap.filter(function(r){return r.priorita==='Alta'}).length;
-    o.kick='Attività e priorità';o.num=ap.length;o.lab='attività aperte';o.sub=sc+' scadute · '+f30+' entro 30 giorni · '+al+' con priorità alta';o.bars=[{t:'Completate',pct:t?(t-ap.length)/t*100:0,l:'0',m:(t-ap.length)+' su '+t,r:String(t)}]}
+    o.kick='Attività e priorità';o.num=ap.length;o.lab='attività aperte';o.sub=sc+' scadute · '+f30+' entro 30 giorni · '+al+' con priorità alta';o.g={p:t?(t-ap.length)/t*100:0,m:'pct'};o.bars=[{t:'Completate',pct:t?(t-ap.length)/t*100:0,l:'0',m:(t-ap.length)+' su '+t,r:String(t)}]}
   else if(k==='scadenze'){var ap2=A.filter(function(r){return!r.fatto}),late=ap2.filter(function(r){return r.data&&r.data<T}).length,fut=ap2.filter(function(r){return r.data&&r.data>=T}).sort(function(a,b){return a.data<b.data?-1:1}),n30=fut.filter(function(r){return r.data<=aggiungiGiorni(30)}).length;
-    o.kick='Calendario delle scadenze';o.sub=ap2.length+' aperte · '+late+' già scadute · '+n30+' entro 30 giorni';if(fut.length){o.num=scGiorni(T,fut[0].data);o.lab='giorni alla prossima scadenza';o.sub2=(o.sub2?o.sub2+' · ':'')+'Prossima: '+fut[0].titolo+' ('+fmtD(fut[0].data)+')'}else{o.num=ap2.length;o.lab='scadenze aperte'}}
+    o.kick='Calendario delle scadenze';o.sub=ap2.length+' aperte · '+late+' già scadute · '+n30+' entro 30 giorni';if(fut.length){o.num=scGiorni(T,fut[0].data);o.g={p:Math.min(100,scGiorni(T,fut[0].data)/365*100),m:'giorni'};o.lab='giorni alla prossima scadenza';o.sub2=(o.sub2?o.sub2+' · ':'')+'Prossima: '+fut[0].titolo+' ('+fmtD(fut[0].data)+')'}else{o.num=ap2.length;o.lab='scadenze aperte'}}
   else if(k==='memoria'){o.kick='Know-how operativo';o.lab='schede di know-how';o.sub=top('categoria',5)}
   else if(k==='documenti'){var kb=0,fo={},last='';A.forEach(function(r){kb+=Number(r.dimensione_kb)||0;if(r.cartella)fo[r.cartella]=1;if(r.modificato_il&&r.modificato_il>last)last=r.modificato_il});
     o.kick='Archivio documenti';o.lab='file archiviati';o.sub=fmtN(kb/1024,0)+' MB · '+Object.keys(fo).length+' cartelle'+(last?' · ultimo aggiornamento '+fmtD(String(last).slice(0,10)):'')}
   else if(k==='registro'){var lim=new Date(Date.now()-7*864e5).toISOString(),r7=A.filter(function(r){return r.quando>=lim}).length,u=A[0];
     o.kick='Tracciato delle modifiche';o.num=r7;o.lab='modifiche negli ultimi 7 giorni';o.sub=t+' modifiche registrate'+(u?' · ultima: '+String(u.utente||'').split('@')[0]+', '+fmtDT(u.quando):'')}
   else if(k==='impianti'){var fz=A.filter(function(r){return r.stato==='In funzione'}).length,fe=A.filter(function(r){return/fermo|parziale/i.test(r.stato||'')}).length;
-    o.kick='Parco impianti';o.lab='impianti';o.sub=fz+' in funzione · '+fe+' fermi o parziali · '+top('lotto',3);o.bars=[{t:'In funzione',pct:t?fz/t*100:0,l:'0',m:fz+' su '+t,r:String(t)}]}
+    o.kick='Parco impianti';o.lab='impianti';o.sub=fz+' in funzione · '+fe+' fermi o parziali · '+top('lotto',3);o.g={p:t?fz/t*100:0,m:'pct'};o.bars=[{t:'In funzione',pct:t?fz/t*100:0,l:'0',m:fz+' su '+t,r:String(t)}]}
   else if(k==='censimento'){o.kick='Schede tecniche';o.lab='schede';o.sub=A.filter(function(r){return r.criticita}).length+' con criticità segnalata · '+top('lotto',3)}
   else if(k==='contatti'){o.kick='Rubrica';o.lab='contatti';o.sub=top('ente',4)}
   else if(k==='contratti'){o.kick='Contratti';o.lab='contratti';var fu2=A.filter(function(r){return r.scadenza&&r.scadenza>=T}).sort(function(a,b){return a.scadenza<b.scadenza?-1:1});
-    if(fu2.length){o.num=scGiorni(T,fu2[0].scadenza);o.lab='giorni alla prossima scadenza contrattuale';o.sub='Prossima: '+fu2[0].nome+' ('+fmtD(fu2[0].scadenza)+')'}else o.sub=t+' contratti'}
+    if(fu2.length){o.num=scGiorni(T,fu2[0].scadenza);o.g={p:Math.min(100,scGiorni(T,fu2[0].scadenza)/365*100),m:'giorni'};o.lab='giorni alla prossima scadenza contrattuale';o.sub='Prossima: '+fu2[0].nome+' ('+fmtD(fu2[0].scadenza)+')'}else o.sub=t+' contratti'}
   return glHero(o);
 }
 function glHead(m,rows){
@@ -1373,7 +1390,7 @@ function contabDisegna(){
   let h=SC_CSS+SC_CSS2+'<div class="sc">';
   h+='<div class="sc-top"><span class="sc-k">Confronto tra i lotti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nqd">+ Voce di quadro</button><button class="sc-b" id="esq">Esporta SAL</button><button class="sc-b p" id="nsal">+ Nuovo SAL</button></span></div>';
   var cf=0,ct2=0;nomi.forEach(function(n){var tv=totV(P[n]);cf+=tv.fatto;ct2+=tv.tetto});
-  h+=glHero({ic:'contabilita',bl:'Contabilità',kick:'Tutti i lotti',title:'Contabilità',sub:'Importi netti, IVA esclusa, con gli oneri della sicurezza',sub2:'Periodo: '+ct.periodo,num:ctSal.length,lab:'SAL registrati',bars:ct2>0?[{t:'Contabilizzato · '+ct.periodo,pct:cf/ct2*100,l:eur(cf),m:fmtN(cf/ct2*100,1)+'%',r:eur(ct2)}]:[]});
+  h+=glHero({ic:'contabilita',bl:'Contabilità',kick:'Tutti i lotti',title:'Contabilità',sub:'Importi netti, IVA esclusa, con gli oneri della sicurezza',sub2:'Periodo: '+ct.periodo,num:ctSal.length,lab:'SAL registrati',nopipe:true,g:ct2>0?{p:cf/ct2*100,m:'pct'}:null,bars:ct2>0?[{t:'Contabilizzato · '+ct.periodo,pct:cf/ct2*100,l:eur(cf),m:fmtN(cf/ct2*100,1)+'%',r:eur(ct2)}]:[]});
   h+='<p class="sc-note">«Contabilizzato» è la somma dei SAL emessi; il residuo è il tetto meno il contabilizzato e non tiene conto degli ordini già emessi che non sono ancora andati a SAL. Quadro economico, tetti per voce e dettaglio di ogni contratto sono nella scheda del contratto.</p>';
   h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Scheda del contratto:</span>'+['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'].filter(function(n){return ctSal.some(function(s){return s.lotto===n})||ctQuadro.some(function(q){return q.lotto===n})}).map(function(n){return '<button type="button" class="sc-ch" data-vai="'+n+'">'+esc(n.replace('LOTTO','Lotto'))+' →</button>'}).join('')+'</div>';
   if(C.periodi.length>1)h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Periodo:</span>'+C.periodi.map(function(p){return '<button type="button" class="sc-ch'+(p===ct.periodo?' on':'')+'" data-c="periodo" data-v="'+esc(p)+'">'+esc(p)+'</button>'}).join('')+'</div>';
