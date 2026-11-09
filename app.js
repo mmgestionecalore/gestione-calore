@@ -322,7 +322,7 @@ function disegna(){
   }
   if(sort)rows=[...rows].sort((a,b)=>{const x=a[sort.k]??'',y=b[sort.k]??'';return(x>y?1:x<y?-1:0)*sort.d});
   const cols=m.campi.filter(c=>c.list&&!(m.vista&&voceCens&&(c.k==='impianto'||c.k==='criticita'))).concat(m.vista&&voceCens?[{k:'__voce',l:voceCens,t:'text'}]:[]).concat(corrente==='impianti'?[{k:'__tag',l:'Tag',t:'text'},{k:'__crit',l:'Criticità principale',t:'text'}]:[]);
-  let h=glGen()?glHead(m,rows):'<div class="bar"><h2 class="hd"><span class="hico">'+ico(corrente)+'</span><span>'+esc(m.pi?'Parco impianti':m.nome)+(corrente==='censimento'?' · schede tecniche':'')+' <span class="muted">('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')</span></span></h2><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>';
+  let h=glGen()?glHead(m,rows):'<div class="bar"><span class="muted" style="font-size:12px;letter-spacing:.14em;text-transform:uppercase">Gestione calore · MM</span><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>'+glMod(m,rows);
   if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'&&vistaMappa?' on':'')+'" data-pi="mappa">Mappa</button><button type="button" class="chip'+(corrente==='impianti'&&!vistaMappa?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
   if(corrente==='contatti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaRubrica?' on':'')+'" data-ct="rubrica">Rubrica</button><button type="button" class="chip'+(vistaRubrica?'':' on')+'" data-ct="elenco">Elenco</button></div>';
   if(corrente==='contratti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaCruscotto?' on':'')+'" data-cc="cruscotto">Cruscotto</button><button type="button" class="chip'+(vistaCruscotto?'':' on')+'" data-cc="elenco">Elenco</button></div>';
@@ -661,7 +661,9 @@ function schedaCtHtml(r){
   if(has&&D)h+='<button class="sc-b" id="scEsp">Esporta SAL</button><button class="sc-b p" id="scNew">+ Nuovo SAL su questo contratto</button>';
   h+='</span></div>';
   var st=ctStato(r),stl=st==='corso'?'In corso':(st==='chiuso'?'Terminato':'In firma');
-  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:'+col+'">'+esc(r.lotto||'')+' · '+stl+'</div><h1 class="sc-t">'+esc(r.nome||'')+'</h1><div class="sc-s">'+esc(r.fornitore||'')+(r.data_inizio?' · dal '+fmtD(r.data_inizio):'')+(r.scadenza?' · al '+fmtD(r.scadenza):'')+'</div></div>';
+  var t0=iso(new Date()),hb=[],hn='—',hl='contratto senza scadenza';
+  if(r.data_inizio&&r.scadenza){var htot=Math.max(1,scGiorni(r.data_inizio,r.scadenza));hb.push({t:'Tempo',pct:scGiorni(r.data_inizio,t0)/htot*100,l:fmtD(r.data_inizio),r:fmtD(r.scadenza)});hn=Math.max(0,scGiorni(t0,r.scadenza));hl='giorni alla scadenza'}
+  h+=glHero({ic:'contratti',bl:r.lotto||'Contratto',kick:(r.lotto||'')+' · '+stl,title:r.nome||'',sub:r.fornitore||'',num:hn,lab:hl,bars:hb});
   var oggi=new Date();oggi.setHours(0,0,0,0);var pt=null,gg=null;
   if(r.data_inizio&&r.scadenza){var tot=scGiorni(r.data_inizio,r.scadenza),pas=Math.round((oggi-new Date(r.data_inizio+'T00:00:00'))/864e5);pt=tot>0?Math.max(0,Math.min(100,pas/tot*100)):null}
   if(r.scadenza)gg=Math.round((new Date(r.scadenza+'T00:00:00')-oggi)/864e5);
@@ -814,6 +816,7 @@ var NORM_CSS2='<style>'+
 function normAmb(r){return[r.ambito].concat(String(r.altri_ambiti||'').split(';').map(function(x){return x.trim()})).filter(Boolean)}
 function normCol(a){var f=NORM_FAM.find(function(x){return x[0]===a});return f?f[1]:'#9a8f85'}
 function normDisegna(){
+  glSkin(false);glFont();
   const q=($('#search').value||'').trim().toLowerCase(),m=MODULI.riferimenti;
   if(q.length>=3&&normTxt.q!==q&&normReq!==q){normReq=q;clearTimeout(normTim);normTim=setTimeout(function(){normCerca(q)},350)}
   if(q.length<3){normTxt={q:'',f:{}};normReq='';normTok++}
@@ -824,7 +827,7 @@ function normDisegna(){
   rows.sort(function(a,b){return String(a.ambito||'').localeCompare(String(b.ambito||''),'it')||String(b.data_atto||'').localeCompare(String(a.data_atto||''))||String(a.titolo||'').localeCompare(String(b.titolo||''),'it')});
   let h=SC_CSS+NORM_CSS+NORM_CSS2+'<div class="sc">';
   h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
-  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">Leggi, decreti, ordinanze, norme tecniche</div><h1 class="sc-t">Normativa e riferimenti</h1><div class="sc-s">'+dati.length+' schede in '+NORM_FAM.length+' famiglie · la ricerca in alto cerca anche dentro il testo dei documenti</div></div>';
+  h+=glHero({ic:'riferimenti',bl:'Normativa',kick:'Leggi, decreti, ordinanze, norme tecniche',title:'Normativa e riferimenti',sub:NORM_FAM.length+' famiglie di riferimento',sub2:'La ricerca in alto cerca anche dentro il testo dei documenti',num:dati.length,lab:'schede'});
   h+='<div class="fam"><button type="button" class="ft'+(normF.amb?'':' on')+'" style="--c:#9a8f85" data-na=""><div class="cn">'+dati.length+'</div><div class="nm">Tutte</div></button>'+NORM_FAM.map(function(f){var n=dati.filter(function(r){return normAmb(r).indexOf(f[0])>-1}).length;return'<button type="button" class="ft'+(normF.amb===f[0]?' on':'')+'" style="--c:'+f[1]+'" data-na="'+esc(f[0])+'"><div class="cn">'+n+'</div><div class="nm">'+esc(f[0])+'</div></button>'}).join('')+'</div>';
   if(normF.amb&&!NORM_FAM.some(function(f){return f[0]===normF.amb}))h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Etichetta:</span><button type="button" class="sc-ch on" data-na="">'+esc(normF.amb)+' ×</button></div>';
   h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Tipo:</span>'+tipi.map(function(t){return'<button type="button" class="sc-ch'+(normF.tipo===t?' on':'')+'" data-nt="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>';
@@ -906,7 +909,7 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 '@media(max-width:640px){main.dk{padding:14px;width:calc(100% - 16px);margin:8px auto 32px}main.dk .hero{padding:18px}main.dk .hero .big{font-size:30px}main.dk .hero>.fl{display:none}main.dk .kpi b{font-size:36px}main.dk h3,main.dk .ch{font-size:21px}}'+
 '@media print{main.dk{--bg:#fff;--bg2:#f3ece3;--fg:#000;--mut:#444;--card:#fff;--bd:#ccc;--ac:#000;background:#fff;color:#000;padding:0;width:auto;margin:0}main.dk .card,main.dk .kpi,main.dk .hero{background:#fff;color:#000;border-color:#ccc}main.dk .sc-ban{background:#fff;color:#000;border-color:#ccc}main.dk .sc-t,main.dk .sc-s,main.dk .sc-k,main.dk .kpi b,main.dk .hero .big,main.dk .hero .sub{color:#000}main.dk .ch,main.dk h3{color:#000}}';
 function glFont(){if(!document.getElementById('pm-font')){var l=document.createElement('link');l.id='pm-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2'+String.fromCharCode(63)+'family=Barlow:wght@400;500;600'+String.fromCharCode(38)+'family=Barlow+Condensed:wght@600;700'+String.fromCharCode(38)+'display=swap';document.head.appendChild(l)}}
-function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS;document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on)}
+function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS+GL_CSS.split('main.dk .ho').join('.ho')+'.ho{color:#fdebd3;margin:0 0 18px}';document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on)}
 function glBan(kick,title,sub){return'<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">'+esc(kick)+'</div><h1 class="sc-t">'+esc(title)+'</h1>'+(sub?'<div class="sc-s">'+sub+'</div>':'')+'</div>'}
 function glGen(){return!((corrente==='impianti'&&vistaMappa)||(corrente==='contatti'&&vistaRubrica)||(corrente==='contratti'&&(vistaCruscotto||schedaCt!=null)))}
 function glOggi(){
@@ -1364,12 +1367,14 @@ var SC_CSS2='<style>'+
 '.sc .sc-lg table tr.row{cursor:pointer}.sc .sc-lg table tr.row:hover td{background:#2f1c10!important}'+
 '</style>';
 function contabDisegna(){
+  glSkin(false);glFont();
   const C=calcContab(ctSal,ctQuadro);
   if(!ct.periodo||!C.periodi.includes(ct.periodo))ct.periodo=C.attivo;
   const P=C.per[ct.periodo]||{},nomi=Object.keys(P).sort(),primo=ct.periodo===C.periodi[0];
   let h=SC_CSS+SC_CSS2+'<div class="sc">';
   h+='<div class="sc-top"><span class="sc-k">Confronto tra i lotti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nqd">+ Voce di quadro</button><button class="sc-b" id="esq">Esporta SAL</button><button class="sc-b p" id="nsal">+ Nuovo SAL</button></span></div>';
-  h+='<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">Tutti i lotti</div><h1 class="sc-t">Contabilità</h1><div class="sc-s">'+ctSal.length+' SAL · importi netti, IVA esclusa, con gli oneri della sicurezza</div></div>';
+  var cf=0,ct2=0;nomi.forEach(function(n){var tv=totV(P[n]);cf+=tv.fatto;ct2+=tv.tetto});
+  h+=glHero({ic:'contabilita',bl:'Contabilità',kick:'Tutti i lotti',title:'Contabilità',sub:'Importi netti, IVA esclusa, con gli oneri della sicurezza',sub2:'Periodo: '+ct.periodo,num:ctSal.length,lab:'SAL registrati',bars:ct2>0?[{t:'Contabilizzato · '+ct.periodo,pct:cf/ct2*100,l:eur(cf),m:fmtN(cf/ct2*100,1)+'%',r:eur(ct2)}]:[]});
   h+='<p class="sc-note">«Contabilizzato» è la somma dei SAL emessi; il residuo è il tetto meno il contabilizzato e non tiene conto degli ordini già emessi che non sono ancora andati a SAL. Quadro economico, tetti per voce e dettaglio di ogni contratto sono nella scheda del contratto.</p>';
   h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Scheda del contratto:</span>'+['LOTTO 1','LOTTO 2','TLR','LEGIONELLA'].filter(function(n){return ctSal.some(function(s){return s.lotto===n})||ctQuadro.some(function(q){return q.lotto===n})}).map(function(n){return '<button type="button" class="sc-ch" data-vai="'+n+'">'+esc(n.replace('LOTTO','Lotto'))+' →</button>'}).join('')+'</div>';
   if(C.periodi.length>1)h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Periodo:</span>'+C.periodi.map(function(p){return '<button type="button" class="sc-ch'+(p===ct.periodo?' on':'')+'" data-c="periodo" data-v="'+esc(p)+'">'+esc(p)+'</button>'}).join('')+'</div>';
