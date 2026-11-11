@@ -224,3 +224,6 @@ footer.recente h3.ch{font-size:13px;color:var(--mut)}
 .login button.ghost{background:transparent;color:#fdebd3;border:1px solid #6b3a1c}
 .login .muted,.login .hint,.login .chk{color:#c9a98a}
 .login .msg{color:#ff8a98}
+
+/* testo schede normativa: rispetta gli a capo */
+.sc .nr-x{white-space:pre-line!important}
