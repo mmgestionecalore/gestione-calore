@@ -819,7 +819,7 @@ var NORM_CSS2='<style>'+
 '.sc .nr-tg button{min-height:26px;padding:0 10px;border-radius:13px;border:1px solid #4a2c18;background:#1b110b;color:#c9a98a;font-size:12px;cursor:pointer;font-family:inherit}'+
 '</style>';
 /* ---------- Normativa: testo comprimibile + consulente normativo ---------- */
-var NORM_SEP='――――――――――――――――――――',consOn=false,consQ='',consHtml='',consCorp=null;
+var NORM_SEP='――――――――――――――――――――',consOn=false;
 var NORM_CSS3='<style>'+
 '.sc .nr-d{margin:2px 0 4px}.sc .nr-d>summary{cursor:pointer;list-style:none;display:inline-block;padding:5px 14px;border-radius:14px;border:1px solid #ff8a1f;color:#ffb35c;font-size:13px;font-weight:600}'+
 '.sc .nr-d>summary::-webkit-details-marker{display:none}.sc .nr-d>summary:hover{background:#33200f}'+
@@ -838,40 +838,6 @@ function normTesto(sx,q){
   else return'<div class="nr-x">'+esc(sx)+'</div>';
   var ap=q&&q.length>=3&&rest.toLowerCase().indexOf(q)>-1;
   return'<div class="nr-x">'+esc(head)+'</div><details class="nr-d"'+(ap?' open':'')+'><summary><span class="a">Mostra '+lab+'</span><span class="b">Riduci</span></summary><div class="nr-x">'+(ap?normHl(rest,q):esc(rest))+'</div></details>'}
-var CONS_STOP=new Set('che chi cosa come quale quali quando dove perche per con senza sono essere stato stati della delle degli dello dell del dei nel nella nelle negli nello sul sulla sulle sugli sullo dal dalla dalle dagli dallo una uno gli le la il lo un in di da su tra fra non piu anche cui ogni deve devo devono puo possono posso fare fatto hanno hanno ha ho avere sia siano dopo prima entro tutti tutte tutto alla alle allo agli all ai al questo questa questi queste quello quella nei sui dai fine norma norme legge'.split(' '));
-function consFold(s){return String(s||'').toLowerCase().replace(/[àáâäã]/g,'a').replace(/[èéêë]/g,'e').replace(/[ìíîï]/g,'i').replace(/[òóôöõ]/g,'o').replace(/[ùúûü]/g,'u').replace(/’/g,"'")}
-function consStem(t){return t.length>7?t.slice(0,t.length-3):t.length>5?t.slice(0,t.length-2):t.length>4?t.slice(0,t.length-1):t}
-function consHl(os,fs,stems){var rg=[];stems.forEach(function(st){var i=0;while((i=fs.indexOf(st,i))>-1){var e=i+st.length;while(e<fs.length&&/[a-z0-9]/.test(fs[e]))e++;rg.push([i,e]);i+=st.length}});rg.sort(function(a,b){return a[0]-b[0]});var o='',pos=0;rg.forEach(function(r){if(r[0]<pos)return;o+=esc(os.slice(pos,r[0]))+'<mark>'+esc(os.slice(r[0],r[1]))+'</mark>';pos=r[1]});return o+esc(os.slice(pos))}
-async function consCerca(){
-  var q=($('#consq').value||'').trim(),out=$('#consris');consQ=q;
-  if(q.length<3){consHtml='';out.innerHTML='';return}
-  out.innerHTML='<p class="sc-note">Ricerca in corso nei documenti, nelle schede e nella memoria operativa…</p>';
-  if(!consCorp){
-    var r=await sb.from('riferimenti_testi').select('file,testo'),me=await sb.from('memoria').select('titolo,categoria,testo');
-    var tit={};dati.forEach(function(x){if(x.file)tit[x.file]=x.titolo});
-    consCorp=[];
-    (r.data||[]).forEach(function(x){consCorp.push({k:'Documento originale',nome:tit[x.file]||x.file,file:x.file,tx:x.testo||''})});
-    dati.forEach(function(x){if(x.testo)consCorp.push({k:'Scheda normativa',nome:x.titolo,tx:x.testo})});
-    (me.data||[]).forEach(function(x){if(x.testo)consCorp.push({k:'Memoria operativa',nome:x.titolo,tx:x.testo})});
-    consCorp.forEach(function(c){c.f=consFold(c.tx);if(c.f.length!==c.tx.length)c.f=c.tx.replace(/[^\x00-\x7f]/g,' ').toLowerCase()});
-  }
-  var tk=(consFold(q).match(/[a-z0-9]{3,}/g)||[]),tk2=tk.filter(function(t){return!CONS_STOP.has(t)});if(!tk2.length)tk2=tk;
-  var stems=[...new Set(tk2.map(consStem))];
-  if(!stems.length){out.innerHTML='<p class="sc-note">Scrivi almeno una parola chiave.</p>';return}
-  var need=Math.max(1,Math.ceil(stems.length*0.5)),W=700,S=450,all=[];
-  consCorp.forEach(function(c,ci){var f=c.f;for(var p=0;p<f.length||p===0;p+=S){var seg=f.substr(p,W),n=0,sc=0;
-    for(var k=0;k<stems.length;k++){var i=seg.indexOf(stems[k]);if(i>-1){n++;sc+=3;var j=seg.indexOf(stems[k],i+stems[k].length);if(j>-1)sc+=1;if(j>-1&&seg.indexOf(stems[k],j+stems[k].length)>-1)sc+=.5}}
-    if(n>=need)all.push({ci:ci,p:p,n:n,sc:sc+(n===stems.length?4:0)});if(p+W>=f.length)break}});
-  all.sort(function(a,b){return b.sc-a.sc});
-  var pick=[],per={};
-  for(var z=0;z<all.length&&pick.length<12;z++){var a=all[z];if((per[a.ci]||[]).length>=3)continue;if((per[a.ci]||[]).some(function(x){return Math.abs(x-a.p)<W}))continue;(per[a.ci]=per[a.ci]||[]).push(a.p);pick.push(a)}
-  var nf=new Set(pick.map(function(a){return a.ci})).size;
-  var h='<p class="sc-note" style="margin-top:12px">Parole cercate: <b>'+stems.map(function(x){return esc(x)+'…'}).join(' · ')+'</b> — '+(pick.length?pick.length+' passaggi in '+nf+' fonti, dal più pertinente':'nessun passaggio trovato (prova con parole diverse o più semplici)')+'</p>';
-  pick.forEach(function(a){var c=consCorp[a.ci],os=c.tx.substr(a.p,W),fs=c.f.substr(a.p,W);
-    h+='<div class="cr"><h4>'+esc(c.nome||'(senza titolo)')+' <span class="nr-b" style="margin-left:6px">'+esc(c.k)+'</span></h4><p>'+(a.p>0?'…':'')+consHl(os,fs,stems)+(a.p+W<c.tx.length?'…':'')+'</p>'+(c.file?'<div class="nr-a"><button type="button" class="sc-ch" data-open="'+esc(c.file)+'">Apri originale</button></div>':'')+'</div>'});
-  consHtml=h;out.innerHTML=h;
-  out.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){normApri(b.dataset.open,b)}});
-}
 function normAmb(r){return[r.ambito].concat(String(r.altri_ambiti||'').split(';').map(function(x){return x.trim()})).filter(Boolean)}
 function normCol(a){var f=NORM_FAM.find(function(x){return x[0]===a});return f?f[1]:'#9a8f85'}
 function normDisegna(){
@@ -887,7 +853,7 @@ function normDisegna(){
   let h=SC_CSS+NORM_CSS+NORM_CSS2+NORM_CSS3+'<div class="sc">';
   h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrcons">Consulente normativo</button><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
   h+=glHero({ic:'riferimenti',bl:'Normativa',kick:'Leggi, decreti, ordinanze, norme tecniche',title:'Normativa e riferimenti',sub:NORM_FAM.length+' famiglie di riferimento',sub2:'La ricerca in alto cerca anche dentro il testo dei documenti',num:dati.length,lab:'schede'});
-  if(consOn)h+='<div class="sc-box" id="cons">'+scH('Consulente normativo')+'<p class="sc-note">Scrivi una domanda o alcune parole chiave: cerco i passaggi più pertinenti in tutti i documenti originali, nelle schede e nella memoria operativa. Non genera risposte: ti indica dove leggere. Verifica sempre sul testo originale.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="consq" class="cq" type="search" placeholder="Es. temperatura massima negli ambienti · campionamento legionella · IVA teleriscaldamento" value="'+esc(consQ)+'"><button type="button" class="sc-b p" id="consgo">Cerca</button></div><div id="consris">'+consHtml+'</div></div>';
+  if(consOn)h+='<div class="sc-box" id="cons"></div>';
   h+='<div class="fam"><button type="button" class="ft'+(normF.amb?'':' on')+'" style="--c:#9a8f85" data-na=""><div class="cn">'+dati.length+'</div><div class="nm">Tutte</div></button>'+NORM_FAM.map(function(f){var n=dati.filter(function(r){return normAmb(r).indexOf(f[0])>-1}).length;return'<button type="button" class="ft'+(normF.amb===f[0]?' on':'')+'" style="--c:'+f[1]+'" data-na="'+esc(f[0])+'"><div class="cn">'+n+'</div><div class="nm">'+esc(f[0])+'</div></button>'}).join('')+'</div>';
   if(normF.amb&&!NORM_FAM.some(function(f){return f[0]===normF.amb}))h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Etichetta:</span><button type="button" class="sc-ch on" data-na="">'+esc(normF.amb)+' ×</button></div>';
   h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Tipo:</span>'+tipi.map(function(t){return'<button type="button" class="sc-ch'+(normF.tipo===t?' on':'')+'" data-nt="'+esc(t)+'">'+esc(t)+'</button>'}).join('')+'</div>';
@@ -911,8 +877,8 @@ function normDisegna(){
   document.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){normApri(b.dataset.open,b)}});
   document.querySelectorAll('[data-mod]').forEach(function(b){b.onclick=function(){modulo(dati.find(function(x){return String(x.id)===b.dataset.mod}),'riferimenti',normVista)}});
   $('#nrnew').onclick=function(){modulo({},'riferimenti',normVista)};
-  $('#nrcons').onclick=function(){consOn=!consOn;normDisegna();if(consOn)setTimeout(function(){var e=$('#consq');if(e){e.focus();e.scrollIntoView({block:'center'})}},60)};
-  if(consOn){$('#consgo').onclick=consCerca;$('#consq').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();consCerca()}};document.querySelectorAll('#consris [data-open]').forEach(function(b){b.onclick=function(){normApri(b.dataset.open,b)}})}
+  $('#nrcons').onclick=function(){consOn=!consOn;normDisegna();if(consOn)setTimeout(function(){var e=document.querySelector('#cons .cx-q');if(e){e.focus();e.scrollIntoView({block:'center'})}},60)};
+  if(consOn&&window.consMonta)window.consMonta($('#cons'),dati);
   $('#nrexp').onclick=function(){esporta('riferimenti',dati)};
 }
 /* ---------- Restyling uniforme: tema scuro per Oggi, Hub, elenchi e Altro ---------- */
