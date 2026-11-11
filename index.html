@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Gestione Calore</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
@@ -43,7 +43,7 @@
 <div id="app" class="hidden">
   <header>
     <a class="brand" href="./" aria-label="Gestione Calore"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#flame"/></svg><span><b>Gestione Calore</b><small>MM · Impianti termici</small></span></a>
-    <input id="search" type="search" placeholder="Cerca in questa sezione…">
+    <div class="srch"><input id="search" type="search" placeholder="Cerca in questa sezione…"><button id="ovunque" type="button" class="ghost" aria-pressed="false" title="Cerca in tutta l'app (impianti, contratti, normativa, appunti…)">Ovunque</button></div>
     <span id="who" class="muted"></span>
     <button id="logout" class="ghost" title="Esci" aria-label="Esci"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="tx">Esci</span></button>
   </header>
@@ -53,6 +53,6 @@
 <dialog id="dlg"><form method="dialog" id="dform"></form></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=56"></script>
+<script src="app.js?v=57"></script>
 </body>
 </html>

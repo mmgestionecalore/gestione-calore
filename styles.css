@@ -227,3 +227,10 @@ footer.recente h3.ch{font-size:13px;color:var(--mut)}
 
 /* testo schede normativa: rispetta gli a capo */
 .sc .nr-x{white-space:pre-line!important}
+
+/* ricerca: interruttore «Ovunque» */
+.srch{display:flex;align-items:center;gap:.4rem;flex:1;max-width:480px}
+.srch input{flex:1;min-width:0}
+header .srch button#ovunque{flex:none;padding:.4rem .8rem;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+header .srch button#ovunque.on{background:linear-gradient(180deg,#ff9a4d,#ff7a26);border-color:#ff9a4d;color:#2a1204}
+@media(max-width:640px){.srch{order:5;flex:1 1 100%;max-width:none}header .srch input{order:0;flex:1 1 auto}}
