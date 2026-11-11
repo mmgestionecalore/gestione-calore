@@ -965,8 +965,7 @@ function glMod(m,rows){
     o.kick='Archivio documenti';o.lab='file archiviati';o.sub=fmtN(kb/1024,0)+' MB · '+Object.keys(fo).length+' cartelle'+(last?' · ultimo aggiornamento '+fmtD(String(last).slice(0,10)):'')}
   else if(k==='registro'){var lim=new Date(Date.now()-7*864e5).toISOString(),r7=A.filter(function(r){return r.quando>=lim}).length,u=A[0];
     o.kick='Tracciato delle modifiche';o.num=r7;o.lab='modifiche negli ultimi 7 giorni';o.sub=t+' modifiche registrate'+(u?' · ultima: '+String(u.utente||'').split('@')[0]+', '+fmtDT(u.quando):'')}
-  else if(k==='impianti'){var fz=A.filter(function(r){return r.stato==='In funzione'}).length,fe=A.filter(function(r){return/fermo|parziale/i.test(r.stato||'')}).length;
-    o.kick='Parco impianti';o.lab='impianti';o.sub=fz+' in funzione · '+fe+' fermi o parziali · '+top('lotto',3);o.g={p:t?fz/t*100:0,m:'pct'};o.bars=[{t:'In funzione',pct:t?fz/t*100:0,l:'0',m:fz+' su '+t,r:String(t)}]}
+  else if(k==='impianti'){o.kick='Parco impianti';o.lab='impianti';o.sub=top('lotto',3)}
   else if(k==='censimento'){o.kick='Schede tecniche';o.lab='schede';o.sub=A.filter(function(r){return r.criticita}).length+' con criticità segnalata · '+top('lotto',3)}
   else if(k==='contatti'){o.kick='Rubrica';o.lab='contatti';o.sub=top('ente',4)}
   else if(k==='contratti'){o.kick='Contratti';o.lab='contratti';var fu2=A.filter(function(r){return r.scadenza&&r.scadenza>=T}).sort(function(a,b){return a.scadenza<b.scadenza?-1:1});
@@ -1101,8 +1100,8 @@ function barraImp(){
   const tg={};dati.forEach(r=>(r.__tags||[]).forEach(t=>{const k=norm(t);(tg[k]=tg[k]||{t,n:0}).n++}));
   const tags=Object.entries(tg).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t,'it'));
   const ch=(g,v,t,n,on)=>'<button type="button" class="chip'+(on?' on':'')+'" data-g="'+g+'" data-v="'+esc(v)+'">'+esc(t)+' <span>'+n+'</span></button>';
-  const attivi=fc.lotto||fc.stato||fc.crit||fc.tag.length;
-  return '<div class="chips fb">'+lotti.map(l=>ch('lotto',l,l,dati.filter(r=>r.lotto===l).length,fc.lotto===l)).join('')+stati.map(x=>ch('stato',x,x,dati.filter(r=>r.stato===x).length,fc.stato===x)).join('')+ch('crit','1','Con criticità principale',dati.filter(r=>r.__crit).length,fc.crit)+'</div>'+
+  const attivi=fc.lotto||fc.crit||fc.tag.length;
+  return '<div class="chips fb">'+lotti.map(l=>ch('lotto',l,l,dati.filter(r=>r.lotto===l).length,fc.lotto===l)).join('')+ch('crit','1','Con criticità principale',dati.filter(r=>r.__crit).length,fc.crit)+'</div>'+
     (tags.length?'<div class="chips fb">'+tags.map(([k,o])=>ch('tag',k,o.t,o.n,fc.tag.includes(k))).join('')+'</div>':'')+
     (attivi?'<div class="vc"><button type="button" class="ghost mini" id="azzera">Azzera filtri</button></div>':'');
 }
@@ -1283,7 +1282,7 @@ async function hubVista(){
   const ritardo=scH.filter(r=>r.data&&r.data<t).length;
   const kpis='<div class="kpis">'+(h.tipo==='leg'?
      kp('',String(stab.length),'Stabili',stab.reduce((a,x)=>a+x.c,0)+' campioni nel 2026')+kp(stab.some(x=>x.p)?'wa':'ok',stab.reduce((a,x)=>a+x.p,0),'Campioni positivi',stab.filter(x=>x.p).length+' stabili interessati'):
-     kp(cnt('Fermo')||cnt('Funzionamento parziale')?'wa':'ok',I.length,'Impianti',cnt('In funzione')+' in funzione · '+(cnt('Fermo')+cnt('Funzionamento parziale'))+' fermi o parziali'))+
+     kp('',I.length,'Impianti',''))+
      kp(ritardo?'ko':scH.length?'wa':'ok',scH.length,'Scadenze aperte',ritardo?ritardo+' già scadute':'')+
      kp('',atH.length,'Attività aperte','')+kp(sgH.length?'wa':'ok',sgH.length,'Segnalazioni aperte','')+'</div>';
   const tabs='<div class="chips" id="hubtabs">'+Object.keys(HUB).map(k=>'<button class="chip'+(k===hubSel?' on':'')+'" data-h="'+k+'">'+esc(HUB[k].nome)+'</button>').join('')+'</div>';
@@ -1297,7 +1296,7 @@ async function hubVista(){
   if(h.tipo==='leg'){
     H+=sez('impianti','Stabili e campionamenti 2026',stab.length?'<div class="tw"><table class="stk"><thead><tr><th>Stabile</th><th class="n">Campioni</th><th class="n">Positivi</th><th>Ultima campagna</th></tr></thead><tbody>'+stab.map(x=>'<tr class="row"><td data-l="Stabile">'+link('memoria',x.r,esc(x.n))+'</td><td class="n" data-l="Campioni">'+x.c+'</td><td class="n" data-l="Positivi"><span class="st '+(x.p?'wa':'ok')+'">'+x.p+'</span></td><td data-l="Ultima campagna">'+(x.u?esc(x.u.d)+' · '+esc(x.u.t.replace(/^campagna di |^prelievi di |^prelievi extra del /,''))+': '+x.u.p+' positivi su '+x.u.c:'—')+'</td></tr>').join('')+'</tbody></table></div><p class="muted" style="font-size:13px;margin:.5rem 0 0">Dati dal portale Rentokil (letti il 01/11/2026). Soglia di riferimento: sotto 100 UFC/L. Le schede si aggiornano dalla Memoria operativa.</p>':vuotoP('Nessuna scheda di campionamento.'));
   }else{
-    H+=sez('impianti','Impianti <span class="muted" style="font-weight:400">('+I.length+')</span>',I.length?'<details><summary>Mostra elenco</summary><ul class="lst">'+I.map(r=>'<li>'+link('impianti',r,esc(r.indirizzo))+' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato||'')+'</span>'+(r.sintesi&&/DA ATTENZIONARE|IN PROSSIMIT/.test(r.sintesi)?' <span class="st '+(/DA ATTENZIONARE/.test(r.sintesi)?'ko':'wa')+'">caldaie '+(/DA ATTENZIONARE/.test(r.sintesi)?'oltre 15 anni':'vicine a 15 anni')+'</span>':'')+'</li>').join('')+'</ul></details>':vuotoP('Nessun impianto.'),'<a href="#" id="vaI" style="margin-left:auto;font-size:13px">Sezione Impianti →</a>');
+    H+=sez('impianti','Impianti <span class="muted" style="font-weight:400">('+I.length+')</span>',I.length?'<details><summary>Mostra elenco</summary><ul class="lst">'+I.map(r=>'<li>'+link('impianti',r,esc(r.indirizzo))+(r.sintesi&&/DA ATTENZIONARE|IN PROSSIMIT/.test(r.sintesi)?' <span class="st '+(/DA ATTENZIONARE/.test(r.sintesi)?'ko':'wa')+'">caldaie '+(/DA ATTENZIONARE/.test(r.sintesi)?'oltre 15 anni':'vicine a 15 anni')+'</span>':'')+'</li>').join('')+'</ul></details>':vuotoP('Nessun impianto.'),'<a href="#" id="vaI" style="margin-left:auto;font-size:13px">Sezione Impianti →</a>');
   }
   H+=sez('contabilita','Contabilità',(cbH||'')+regole,h.tipo==='gc'?'<a href="#" id="vaB" style="margin-left:auto;font-size:13px">Apri Contabilità →</a>':'');
   H+=sez('attivita','Attività aperte <span class="muted" style="font-weight:400">('+atH.length+')</span>',(atH.length?'<ul class="ev">'+atH.map(r=>'<li><span class="dt '+(r.scadenza&&r.scadenza<t?'late':'')+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+link('attivita',r,esc(r.titolo))+' <span class="st '+(tonoStato(r.stato)||'off')+'">'+esc(r.stato)+'</span>'+pri(r.priorita)+'</span></li>').join('')+'</ul>':vuotoP('Nessuna attività aperta.')),'<button class="ghost mini" id="nuA" style="margin-left:auto">+ attività</button>');
