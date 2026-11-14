@@ -10,10 +10,10 @@ const MODULI={
   {k:'titolo',l:'Attività',t:'text',list:1},{k:'priorita',l:'Priorità',t:'sel',o:['Alta','Media','Bassa'],list:1},
   {k:'stato',l:'Stato',t:'sel',o:['Da fare','In corso','In attesa','Fatto'],list:1},{k:'scadenza',l:'Scadenza',t:'date',list:1},{k:'note',l:'Note',t:'long'}]},
  scadenze:{nome:'Scadenze',tab:'scadenze',ord:['data',true],campi:[
-  {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile'],list:1},
+  {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile','Quindicinale'],list:1},
   {k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'fatto',l:'Fatto',t:'bool',list:1},{k:'note',l:'Note',t:'long'}]},
  impianti:{nome:'Parco impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,pi:1,intro:'Tutto sugli impianti in un posto solo: note, più le schede tecniche (il know-how raccolto nel censimento). Filtra per lotto o tag; clic su una riga per aprire la scheda completa con ordini, segnalazioni, scadenze e documenti. Passa a «Schede tecniche» per confrontare una voce su tutte le centrali.',avviso:'I campi contrassegnati «da SharePoint» sono allineati con la lista della Dashboard: per cambiarli modifica la lista, altrimenti al prossimo allineamento tornano al valore della lista.',campi:[
-  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},
+  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},{k:'chiavi_documenti',l:'Chiavi per trovare i documenti (separate da ;)',t:'text'},
   {k:'tipologia',l:'Tipologia',t:'text',list:1,sp:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long',sp:1}]},
  censimento:{nome:'Schede tecniche',tab:'censimento',ord:['ordine',true],vista:1,pi:1,nascosto:1,vai:'impianti',intro:'Il nostro know-how sulle centrali, una scheda per impianto (o per gruppo di impianti). Filtra per lotto e per tag, oppure scegli una voce per confrontarla su tutte le schede. Clic su una riga per leggere la scheda; da lì si modifica. Ogni modifica resta nel Registro.',avviso:'Scheda: una voce per riga, nella forma «Etichetta: testo»; le sotto-voci iniziano con «- ». Criticità principale e Note hanno il loro campo. Tag: separati da virgola, oppure tocca quelli già in uso. Per collegare la scheda a più impianti scrivi gli indirizzi separati da «;», identici a come compaiono nel Parco impianti.',campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},
@@ -156,7 +156,7 @@ function vriga(nome,x,compatto){
 }
 /* Da fare: i fatti in fondo, poi per scadenza (senza data dopo), poi per priorità */
 function ordinaAttivita(rows){const rk={Alta:0,Media:1,Bassa:2},fa=r=>r.stato==='Fatto'?1:0;return rows.slice().sort((a,b)=>fa(a)-fa(b)||(a.scadenza||'9999').localeCompare(b.scadenza||'9999')||(rk[a.priorita]??3)-(rk[b.priorita]??3)||String(a.titolo||'').localeCompare(String(b.titolo||''),'it'))}
-let fonteDoc='',cartDoc='',mostraFatte=false,corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
+let fonteDoc='',cartDoc='',lottoDoc='',mostraFatte=false,corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
 const LIM=300;let limite=LIM;
 const AZIONI={INSERT:'Creata',UPDATE:'Modificata',DELETE:'Eliminata'};
 const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
@@ -283,7 +283,7 @@ async function leggiTutto(m){
 
 /* ---------- elenchi ---------- */
 async function apri(k){schedaCt=null;
-  if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens='';fonteDoc='';cartDoc=''}
+  if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens='';fonteDoc='';cartDoc='';lottoDoc=''}
   corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');glSkin(false);glFont();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':(k==='altro'||(MODULI[k]&&MODULI[k].altro)?'altro':k))));
   if(k!=='attivita')mostraFatte=false;
@@ -309,7 +309,7 @@ function disegna(){
   const m=MODULI[corrente],q=$('#search').value.toLowerCase();
   if(corrente==='impianti')arricchisciImp();
   let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q))||(corrente==='impianti'&&r.__txt.includes(q)));
-  if(corrente==='documenti'){if(fonteDoc)rows=rows.filter(r=>r.fonte===fonteDoc);if(cartDoc)rows=rows.filter(r=>String(r.cartella||'').split(' / ')[0]===cartDoc)}
+  if(corrente==='documenti'){if(fonteDoc)rows=rows.filter(r=>r.fonte===fonteDoc);if(lottoDoc)rows=rows.filter(r=>inLottoDoc(r));if(cartDoc)rows=rows.filter(r=>chiaveCartDoc(r)===cartDoc)}
   const nFatte=corrente==='attivita'?dati.filter(r=>r.stato==='Fatto').length:0;
   if(corrente==='attivita'&&!mostraFatte&&!q)rows=rows.filter(r=>r.stato!=='Fatto');
   if(corrente==='impianti'){
@@ -363,10 +363,11 @@ function disegna(){
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
-  document.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{fonteDoc=fonteDoc===b.dataset.gd?'':b.dataset.gd;cartDoc='';limite=LIM;disegna()});
+  document.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{fonteDoc=fonteDoc===b.dataset.gd?'':b.dataset.gd;cartDoc='';lottoDoc='';limite=LIM;disegna()});
+  document.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{lottoDoc=lottoDoc===b.dataset.gl?'':b.dataset.gl;cartDoc='';limite=LIM;disegna()});
   document.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>window.open(b.dataset.ap,'_blank','noopener'));
   const cd=$('#cdoc');if(cd)cd.onchange=()=>{cartDoc=cd.value;limite=LIM;disegna()};
-  const azd=$('#azzerad');if(azd)azd.onclick=()=>{fonteDoc='';cartDoc='';limite=LIM;disegna()};
+  const azd=$('#azzerad');if(azd)azd.onclick=()=>{fonteDoc='';cartDoc='';lottoDoc='';limite=LIM;disegna()};
   const az=$('#azzera');if(az)az.onclick=()=>{fc={lotto:'',crit:false,tag:[]};voceCens='';limite=LIM;disegna()};
   const vs=$('#voce');if(vs)vs.onchange=()=>{voceCens=vs.value;sort=null;limite=LIM;disegna()};
   if(!m.ro){$('#nuovo').onclick=()=>modulo(null);$('#imp').onclick=importa}$('#exp').onclick=()=>esporta(corrente,dati);
@@ -1072,6 +1073,7 @@ function modulo(r,tab,dopo){
   };
 }
 function spostaData(s,ric){
+  if(ric==='Quindicinale'){const[y0,m0,g0]=s.split('-').map(Number);return iso(new Date(y0,m0-1,g0+15))}
   const [y,mo,g]=s.split('-').map(Number),mesi={Annuale:12,Semestrale:6,Trimestrale:3,Mensile:1}[ric];
   if(!mesi)return null;
   const t=new Date(y,mo-1+mesi,1),ult=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
@@ -1087,20 +1089,35 @@ async function prossimaRicorrenza(o){
 /* ---------- Documenti: filtri per archivio e cartella; ricerca per indirizzo ---------- */
 var SP_ARCH={'Archivio Centralizzati':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Centralizzati','Archivio Teleriscaldamento':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Teleriscaldamento'};
 function nzDoc(t){return' '+String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' '}
-function variantiInd(a){
-  const base=String(a||'').replace(/\(.*?\)/g,' ').trim(),m=base.match(/^(.*?)\s*(\d[\d\/,\-\s]*[A-Za-z]?)\s*$/),s=new Set([nzDoc(base)]);
-  if(m){const st=m[1].trim();m[2].split(/[\/,\-\s]+/).filter(x=>/^\d+/.test(x)).forEach(c=>s.add(nzDoc(st+' '+c)))}
-  return[...s].filter(x=>x.trim().length>3);
+function chiaviRicerca(a,extra){
+  const raw=String(a||''),ex=(raw.match(/\(\s*ex\s+(.*?)\)/i)||[])[1];
+  const base=raw.replace(/\(.*?\)/g,' ').replace(/\s-\s.*$/,'').trim(),out=[];
+  const aggiungi=b=>{const m=b.match(/^(\D*?)\s*(\d.*)$/);
+    if(m){const st=nzDoc(m[1]).trim(),nums=(m[2].match(/\d+/g)||[]);nums.forEach(c=>out.push({st,c}));if(nums.length>1)out.push({st,c:nums.join('')})}
+    else out.push({st:nzDoc(b).trim(),c:null})};
+  aggiungi(base);if(ex)aggiungi(ex.trim());
+  String(extra||'').split(/[;\n]+/).map(x=>nzDoc(x).trim()).filter(x=>x.length>2).forEach(x=>out.push({st:x,c:null}));
+  return out.filter(k=>k.st.length>2);
 }
+function docCorrisponde(t,k){return k.c==null?t.includes(' '+k.st+' '):new RegExp(' '+k.st+'(?: [a-z]+){0,2} '+k.c+' ').test(t)}
+function primaCartDoc(r){return String(r.cartella||'').split(' / ')[0]||'(radice)'}
+function inLottoDoc(r){const p=primaCartDoc(r).toUpperCase();return lottoDoc==='ALTRO'?(p!=='LOTTO 1'&&p!=='LOTTO 2'):p===lottoDoc}
+function chiaveCartDoc(r){const p=String(r.cartella||'').split(' / ');return(lottoDoc==='LOTTO 1'||lottoDoc==='LOTTO 2')?(p[1]||'(radice)'):(p[0]||'(radice)')}
 function barraDoc(){
   const fonti=[...new Set(dati.map(r=>r.fonte).filter(Boolean))].sort();
-  const base=fonteDoc?dati.filter(r=>r.fonte===fonteDoc):dati;
-  const cs={};base.forEach(r=>{const k=String(r.cartella||'').split(' / ')[0]||'(radice)';cs[k]=(cs[k]||0)+1});
+  const cent=fonteDoc==='Archivio Centralizzati';
+  let base=fonteDoc?dati.filter(r=>r.fonte===fonteDoc):dati;
+  if(cent&&lottoDoc)base=base.filter(inLottoDoc);
+  const cs={};base.forEach(r=>{const k=chiaveCartDoc(r);cs[k]=(cs[k]||0)+1});
   const cart=Object.entries(cs).sort((a,b)=>a[0].localeCompare(b[0],'it'));
   const ch=(v,n,on)=>'<button type="button" class="chip'+(on?' on':'')+'" data-gd="'+esc(v)+'">'+esc(v.replace(/^Archivio /,''))+' <span>'+n+'</span></button>';
+  const cl=(v,t,n)=>'<button type="button" class="chip'+(lottoDoc===v?' on':'')+'" data-gl="'+v+'">'+t+' <span>'+n+'</span></button>';
+  const cen=dati.filter(r=>r.fonte==='Archivio Centralizzati'),np=k=>cen.filter(r=>primaCartDoc(r).toUpperCase()===k).length;
+  const sub=cent?'<div class="chips fb">'+cl('LOTTO 1','Lotto 1',np('LOTTO 1'))+cl('LOTTO 2','Lotto 2',np('LOTTO 2'))+cl('ALTRO','Comuni ai lotti e altro',cen.length-np('LOTTO 1')-np('LOTTO 2'))+'</div>':'';
   const ap=Object.keys(SP_ARCH).filter(k=>fonti.includes(k)).map(k=>'<button type="button" class="ghost mini" data-ap="'+SP_ARCH[k]+'">Apri '+esc(k)+' su SharePoint</button>').join(' ');
-  return '<div class="chips fb">'+fonti.map(f=>ch(f,dati.filter(r=>r.fonte===f).length,fonteDoc===f)).join('')+'</div>'+
-    '<div class="vc"><label>Cartella principale <select id="cdoc"><option value="">— tutte —</option>'+cart.map(([k,n])=>'<option value="'+esc(k)+'"'+(k===cartDoc?' selected':'')+'>'+esc(k)+' ('+n+')</option>').join('')+'</select></label> '+ap+((fonteDoc||cartDoc)?' <button type="button" class="ghost mini" id="azzerad">Azzera filtri</button>':'')+'</div>';
+  const lab=(lottoDoc==='LOTTO 1'||lottoDoc==='LOTTO 2')?'Cartella di '+lottoDoc.replace('LOTTO','Lotto'):'Cartella principale';
+  return '<div class="chips fb">'+fonti.map(f=>ch(f,dati.filter(r=>r.fonte===f).length,fonteDoc===f)).join('')+'</div>'+sub+
+    '<div class="vc"><label>'+lab+' <select id="cdoc"><option value="">— tutte —</option>'+cart.map(([k,n])=>'<option value="'+esc(k)+'"'+(k===cartDoc?' selected':'')+'>'+esc(k)+' ('+n+')</option>').join('')+'</select></label> '+ap+((fonteDoc||cartDoc||lottoDoc)?' <button type="button" class="ghost mini" id="azzerad">Azzera filtri</button>':'')+'</div>';
 }
 async function scheda(r){
   const a=r.indirizzo,coll=[
@@ -1109,8 +1126,8 @@ async function scheda(r){
    ['scadenze','Scadenze',x=>fmtD(x.data)+' · '+(x.titolo||'')+(x.fatto?' ✔':'')],
    ['programmazione','Programmazione',x=>(x.anno||'')+' · '+(x.titolo||'')+' · '+fmtN(x.importo)]];
   const res=await Promise.all(coll.map(c=>sb.from(c[0]).select('*').eq('impianto',a).order(MODULI[c[0]].ord[0],{ascending:false,nullsFirst:false})));
-  const [dc,ce]=await Promise.all([sb.from('documenti').select('titolo,cartella,link').or(variantiInd(a).flatMap(v=>{const p=v.trim().replace(/ /g,'_');return['cartella.ilike.%'+p+'%','titolo.ilike.%'+p+'%']}).join(',')).limit(500),sb.from('censimento').select('*').ilike('impianto','%'+a+'%').order('ordine')]);
-  const vi=variantiInd(a),dfil=(dc.data||[]).filter(x=>{const t=nzDoc(x.cartella+' '+x.titolo);return vi.some(k=>t.includes(k))});dc.count=dfil.length;dc.data=dfil.slice(0,40);
+  const [dc,ce]=await Promise.all([sb.from('documenti').select('titolo,cartella,link').or(chiaviRicerca(a,r.chiavi_documenti).flatMap(k=>{const p='%'+k.st.replace(/ /g,'_')+'%'+(k.c?k.c+'%':'');return['cartella.ilike.'+p,'titolo.ilike.'+p]}).join(',')).limit(800),sb.from('censimento').select('*').ilike('impianto','%'+a+'%').order('ordine')]);
+  const vi=chiaviRicerca(a,r.chiavi_documenti),dfil=(dc.data||[]).filter(x=>{const t=nzDoc(x.cartella+' '+x.titolo);return vi.some(k=>docCorrisponde(t,k))});dc.count=dfil.length;dc.data=dfil.slice(0,40);
   const cs=(ce.data||[]).filter(x=>String(x.impianto||'').split(';').some(p=>norm(p)===norm(a)));
   let h='<h3>'+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
