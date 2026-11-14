@@ -65,6 +65,7 @@ const MODULI={
 const TABELLE=Object.keys(MODULI).filter(k=>MODULI[k].tab&&!MODULI[k].ro);
 
 const $=s=>document.querySelector(s);
+let HUB_TESTI=null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -185,7 +186,7 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 async function avvia(){
   const{data:{session}}=await sb.auth.getSession();
   if(session){await entra(session)}else show(false);
-  sb.auth.onAuthStateChange((e,s)=>{if(s&&!utente)entra(s);if(!s){utente=null;show(false);if($('#pwd'))$('#pwd').value=''}});
+  sb.auth.onAuthStateChange((e,s)=>{if(s&&!utente)entra(s);if(!s){utente=null;HUB_TESTI=null;show(false);if($('#pwd'))$('#pwd').value=''}});
 }
 async function entra(session){
   const{data:ok,error}=await sb.rpc('is_autorizzato');
@@ -1291,21 +1292,22 @@ const HUB={
  leg:{nome:'Legionella',tit:'Legionella',sub:'Servizio ponte Rentokil · gara 108/2025 (RTI Bioh-MBT)',tipo:'leg',lotto:null,re:RE_L,ente:/rentokil|bioh|mbt|molecular/i}
 };
 let hubSel='l1';try{hubSel=localStorage.getItem('hub')||'l1'}catch(e){}
-const HUB_RUOLI={
- gc:'<li><b>DEC</b>: Andrea Lampignani, dal 01/08/2022</li><li><b>RdP</b> (responsabile del procedimento): Paolo Viesti, dal 10/03/2025</li><li><b>Permessi nell’app</b>: Andrea Lampignani e Gianluca Sardo hanno gli stessi permessi</li>',
- tlr:'<li><b>DEC</b>: Andrea Lampignani, dal 01/08/2022 (Gianluca Sardo per una finestra di 4 mesi)</li><li><b>RdP</b>: Paolo Viesti, dal 10/03/2025</li><li><b>Permessi nell’app</b>: Andrea Lampignani e Gianluca Sardo</li>',
- leg:'<li><b>DEC</b>: Andrea Lampignani (proposto per la gara 108/2025)</li><li><b>RUP</b>: Paolo Viesti (da verificare per il servizio ponte)</li><li><b>Permessi nell’app</b>: Andrea Lampignani e Gianluca Sardo</li>'
-};
-const HUB_REGOLE={
- gc:['Si tengono separati: canone (SAC bimestrali), utenze e consumi, SAL extra canone.','Extra canone: segnalazione dell’utente al call center MM (SAP/Mitti) → verifica del Building Manager o dell’appaltatore → richiesta di passaggio da canone a extra → il BM inserisce l’ordine extra → il DEC lo approva → SAL bimestrale.','Pagamenti: bimestrali, a 30 giorni, ritenuta 0,50%, split payment. Fatture intestate «in nome e per conto del Comune di Milano».','Penali: 17 codici, tetto 10% dell’importo; contestazione entro 5 giorni lavorativi (schede «Penali» e «Tempi di intervento»).'],
- tlr:['Si tengono separate le utenze (consumi) dalle altre voci.','Bonus di regolarità e sconto del 15% (già recuperato): vedi le schede dedicate.','Spesa «in nome e per conto del Comune di Milano».'],
- leg:['Servizio ponte Rentokil: canone variabile in base alle attività e agli impianti in funzione.','Gara 108/2025: canone bimestrale più extra canone a SAL su ordine del DEC (tetto di spesa); penali fino al 10%.','Spesa «in nome e per conto del Comune di Milano».']
-};
+async function caricaHubTesti(){
+  if(HUB_TESTI)return HUB_TESTI;
+  const r=await sb.from('hub_testi').select('hub,sezione,ordine,etichetta,nota,testo').order('ordine');
+  if(r.error||!r.data)return null;
+  const T={};
+  r.data.forEach(x=>{const h=T[x.hub]||(T[x.hub]={});(h[x.sezione]||(h[x.sezione]=[])).push(x)});
+  HUB_TESTI=T;return T;
+}
+const HUB_ND='<li class="muted">Non disponibile al momento: ricarica la pagina.</li>';
+const hubRuoli=(T,tipo)=>{const a=T&&T[tipo]&&T[tipo].ruoli;return a&&a.length?a.map(x=>'<li><b>'+esc(x.etichetta||'')+'</b>'+(x.nota?esc(' ('+x.nota+')'):'')+': '+esc(x.testo)+'</li>').join(''):HUB_ND};
+const hubRegole=(T,tipo)=>{const a=T&&T[tipo]&&T[tipo].regole;return a&&a.length?a.map(x=>'<li>'+esc(x.testo)+'</li>').join(''):HUB_ND};
 async function hubVista(){
   const h=HUB[hubSel]||HUB.l1,t=oggi(),reg={};
   glSkin(true);$('#main').innerHTML='<p class="muted">Carico l’hub…</p>';
   const vuoto=Promise.resolve({data:[],error:null,count:null});
-  const[co,sc,at,im,me,ctt,sg,sl,qd]=await Promise.all([
+  const[co,sc,at,im,me,ctt,sg,sl,qd,HT]=await Promise.all([
     sb.from('contratti').select('*').order('nome'),
     sb.from('scadenze').select('*').eq('fatto',false).order('data'),
     sb.from('attivita').select('*').neq('stato','Fatto'),
@@ -1314,7 +1316,8 @@ async function hubVista(){
     sb.from('contatti').select('*').order('nome'),
     sb.from('segnalazioni').select('*').neq('stato','Risolta'),
     h.tipo==='gc'?sb.from('sal').select('*'):vuoto,
-    h.tipo==='gc'?sb.from('quadro').select('*'):vuoto]);
+    h.tipo==='gc'?sb.from('quadro').select('*'):vuoto,
+    caricaHubTesti()]);
   const er=[co,sc,at,im,me,ctt,sg].find(x=>x.error);
   if(er){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(er.error.message)+'</p>';return}
   const altri=[HUB.l1,HUB.l2,HUB.tlr,HUB.leg];
@@ -1361,7 +1364,7 @@ async function hubVista(){
   }
   const ultAgg=[].concat(me.data||[],at.data||[],sc.data||[]).map(r=>r.aggiornato_il||'').sort().pop();
   const ultTxt=ultAgg?new Date(ultAgg).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-  const regole='<ul class="lst">'+HUB_REGOLE[h.tipo].map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+  const regole='<ul class="lst">'+hubRegole(HT,h.tipo)+'</ul>';
   const kp=(tono,val,lab,sub)=>'<div class="kpi '+tono+'"><b>'+val+'</b><span>'+lab+'</span>'+(sub?'<small>'+sub+'</small>':'')+'</div>';
   const ritardo=scH.filter(r=>r.data&&r.data<t).length;
   const kpis='<div class="kpis">'+(h.tipo==='leg'?
@@ -1375,7 +1378,7 @@ async function hubVista(){
   if(dvC){const righe=String(dvC.testo||'').split('\n').map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);
     H+=sez('attivita','Da verificare <span class="muted" style="font-weight:400">('+righe.length+')</span>','<ul class="lst">'+righe.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><p class="muted" style="font-size:13px;margin:.5rem 0 0">'+link('memoria',dvC,'Apri la scheda per modificare o togliere le voci risolte')+'</p>');}
   H+=sez('contratti','Scheda contratto',cH,'<a href="#" id="vaiC" style="margin-left:auto;font-size:13px">Tutti i contratti →</a>');
-  H+=sez('contatti','Ruoli e contatti','<ul class="lst">'+HUB_RUOLI[h.tipo]+'</ul><p class="muted" style="font-size:13px;margin:.4rem 0">Storico, CSE e nomine: scheda «Chi ha ricoperto i ruoli» (Memoria operativa).</p>'+(cH2.length?'<ul class="lst">'+cH2.map(c=>'<li>'+link('contatti',c,esc(c.nome))+' · '+esc(c.ruolo||'')+' · '+esc(c.ente||'')+(c.email?' · '+esc(c.email):'')+(c.telefono?' · '+esc(c.telefono):'')+'</li>').join('')+'</ul>':''));
+  H+=sez('contatti','Ruoli e contatti','<ul class="lst">'+hubRuoli(HT,h.tipo)+'</ul><p class="muted" style="font-size:13px;margin:.4rem 0">Storico, CSE e nomine: scheda «Chi ha ricoperto i ruoli» (Memoria operativa).</p>'+(cH2.length?'<ul class="lst">'+cH2.map(c=>'<li>'+link('contatti',c,esc(c.nome))+' · '+esc(c.ruolo||'')+' · '+esc(c.ente||'')+(c.email?' · '+esc(c.email):'')+(c.telefono?' · '+esc(c.telefono):'')+'</li>').join('')+'</ul>':''));
   H+=sez('scadenze','Scadenze aperte <span class="muted" style="font-weight:400">('+scH.length+')</span>',scH.length?'<ul class="ev">'+scH.map(r=>'<li><span class="dt '+(r.data<t?'late':'')+'">'+(r.data?fmtD(r.data):'—')+'</span><span class="tx">'+link('scadenze',r,esc(r.titolo))+'</span></li>').join('')+'</ul>':vuotoP('Nessuna scadenza aperta.'),'<button class="ghost mini" id="nuS" style="margin-left:auto">+ scadenza</button>');
   if(h.tipo==='leg'){
     H+=sez('impianti','Stabili e campionamenti 2026',stab.length?'<div class="tw"><table class="stk"><thead><tr><th>Stabile</th><th class="n">Campioni</th><th class="n">Positivi</th><th>Ultima campagna</th></tr></thead><tbody>'+stab.map(x=>'<tr class="row"><td data-l="Stabile">'+link('memoria',x.r,esc(x.n))+'</td><td class="n" data-l="Campioni">'+x.c+'</td><td class="n" data-l="Positivi"><span class="st '+(x.p?'wa':'ok')+'">'+x.p+'</span></td><td data-l="Ultima campagna">'+(x.u?esc(x.u.d)+' · '+esc(x.u.t.replace(/^campagna di |^prelievi di |^prelievi extra del /,''))+': '+x.u.p+' positivi su '+x.u.c:'—')+'</td></tr>').join('')+'</tbody></table></div><p class="muted" style="font-size:13px;margin:.5rem 0 0">Dati dal portale Rentokil (letti il 01/11/2026). Soglia di riferimento: sotto 100 UFC/L. Le schede si aggiornano dalla Memoria operativa.</p>':vuotoP('Nessuna scheda di campionamento.'));
