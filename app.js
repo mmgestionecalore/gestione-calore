@@ -156,7 +156,7 @@ function vriga(nome,x,compatto){
 }
 /* Da fare: i fatti in fondo, poi per scadenza (senza data dopo), poi per priorità */
 function ordinaAttivita(rows){const rk={Alta:0,Media:1,Bassa:2},fa=r=>r.stato==='Fatto'?1:0;return rows.slice().sort((a,b)=>fa(a)-fa(b)||(a.scadenza||'9999').localeCompare(b.scadenza||'9999')||(rk[a.priorita]??3)-(rk[b.priorita]??3)||String(a.titolo||'').localeCompare(String(b.titolo||''),'it'))}
-let mostraFatte=false,corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
+let fonteDoc='',cartDoc='',mostraFatte=false,corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
 const LIM=300;let limite=LIM;
 const AZIONI={INSERT:'Creata',UPDATE:'Modificata',DELETE:'Eliminata'};
 const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
@@ -283,7 +283,7 @@ async function leggiTutto(m){
 
 /* ---------- elenchi ---------- */
 async function apri(k){schedaCt=null;
-  if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens=''}
+  if(corrente!==k){fc={lotto:'',crit:false,tag:[]};voceCens='';fonteDoc='';cartDoc=''}
   corrente=k;sort=null;limite=LIM;$('#search').value='';$('#main').removeAttribute('data-hub');glSkin(false);glFont();
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k==='censimento'?'impianti':(k==='altro'||(MODULI[k]&&MODULI[k].altro)?'altro':k))));
   if(k!=='attivita')mostraFatte=false;
@@ -309,6 +309,7 @@ function disegna(){
   const m=MODULI[corrente],q=$('#search').value.toLowerCase();
   if(corrente==='impianti')arricchisciImp();
   let rows=dati.filter(r=>!q||m.campi.some(c=>sv(r[c.k]).toLowerCase().includes(q))||(corrente==='impianti'&&r.__txt.includes(q)));
+  if(corrente==='documenti'){if(fonteDoc)rows=rows.filter(r=>r.fonte===fonteDoc);if(cartDoc)rows=rows.filter(r=>String(r.cartella||'').split(' / ')[0]===cartDoc)}
   const nFatte=corrente==='attivita'?dati.filter(r=>r.stato==='Fatto').length:0;
   if(corrente==='attivita'&&!mostraFatte&&!q)rows=rows.filter(r=>r.stato!=='Fatto');
   if(corrente==='impianti'){
@@ -336,6 +337,7 @@ function disegna(){
   if(m.ro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Registro in sola lettura: tiene traccia di chi crea, modifica o elimina elementi nelle altre sezioni.</p>';
   if(m.intro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">'+esc(m.intro)+'</p>';
   if(m.vista)h+=barraCens();
+  if(corrente==='documenti')h+=barraDoc();
   if(corrente==='impianti'&&!vistaMappa)h+=barraImp();
   if(corrente==='attivita'&&nFatte)h+='<div class="chips fb"><button type="button" class="chip'+(mostraFatte?' on':'')+'" id="fatte">'+(mostraFatte?'Nascondi le attività fatte':'Mostra anche le fatte')+' <span class="muted">'+nFatte+'</span></button></div>';
   h+='<div class="tw"><table class="'+(m.vista?'cens':'stk')+'"><thead><tr>'+cols.map(c=>'<th data-k="'+c.k+'"'+(c.t==='num'?' class="n"':'')+'>'+esc(c.l)+(sort&&sort.k===c.k?(sort.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead><tbody>';
@@ -361,6 +363,10 @@ function disegna(){
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
+  document.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{fonteDoc=fonteDoc===b.dataset.gd?'':b.dataset.gd;cartDoc='';limite=LIM;disegna()});
+  document.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>window.open(b.dataset.ap,'_blank','noopener'));
+  const cd=$('#cdoc');if(cd)cd.onchange=()=>{cartDoc=cd.value;limite=LIM;disegna()};
+  const azd=$('#azzerad');if(azd)azd.onclick=()=>{fonteDoc='';cartDoc='';limite=LIM;disegna()};
   const az=$('#azzera');if(az)az.onclick=()=>{fc={lotto:'',crit:false,tag:[]};voceCens='';limite=LIM;disegna()};
   const vs=$('#voce');if(vs)vs.onchange=()=>{voceCens=vs.value;sort=null;limite=LIM;disegna()};
   if(!m.ro){$('#nuovo').onclick=()=>modulo(null);$('#imp').onclick=importa}$('#exp').onclick=()=>esporta(corrente,dati);
@@ -1077,6 +1083,25 @@ async function prossimaRicorrenza(o){
   const{error}=await sb.from('scadenze').insert(c);
   if(!error)toast('Creata la prossima scadenza: '+fmtD(n));
 }
+
+/* ---------- Documenti: filtri per archivio e cartella; ricerca per indirizzo ---------- */
+var SP_ARCH={'Archivio Centralizzati':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Centralizzati','Archivio Teleriscaldamento':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Teleriscaldamento'};
+function nzDoc(t){return' '+String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' '}
+function variantiInd(a){
+  const base=String(a||'').replace(/\(.*?\)/g,' ').trim(),m=base.match(/^(.*?)\s*(\d[\d\/,\-\s]*[A-Za-z]?)\s*$/),s=new Set([nzDoc(base)]);
+  if(m){const st=m[1].trim();m[2].split(/[\/,\-\s]+/).filter(x=>/^\d+/.test(x)).forEach(c=>s.add(nzDoc(st+' '+c)))}
+  return[...s].filter(x=>x.trim().length>3);
+}
+function barraDoc(){
+  const fonti=[...new Set(dati.map(r=>r.fonte).filter(Boolean))].sort();
+  const base=fonteDoc?dati.filter(r=>r.fonte===fonteDoc):dati;
+  const cs={};base.forEach(r=>{const k=String(r.cartella||'').split(' / ')[0]||'(radice)';cs[k]=(cs[k]||0)+1});
+  const cart=Object.entries(cs).sort((a,b)=>a[0].localeCompare(b[0],'it'));
+  const ch=(v,n,on)=>'<button type="button" class="chip'+(on?' on':'')+'" data-gd="'+esc(v)+'">'+esc(v.replace(/^Archivio /,''))+' <span>'+n+'</span></button>';
+  const ap=Object.keys(SP_ARCH).filter(k=>fonti.includes(k)).map(k=>'<button type="button" class="ghost mini" data-ap="'+SP_ARCH[k]+'">Apri '+esc(k)+' su SharePoint</button>').join(' ');
+  return '<div class="chips fb">'+fonti.map(f=>ch(f,dati.filter(r=>r.fonte===f).length,fonteDoc===f)).join('')+'</div>'+
+    '<div class="vc"><label>Cartella principale <select id="cdoc"><option value="">— tutte —</option>'+cart.map(([k,n])=>'<option value="'+esc(k)+'"'+(k===cartDoc?' selected':'')+'>'+esc(k)+' ('+n+')</option>').join('')+'</select></label> '+ap+((fonteDoc||cartDoc)?' <button type="button" class="ghost mini" id="azzerad">Azzera filtri</button>':'')+'</div>';
+}
 async function scheda(r){
   const a=r.indirizzo,coll=[
    ['ordini','Ordini e manutenzione',x=>fmtD(x.data)+' · '+(x.numero||'')+' · '+(x.codice_stato||'')+' · '+(x.descrizione||'')],
@@ -1084,14 +1109,15 @@ async function scheda(r){
    ['scadenze','Scadenze',x=>fmtD(x.data)+' · '+(x.titolo||'')+(x.fatto?' ✔':'')],
    ['programmazione','Programmazione',x=>(x.anno||'')+' · '+(x.titolo||'')+' · '+fmtN(x.importo)]];
   const res=await Promise.all(coll.map(c=>sb.from(c[0]).select('*').eq('impianto',a).order(MODULI[c[0]].ord[0],{ascending:false,nullsFirst:false})));
-  const [dc,ce]=await Promise.all([sb.from('documenti').select('titolo,cartella,link',{count:'exact'}).ilike('cartella','%'+a+'%').limit(30),sb.from('censimento').select('*').ilike('impianto','%'+a+'%').order('ordine')]);
+  const [dc,ce]=await Promise.all([sb.from('documenti').select('titolo,cartella,link').or(variantiInd(a).flatMap(v=>{const p=v.trim().replace(/ /g,'_');return['cartella.ilike.%'+p+'%','titolo.ilike.%'+p+'%']}).join(',')).limit(500),sb.from('censimento').select('*').ilike('impianto','%'+a+'%').order('ordine')]);
+  const vi=variantiInd(a),dfil=(dc.data||[]).filter(x=>{const t=nzDoc(x.cartella+' '+x.titolo);return vi.some(k=>t.includes(k))});dc.count=dfil.length;dc.data=dfil.slice(0,40);
   const cs=(ce.data||[]).filter(x=>String(x.impianto||'').split(';').some(p=>norm(p)===norm(a)));
   let h='<h3>'+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
   h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+x.id+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
-  h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(x.link)+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
+  h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(x.link)+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a> <span class="muted">'+esc(x.cartella)+'</span></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
   h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button><button type="button" id="mod">Modifica impianto</button></div>';
   $('#dform').innerHTML=h;const d=$('#dlg');if(!d.open)d.showModal();
   $('#ann').onclick=()=>d.close();$('#mod').onclick=()=>modulo(r);larga(d);
