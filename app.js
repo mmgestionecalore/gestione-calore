@@ -69,7 +69,8 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const oggi=()=>iso(new Date());
-const fmtD=d=>d?d.split('-').reverse().join('/'):'';
+const fmtD=d=>d?esc(String(d)).split('-').reverse().join('/'):'';
+const okUrl=u=>/^https?:\/\//i.test(String(u||''))?String(u):'#';
 const fmtN=(n,d=2)=>n==null||n===''?'':Number(n).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d,useGrouping:'always'});
 const aggiungiGiorni=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
 const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
@@ -159,7 +160,7 @@ function ordinaAttivita(rows){const rk={Alta:0,Media:1,Bassa:2},fa=r=>r.stato===
 let fonteDoc='',cartDoc='',lottoDoc='',soloDopp=false,docPre=null,mostraFatte=false,corrente='oggi',dati=[],sort=null,utente=null,indirizzi=[],allineato=null,fc={lotto:'',crit:false,tag:[]},voceCens='',tagCanon={},censAll=[];
 const LIM=300;let limite=LIM;
 const AZIONI={INSERT:'Creata',UPDATE:'Modificata',DELETE:'Eliminata'};
-const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+const fmtDT=v=>{if(!v)return'';const d=new Date(v);return isNaN(d)?esc(String(v)):d.toLocaleString('it-IT',{timeZone:'Europe/Rome',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
 const sv=v=>v==null?'':(typeof v==='object'?JSON.stringify(v):String(v));
 const lab=c=>esc(c.l)+(c.sp?' <span class="sp">da SharePoint</span>':'');
 const tagLista=s=>{const m=new Map();String(s||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{const k=norm(x);if(!m.has(k))m.set(k,x)});return[...m.values()]};
@@ -177,6 +178,7 @@ function vociDi(r){
 
 function msg(t){$('#loginMsg').textContent=t||''}
 function show(logged){$('#login').classList.toggle('hidden',logged);$('#app').classList.toggle('hidden',!logged)}
+document.addEventListener('click',e=>{const a=e.target&&e.target.closest?e.target.closest('a[data-sp]'):null;if(a)e.stopPropagation()},true);
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),3500)}
 
 /* ---------- accesso ---------- */
@@ -344,7 +346,7 @@ function disegna(){
   let ult;
   for(const r of rows.slice(0,limite)){
     if(m.vista&&!sort&&r.lotto!==ult){ult=r.lotto;h+='<tr class="sez"><td colspan="'+cols.length+'">'+esc(r.lotto||'Senza lotto')+' <span class="muted">· '+rows.filter(x=>x.lotto===r.lotto).length+'</span></td></tr>'}
-    h+='<tr class="row" data-id="'+r.id+'">'+cols.map(c=>'<td'+(m.vista?' class="k-'+c.k.replace(/[^a-z]/gi,'')+'"':c.t==='num'?' class="n"':'')+' data-l="'+esc(c.l)+'">'+cella(c,r)+'</td>').join('')+'</tr>';
+    h+='<tr class="row" data-id="'+esc(r.id)+'">'+cols.map(c=>'<td'+(m.vista?' class="k-'+c.k.replace(/[^a-z]/gi,'')+'"':c.t==='num'?' class="n"':'')+' data-l="'+esc(c.l)+'">'+cella(c,r)+'</td>').join('')+'</tr>';
   }
   h+='</tbody></table></div>';
   if(!rows.length)h+=glVuoto('Nessun elemento','Prova a cambiare la ricerca o i filtri');
@@ -396,7 +398,7 @@ function mappaImp(rows){
   var list=rows.filter(function(r){return r.lotto===cur[0]});
   h+='</div><div class="pm-stage"><div class="pm-st" style="color:'+cur[4]+'">'+cur[1]+'<span>'+list.length+'</span></div><div class="pm-grid">';
   list.forEach(function(r){
-    h+='<button type="button" class="pm-n" data-id="'+r.id+'" aria-label="'+esc(r.indirizzo||'Impianto')+'" style="--g:'+cur[4]+'88"><span class="pm-b">'+icoImp(cur[3],cur[4],44)+'</span><span class="pm-t">'+esc(r.indirizzo||'Senza indirizzo')+'</span></button>';
+    h+='<button type="button" class="pm-n" data-id="'+esc(r.id)+'" aria-label="'+esc(r.indirizzo||'Impianto')+'" style="--g:'+cur[4]+'88"><span class="pm-b">'+icoImp(cur[3],cur[4],44)+'</span><span class="pm-t">'+esc(r.indirizzo||'Senza indirizzo')+'</span></button>';
   });
   if(!list.length)h+=glVuoto('Nessun impianto','Nessun impianto in questo lotto con la ricerca attuale');
   return h+'</div></div></div>';
@@ -457,7 +459,7 @@ function rubricaCont(rows){
     var L=nm.charAt(0).toUpperCase();if(!lets[L])lets[L]=1;
     var rk=rbKind(r.ente),c=cur?col:RB_COL[rk];
     var tel=String(r.telefono||'').trim(),ml=String(r.email||'').trim();
-    h+='<div class="rb-r" data-id="'+r.id+'" data-i="'+esc(L)+'"><div class="rb-av" style="border-color:'+c+';color:'+c+'">'+esc(ini)+'</div><div class="rb-nm"><b>'+esc(nm||'(senza nome)')+'</b><span>'+esc([r.ruolo,cur?'':r.ente].filter(Boolean).join(' · '))+'</span></div>';
+    h+='<div class="rb-r" data-id="'+esc(r.id)+'" data-i="'+esc(L)+'"><div class="rb-av" style="border-color:'+c+';color:'+c+'">'+esc(ini)+'</div><div class="rb-nm"><b>'+esc(nm||'(senza nome)')+'</b><span>'+esc([r.ruolo,cur?'':r.ente].filter(Boolean).join(' · '))+'</span></div>';
     if(tel)h+='<span class="rb-t">'+esc(tel)+'</span><a class="rb-b" href="tel:'+esc(tel.replace(/[^0-9+]/g,''))+'" aria-label="Chiama" style="background:'+c+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1b110b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></a>';
     if(ml)h+='<a class="rb-b" href="mailto:'+esc(ml)+'" aria-label="Scrivi" style="border:2px solid '+c+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></a>';
     h+='</div>';
@@ -791,7 +793,7 @@ async function normVista(){
 }
 function normHl(s,q){var i=q?s.toLowerCase().indexOf(q):-1;if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
 async function normApri(file,btn){
-  const w=window.open('','_blank');
+  const w=window.open('','_blank');if(w){try{w.opener=null}catch(e){}}
   const r=await sb.storage.from('norme').createSignedUrl(file,600);
   if(r.error||!r.data){if(w)w.close();if(btn){btn.textContent='Non disponibile';btn.disabled=true}return}
   if(w)w.location=r.data.signedUrl;else window.location=r.data.signedUrl;
@@ -878,7 +880,7 @@ function normDisegna(){
     return'<div class="nr-c" style="--c:'+normCol(r.ambito)+'"><div><span class="nr-b">'+esc(r.tipo||'Senza tipo')+'</span>'+(r.ambito?'<span class="nr-m">'+esc(r.ambito)+'</span>':'')+'</div><div class="nr-t">'+esc(r.titolo)+'</div><div class="nr-m">'+(r.data_atto?esc(fmtD(r.data_atto))+' · ':'')+esc(r.fonte||'')+'</div>'+normTesto(sx,q)+
       (alt.length?'<div class="nr-tg">'+alt.map(function(a){return'<button type="button" data-na="'+esc(a)+'">'+esc(a)+'</button>'}).join('')+'</div>':'')+
       (tx&&tx.sn.length?'<div class="nr-m">'+(tx.n?tx.n+' occorrenze nel testo':'')+'</div>'+tx.sn.map(function(s){return'<div class="nr-sn">…'+normHl(s,q)+'…</div>'}).join(''):'')+
-      '<div class="nr-a">'+(r.file?'<button type="button" class="sc-ch" data-open="'+esc(r.file)+'">Apri originale</button>':'')+(r.link?'<a class="sc-ch" href="'+esc(r.link)+'" target="_blank" rel="noopener">Link</a>':'')+'<button type="button" class="sc-ch" data-mod="'+r.id+'">Modifica</button></div></div>'}).join('')+'</div>'+(rows.length?'':'<p class="sc-note">Nessuna scheda trovata.</p>')+'</div></div>';
+      '<div class="nr-a">'+(r.file?'<button type="button" class="sc-ch" data-open="'+esc(r.file)+'">Apri originale</button>':'')+(r.link?'<a class="sc-ch" href="'+esc(okUrl(r.link))+'" target="_blank" rel="noopener">Link</a>':'')+'<button type="button" class="sc-ch" data-mod="'+esc(r.id)+'">Modifica</button></div></div>'}).join('')+'</div>'+(rows.length?'':'<p class="sc-note">Nessuna scheda trovata.</p>')+'</div></div>';
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-nt]').forEach(function(b){b.onclick=function(){normF.tipo=normF.tipo===b.dataset.nt?'':b.dataset.nt;normDisegna()}});
   document.querySelectorAll('[data-na]').forEach(function(b){b.onclick=function(){var a=b.dataset.na;normF.amb=(a&&normF.amb===a)?'':a;normDisegna();window.scrollTo(0,0)}});
@@ -1022,7 +1024,7 @@ function cella(c,r){
   if(corrente==='registro'&&c.k==='azione')return esc(AZIONI[r[c.k]]||r[c.k]);
   if(corrente==='registro'&&c.k==='tabella')return esc((MODULI[r[c.k]]&&MODULI[r[c.k]].nome)||r[c.k]);
   const v=r[c.k];
-  if(corrente==='documenti'&&c.k==='cartella'&&v&&/^https?:\/\//i.test(r.link||''))return'<a href="'+esc(r.link.replace(/\/[^\/]*$/,''))+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Apri la cartella su SharePoint">'+esc(v)+'</a>';
+  if(corrente==='documenti'&&c.k==='cartella'&&v&&/^https?:\/\//i.test(r.link||''))return'<a href="'+esc(r.link.replace(/\/[^\/]*$/,''))+'" target="_blank" rel="noopener" data-sp="1" title="Apri la cartella su SharePoint">'+esc(v)+'</a>';
   if(c.k==='__tag')return (r.__tags||[]).map(t=>'<span class="tg">'+esc(t)+'</span>').join(' ');
   if(c.k==='__crit'){const t=r.__crit||'';return t.length>110?esc(t.slice(0,109).trimEnd())+'…':esc(t)}
   if(c.k==='__voce')return r.__voce?esc(r.__voce):'<span class="muted">—</span>';
@@ -1034,7 +1036,7 @@ function cella(c,r){
   if(c.t==='date'){if(!v)return'';const chiuso=r.fatto||r.stato==='Fatto'||r.stato==='Risolta';const cl=v&&v<oggi()&&!chiuso?'late':(v&&v<=aggiungiGiorni(30)&&!chiuso?'soon':'');return'<span class="'+cl+'">'+fmtD(v)+'</span>'}
   if(c.t==='num')return fmtN(v,c.dec);
   if(c.t==='bool')return v?'✔':'';
-  if(c.k==='link'&&/^https?:\/\//i.test(v||''))return'<a href="'+esc(v)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">apri</a>';
+  if(c.k==='link'&&/^https?:\/\//i.test(v||''))return'<a href="'+esc(v)+'" target="_blank" rel="noopener" data-sp="1">apri</a>';
   return esc(v);
 }
 
@@ -1137,9 +1139,9 @@ async function scheda(r){
   let h='<h3>'+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
-  h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+x.id+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
+  h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+esc(x.id)+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
-  h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(x.link)+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a> <a class="muted" href="'+esc(String(x.link||'').replace(/\/[^\/]*$/,''))+'" target="_blank" rel="noopener" title="Apri la cartella su SharePoint">'+esc(x.cartella)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
+  h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(okUrl(x.link))+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a> <a class="muted" href="'+esc(okUrl(String(x.link||'').replace(/\/[^\/]*$/,'')))+'" target="_blank" rel="noopener" title="Apri la cartella su SharePoint">'+esc(x.cartella)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
   h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button><button type="button" id="mod">Modifica impianto</button></div>';
   $('#dform').innerHTML=h;const d=$('#dlg');if(!d.open)d.showModal();
   $('#ann').onclick=()=>d.close();$('#mod').onclick=()=>modulo(r);larga(d);
@@ -1274,7 +1276,7 @@ async function ricercaGlobale(){
   let h='',n=0;
   for(const[k,rows,tot]of out){if(!rows.length)continue;n+=rows.length;const m=MODULI[k],cs=m.campi.filter(c=>c.list).slice(0,3);
     h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">'+esc(m.nome)+' <span class="muted">('+(tot>rows.length?rows.length+' di '+tot:rows.length)+')</span>'+(tot>rows.length&&k==='documenti'?' <a href="#" class="vtd" style="font-size:13px;margin-left:.6rem">Vedi tutti nella sezione Documenti →</a>':'')+'</h3><ul class="lst">'+rows.map(r=>{const ql=q.toLowerCase();let sn='';for(const c of m.campi){if(c.t!=='long'&&c.t!=='text')continue;if(cs.some(x=>x.k===c.k))continue;const v=String(r[c.k]||''),i=v.toLowerCase().indexOf(ql);if(i>=0){sn='<small class="muted" style="display:block;margin:.1rem 0 .35rem">…'+esc(v.slice(Math.max(0,i-45),i+q.length+70).replace(/\s+/g,' '))+'…</small>';break}}
-      return'<li><a href="'+(k==='documenti'&&/^https?:\/\//i.test(r.link||'')?esc(r.link)+'" target="_blank" rel="noopener" data-dir="1':'#')+'" data-k="'+k+'" data-id="'+r.id+'">'+esc((m.glob?m.glob(r):cs.map(c=>r[c.k]).filter(Boolean).join(' · '))||'(senza titolo)')+'</a>'+sn+'</li>'}).join('')+'</ul></div>'}
+      return'<li><a href="'+(k==='documenti'&&/^https?:\/\//i.test(r.link||'')?esc(r.link)+'" target="_blank" rel="noopener" data-dir="1':'#')+'" data-k="'+k+'" data-id="'+esc(r.id)+'">'+esc((m.glob?m.glob(r):cs.map(c=>r[c.k]).filter(Boolean).join(' · '))||'(senza titolo)')+'</a>'+sn+'</li>'}).join('')+'</ul></div>'}
   ris.innerHTML=n?h:'<p class="muted">Nessun risultato in tutta l\'archivio.</p>';
   ris.querySelectorAll('a.vtd').forEach(a=>a.onclick=async e=>{e.preventDefault();docPre={q:$('#search').value.trim()};await apri('documenti')});
   ris.querySelectorAll('a[data-k]').forEach(a=>a.onclick=async e=>{if(a.dataset.dir)return;e.preventDefault();const k=a.dataset.k,row=out.find(o=>o[0]===k)[1].find(x=>x.id===a.dataset.id);if(MODULI[k].vista)return schedaCens(row,ricercaGlobale);corrente=k;MODULI[k].dossier?scheda(row):modulo(row,k,()=>apri('oggi'))});
@@ -1319,7 +1321,7 @@ async function hubVista(){
   const mio=(txt,x)=>x.re.test(txt);
   const tuttiRe=r=>altri.some(x=>mio(r,x));
   const dellHub=txt=>h.tipo==='gc'?(mio(txt,h)||!tuttiRe(txt)):mio(txt,h);
-  const link=(tb,r,lab)=>{reg[tb+r.id]=r;return'<a href="#" class="lk" data-t="'+tb+'" data-id="'+r.id+'">'+lab+'</a>'};
+  const link=(tb,r,lab)=>{reg[tb+r.id]=r;return'<a href="#" class="lk" data-t="'+tb+'" data-id="'+esc(r.id)+'">'+lab+'</a>'};
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
   const sez=(ic,tit,body,extra)=>'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico(ic)+tit+(extra||'')+'</h3>'+body+'</div>';
   const vuotoP=s=>'<p class="muted" style="margin:0">'+s+'</p>';
@@ -1437,7 +1439,7 @@ function tabAnni(P,nomi,quote,usaQuote){
   gr.forEach((g,i)=>{const T=tot[i];h+=g.vs.map((v,k)=>'<td class="n'+(k?'':' gl')+'">'+fmtN(T.v[v]||0)+'</td>').join('')+'<td class="n">'+fmtN(T.t)+'</td>'+(g.q?'<td class="n">'+fmtN(T.q)+'</td><td class="n">'+fmtN(T.r)+'</td>':'')});
   h+='</tr></tfoot></table></div>';
   const senza=gr.filter(g=>usaQuote&&!g.q).map(g=>g.n.replace('LOTTO','Lotto'));
-  return h+'<p class="sub2">L’anno è quello indicato sul SAL: per il canone l’anno di budget, per gli extra-canone l’anno degli ordini. Il residuo della quota annua è calcolato sul solo canone'+(senza.length?'; la quota annua del canone non è caricata per: '+senza.join(', ')+'.':'.')+'</p>';
+  return h+'<p class="sub2">L’anno è quello indicato sul SAL: per il canone l’anno di budget, per gli extra-canone l’anno degli ordini. Il residuo della quota annua è calcolato sul solo canone'+(senza.length?'; la quota annua del canone non è caricata per: '+senza.map(esc).join(', ')+'.':'.')+'</p>';
 }
 function cardLotto(nome,L){
   const T=totV(L),res=r2(T.tetto-T.fatto);
@@ -1506,7 +1508,7 @@ function listaSal(){
   for(const s of rows){
     const em=s.stato!=='Annullato';if(em){sn+=Number(s.netto)||0;st+=Number(s.totale)||0}
     const rif=s.periodo_dal?fmtD(s.periodo_dal)+' – '+fmtD(s.periodo_al):(s.n_ordini?s.n_ordini+(s.n_ordini===1?' ordine':' ordini'):'')+(s.anno?(s.n_ordini?' · ':'')+'anno '+s.anno:'');
-    h+='<tr class="row" data-sal="'+s.id+'"'+(em?'':' style="opacity:.62"')+'><td><b>'+(s.numero??'')+'</b> <span class="muted">'+esc((s.lotto||'').replace('LOTTO','Lotto'))+'</span></td><td>'+esc(s.tipo||'')+'</td><td style="white-space:nowrap">'+esc(rif)+'</td><td class="n">'+fmtD(s.emissione)+'</td><td class="n">'+fmtN(s.netto)+'</td><td class="n">'+fmtN(s.totale)+'</td><td class="n">'+fmtN(s.progressivo)+'</td><td>'+cella({k:'stato'},s)+'</td></tr>';
+    h+='<tr class="row" data-sal="'+esc(s.id)+'"'+(em?'':' style="opacity:.62"')+'><td><b>'+(s.numero??'')+'</b> <span class="muted">'+esc((s.lotto||'').replace('LOTTO','Lotto'))+'</span></td><td>'+esc(s.tipo||'')+'</td><td style="white-space:nowrap">'+esc(rif)+'</td><td class="n">'+fmtD(s.emissione)+'</td><td class="n">'+fmtN(s.netto)+'</td><td class="n">'+fmtN(s.totale)+'</td><td class="n">'+fmtN(s.progressivo)+'</td><td>'+cella({k:'stato'},s)+'</td></tr>';
   }
   h+='</tbody>'+(rows.length?'<tfoot><tr><td colspan="4">Totale SAL emessi nell’elenco</td><td class="n">'+fmtN(sn)+'</td><td class="n">'+fmtN(st)+'</td><td colspan="2"></td></tr></tfoot>':'')+'</table></div>';
   if(!rows.length)h+='<p class="muted">Nessun SAL con questi filtri.</p>';
@@ -1515,7 +1517,7 @@ function listaSal(){
 function tabQuadro(){
   const rows=[...ctQuadro].sort((a,b)=>String(a.periodo).localeCompare(String(b.periodo),'it')||String(a.lotto).localeCompare(String(b.lotto))||String(a.voce).localeCompare(String(b.voce),'it'));
   let h='<details class="card" style="margin-top:1.4rem"><summary>Quadro economico: tetti per voce ('+rows.length+')</summary><p class="sub2">Importo base = valore contrattuale; importo attuale = dopo atti di sottomissione e variazioni. Clic su una riga per correggerla: da qui partono i residui.</p><div class="tw"><table class="scr"><thead><tr><th>Periodo</th><th>Lotto</th><th>Voce</th><th class="n">Importo base</th><th class="n">Importo attuale</th><th>Note</th></tr></thead><tbody>';
-  for(const r of rows)h+='<tr class="row" data-qd="'+r.id+'"><td>'+esc(r.periodo||'')+'</td><td>'+esc((r.lotto||'').replace('LOTTO','Lotto'))+'</td><td>'+esc(r.voce||'')+'</td><td class="n">'+fmtN(r.importo_base)+'</td><td class="n">'+fmtN(r.importo_attuale)+'</td><td class="wrap">'+esc(String(r.note||'').length>130?String(r.note).slice(0,129).trimEnd()+'…':(r.note||''))+'</td></tr>';
+  for(const r of rows)h+='<tr class="row" data-qd="'+esc(r.id)+'"><td>'+esc(r.periodo||'')+'</td><td>'+esc((r.lotto||'').replace('LOTTO','Lotto'))+'</td><td>'+esc(r.voce||'')+'</td><td class="n">'+fmtN(r.importo_base)+'</td><td class="n">'+fmtN(r.importo_attuale)+'</td><td class="wrap">'+esc(String(r.note||'').length>130?String(r.note).slice(0,129).trimEnd()+'…':(r.note||''))+'</td></tr>';
   return h+'</tbody></table></div><p style="margin:.6rem 0 1rem"><button type="button" class="ghost" id="nqd">+ Nuova voce</button></p></details>';
 }
 /* ---------- registro modifiche ---------- */
@@ -1533,7 +1535,7 @@ function dettaglio(r){
 /* ---------- esporta / backup ---------- */
 function scarica(nome,testo,tipo){const b=new Blob([testo],{type:tipo}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000)}
 function esporta(k,rows){
-  const cs=MODULI[k].campi,cel=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const cs=MODULI[k].campi,cel=v=>{let t=String(v??'');if(/^[=+\-@\t\r]/.test(t)&&!/^[-+]?\d+([.,]\d+)*$/.test(t))t="'"+t;return'"'+t.replace(/"/g,'""')+'"'};
   const csv='﻿'+cs.map(c=>cel(c.l)).join(';')+'\n'+rows.map(r=>cs.map(c=>cel(c.t==='bool'?(r[c.k]?'Sì':''):(c.t==='dt'?fmtDT(r[c.k]):(k==='registro'&&c.k==='azione'?(AZIONI[r[c.k]]||r[c.k]):(k==='registro'&&c.k==='tabella'?((MODULI[r[c.k]]&&MODULI[r[c.k]].nome)||r[c.k]):sv(r[c.k])))))).join(';')).join('\n');
   scarica('gestione-calore-'+k+'-'+oggi()+'.csv',csv,'text/csv;charset=utf-8');
 }
