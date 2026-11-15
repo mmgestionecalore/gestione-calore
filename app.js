@@ -1336,8 +1336,8 @@ async function caldaieVista(){
   const gia=gen.filter(g=>g.sc<=y),f=n=>gen.filter(g=>g.sc>y&&g.sc<=y+n);
   const fmt=l=>[...new Map(l.map(g=>[g.r.indirizzo,g.r.indirizzo])).values()];
   const riga=(t,l)=>'<li><span class="dt">'+t+'</span><span class="tx"><b>'+l.length+'</b> generatori <span class="muted">in '+fmt(l).length+' centrali</span></span></li>';
-  const el=gia.concat(f(3)).sort((p,q)=>p.sc-q.sc).slice(0,12);
-  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('impianti')+'Generatori a 15 anni (previsione rinnovi)</h3><ul class="ev">'+riga('Già oltre',gia)+riga('Entro '+(y+1),f(1))+riga('Entro '+(y+2),f(2))+riga('Entro '+(y+3),f(3))+'</ul><p class="muted" style="margin:.5rem 0 0">Prossimi: '+el.map(g=>esc(g.r.indirizzo)+' ('+g.sc+')').join(' · ')+'</p></div>';
+  const vis=new Map();gia.concat(f(3)).sort((p,q)=>p.sc-q.sc).forEach(g=>{if(!vis.has(g.r.indirizzo))vis.set(g.r.indirizzo,g)});const el=[...vis.values()].slice(0,12);
+  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('impianti')+'Generatori a 15 anni (previsione rinnovi)</h3><ul class="ev">'+riga('Già oltre',gia)+riga('Entro '+(y+1),f(1))+riga('Entro '+(y+2),f(2))+riga('Entro '+(y+3),f(3))+'</ul><p class="muted" style="margin:.5rem 0 0">Centrali con il generatore più vecchio (anno del 15° anno): '+el.map(g=>esc(g.r.indirizzo)+' ('+g.sc+')').join(' · ')+'</p></div>';
 }
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
