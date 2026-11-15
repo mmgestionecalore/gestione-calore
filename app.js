@@ -1638,7 +1638,7 @@ async function mappaVista(){
    '<div id="mapbox"></div><p class="muted" style="font-size:12px">Segnaposto: <b>pieno</b> = indirizzo con numero civico · <b>sfumato</b> = solo la via · mappa © OpenStreetMap.</p>';
   if(mapObj){try{mapObj.remove()}catch(e){}}
   mapObj=L.map('mapbox',{zoomControl:true,attributionControl:true}).setView([45.4642,9.19],12);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(mapObj);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,referrerPolicy:'origin',attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(mapObj);
   mapLay=L.layerGroup().addTo(mapObj);mapSrc=L.layerGroup().addTo(mapObj);mapTrov=null;mapGiroLay=L.layerGroup().addTo(mapObj);mapGiro=[];
   L.marker([UFF.lat,UFF.lng],{title:UFF.nome,zIndexOffset:800,icon:L.divIcon({className:'mp-pin',html:'<div class="mp-off">UFFICIO</div>',iconSize:[70,26],iconAnchor:[35,13]})}).bindPopup(UFF.nome).addTo(mapObj);
   document.querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>{mapLotto=b.dataset.lt;document.querySelectorAll('[data-lt]').forEach(x=>x.classList.toggle('on',x===b));mapDisegna()});
