@@ -989,7 +989,7 @@ function glOggi(){
   var t=dentro?'In corso: giorno '+S.n+' di '+S.tot:'Prossima accensione: '+fd(S.i);
   var sb=dentro?'Periodo di accensione dal '+fd(S.i)+' al '+fd(S.f):'Il periodo di accensione va dal '+fmtD(iso(S.i)).slice(0,5)+' al '+fmtD(iso(S.f)).slice(0,5);
   var num=dentro?S.aFine:S.aInizio,lab=dentro?(num===1?'giorno':'giorni')+' alla fine dell accensione':(num===1?'giorno':'giorni')+' alla prossima accensione';
-  return'<section class="ho'+(dentro?'':' fuori')+'"><div class="ho-d"><span>'+esc(wd)+'</span><b>'+now.getDate()+'</b><span>'+esc(mo)+'</span></div>'+
+  return'<section class="ho'+(dentro?'':' fuori')+'">'+gcArt(!dentro)+'<div class="ho-d"><span>'+esc(wd)+'</span><b>'+now.getDate()+'</b><span>'+esc(mo)+'</span></div>'+
     '<div><div class="ho-k">'+ico(dentro?'fiamma':'neve')+esc(k)+'</div><div class="ho-t">'+esc(t)+'</div><div class="ho-s">'+esc(sb)+'</div>'+
     '<div class="ho-p"><i style="width:'+pct+'%"></i><span class="ho-mk" style="left:'+pct+'%">'+SC_FL.replace('CLS','')+'</span></div><div class="ho-l"><span>'+(dentro?fd(S.i):'15/04')+'</span><span>'+pct+'%</span><span>'+(dentro?fd(S.f):'15/10')+'</span></div></div>'+
     '<div class="ho-n">'+glGauge(dentro?100-pct:pct,dentro?'rest':'pct')+'<b>'+num+'</b><span>'+lab+'</span></div><h1 style="position:absolute;left:-9999px">Oggi</h1></section>'+SC_PIPE;
@@ -1000,12 +1000,12 @@ function glGauge(p,m){
   var tk='';for(var i=0;i<=10;i++){var t=(-180+i*18)*Math.PI/180,r2=i%5?65:68;tk+='M'+(70+Math.cos(t)*60).toFixed(1)+' '+(74+Math.sin(t)*60).toFixed(1)+'L'+(70+Math.cos(t)*r2).toFixed(1)+' '+(74+Math.sin(t)*r2).toFixed(1)}
   return'<svg class="ho-g" viewBox="0 0 140 88" role="img" aria-label="Manometro '+Math.round(p)+'%"><path d="M18 74A52 52 0 0 1 122 74" fill="none" stroke="#33200f" stroke-width="10"/><path class="ho-gf" d="M18 74A52 52 0 0 1 122 74" fill="none" stroke="'+col+'" stroke-width="10" stroke-dasharray="'+(L*p/100).toFixed(1)+' '+L.toFixed(1)+'"/><path d="'+tk+'" stroke="#c9a98a" stroke-width="1.6" fill="none"/><g class="ho-nd" style="transform:rotate('+a.toFixed(1)+'deg)"><path d="M68 76L70 30L72 76z" fill="#fdebd3"/></g><circle cx="70" cy="74" r="7" fill="#ff8a1f" stroke="#1b110b" stroke-width="3"/></svg>';
 }
-function glVuoto(t,s){return'<div class="vuoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M12 10v3M6 7h12M9 21v1.5M15 21v1.5"/><circle cx="12" cy="15.5" r=".6" fill="currentColor"/></svg><b>'+esc(t)+'</b>'+(s?'<span>'+esc(s)+'</span>':'')+'</div>'}
+function glVuoto(t,s){return'<div class="vuoto">'+gcI(['radiatore','caldaia','termometro','manometro'][(t.length+String(s||'').length)%4],'gc-big')+'<b>'+esc(t)+'</b>'+(s?'<span>'+esc(s)+'</span>':'')+'</div>'}
 function glHero(o){
   var bars=(o.bars||[]).map(function(b,i){var p=Math.max(0,Math.min(100,Math.round(b.pct)));return(b.t?'<div class="ho-bt">'+esc(b.t)+'</div>':'')+'<div class="ho-p'+(i?' ho-p2':'')+'"><i style="width:'+p+'%"></i>'+(i?'':'<span class="ho-mk" style="left:'+p+'%">'+SC_FL.replace('CLS','')+'</span>')+'</div><div class="ho-l"><span>'+esc(b.l||'')+'</span><span>'+(b.m==null?p+'%':esc(b.m))+'</span><span>'+esc(b.r||'')+'</span></div>'}).join('');
-  var badge='<div class="ho-d ho-i">'+ico(o.ic)+'<span>'+esc(o.bl||'')+'</span></div>';
+  var GM={impianti:'caldaia',ordini:'valvola',segnalazioni:'manometro',programmazione:'pompa',hub:'caldaia',attivita:'fiamma',scadenze:'termometro'};var badge='<div class="ho-d ho-i">'+(GM[o.ic]?gcI(GM[o.ic],'ic'):ico(o.ic))+'<span>'+esc(o.bl||'')+'</span></div>';
   var fz=o.fuori!=null?o.fuori:!stagione(new Date()).dentro;
-  return'<section class="ho'+(fz?' fuori':'')+'">'+badge+'<div><div class="ho-k">'+ico('fiamma')+esc(o.kick)+'</div><div class="ho-t">'+esc(o.title)+'</div><div class="ho-s">'+esc(o.sub||'')+'</div>'+(o.sub2?'<div class="ho-s ho-s2">'+esc(o.sub2)+'</div>':'')+bars+'</div><div class="ho-n">'+(o.g?glGauge(o.g.p,o.g.m):'')+'<b>'+o.num+'</b><span>'+esc(o.lab)+'</span></div><h1 style="position:absolute;left:-9999px">'+esc(o.title)+'</h1></section>'+(o.nopipe?'':SC_PIPE);
+  return'<section class="ho'+(fz?' fuori':'')+'">'+gcArt(fz)+badge+'<div><div class="ho-k">'+ico('fiamma')+esc(o.kick)+'</div><div class="ho-t">'+esc(o.title)+'</div><div class="ho-s">'+esc(o.sub||'')+'</div>'+(o.sub2?'<div class="ho-s ho-s2">'+esc(o.sub2)+'</div>':'')+bars+'</div><div class="ho-n">'+(o.g?glGauge(o.g.p,o.g.m):'')+'<b>'+o.num+'</b><span>'+esc(o.lab)+'</span></div><h1 style="position:absolute;left:-9999px">'+esc(o.title)+'</h1></section>'+(o.nopipe?'':SC_PIPE);
 }
 function glHubHero(h,mioC,I,sl,qd,t){
   var c=mioC.find(function(x){return x.data_inizio&&x.scadenza})||null,bars=[],num=I.length,lab='impianti',gg0=null;
@@ -1155,7 +1155,7 @@ async function scheda(r){
   const [dc,ce]=await Promise.all([sb.from('documenti').select('titolo,cartella,link').or(chiaviRicerca(a,r.chiavi_documenti).flatMap(k=>{const p='%'+k.st.replace(/ /g,'_')+'%'+(k.c?k.c+'%':'');return['cartella.ilike.'+p,'titolo.ilike.'+p]}).join(',')).limit(800),sb.from('censimento').select('*').ilike('impianto','%'+a+'%').order('ordine')]);
   const vi=chiaviRicerca(a,r.chiavi_documenti),dfil=(dc.data||[]).filter(x=>{const t=nzDoc(x.cartella+' '+x.titolo);return vi.some(k=>docCorrisponde(t,k))});dc.count=dfil.length;dc.data=dfil.slice(0,40);
   const cs=(ce.data||[]).filter(x=>String(x.impianto||'').split(';').some(p=>norm(p)===norm(a)));
-  let h='<h3>'+esc(a)+'</h3><dl class="kv">';
+  let h='<h3 class="gc-sec">'+gcI('caldaia','gc-big')+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
   h+=await chiChiamo(r);
@@ -1311,6 +1311,72 @@ async function esportaExcel(){
   finally{b.disabled=false;b.textContent=t}
 }
 
+/* ---------- grafica: illustrazioni a tema impianto termico ---------- */
+const GC_P={
+ caldaia:'<rect x="14" y="16" width="30" height="36" rx="5"/><path d="M36 16V6h6v10M20 52v5M38 52v5M6 40h8M44 40h14"/><circle cx="29" cy="28" r="6"/><path d="M29 28l3-3M22 44h14"/><path d="M29 49c-3-2-3-4-1-6 1 1.5 3 1.5 3 3.5 1-.8 1.5-1.8 1-3.2 2.5 1.8 3 5.2-3 5.7z"/>',
+ radiatore:'<rect x="8" y="14" width="48" height="32" rx="4"/><path d="M19 19v22M27 19v22M35 19v22M43 19v22M51 19v22M2 40h6M56 40h6M14 46v8M50 46v8"/>',
+ termometro:'<path d="M28 10a4 4 0 0 1 8 0v26.5a10 10 0 1 1-8 0z"/><circle cx="32" cy="46" r="4" fill="currentColor"/><path d="M32 22v20M42 16h6M42 24h4M42 32h6"/>',
+ valvola:'<path d="M4 40h12M48 40h12M16 30v20l16-10zM48 30v20L32 40zM32 40V20M22 18h20"/>',
+ pompa:'<circle cx="32" cy="40" r="14"/><circle cx="32" cy="40" r="3"/><path d="M32 37V28M34.6 41.5l8 4.5M29.4 41.5l-8 4.5M24 12h16v10H24zM32 22v4M4 40h14M46 40h14"/>',
+ camino:'<path d="M24 58V24h16v34zM21 24h22M26 14h12v10M44 16c4-2 4-6 8-6M46 24c4-2 4-6 8-6"/>',
+ manometro:'<circle cx="32" cy="32" r="22"/><path d="M32 32l10-10M32 12v4M12 32h4M48 32h4M18 18l3 3M46 18l-3 3"/><circle cx="32" cy="32" r="2.5" fill="currentColor"/>',
+ goccia:'<path d="M32 8c8 10 14 17 14 26a14 14 0 0 1-28 0c0-9 6-16 14-26z"/><path d="M24 38a8 8 0 0 0 8 8"/>',
+ fiocco:'<path d="M32 6v52M9.5 19l45 26M9.5 45l45-26M26 10l6 5 6-5M26 54l6-5 6 5"/>',
+ fiamma:'<path d="M32 6c2 10 14 16 14 32a14 14 0 0 1-28 0c0-7 3-10 6-13 1 4 3 6 5 7-1-9 0-17 3-26z"/><path d="M32 40c1 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-4 3-6 1 2 2 3 3 3z"/>'
+};
+function gcI(n,c){return'<svg class="gci'+(c?' '+c:'')+'" viewBox="0 0 64 64" aria-hidden="true"><use href="#gc-'+n+'"/></svg>'}
+function gcSprite(){
+  if(document.getElementById('gc-sprite'))return;
+  const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.id='gc-sprite';s.setAttribute('width','0');s.setAttribute('height','0');s.setAttribute('aria-hidden','true');s.style.position='absolute';
+  s.innerHTML=Object.keys(GC_P).map(k=>'<symbol id="gc-'+k+'" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+GC_P[k]+'</g></symbol>').join('');
+  document.body.insertBefore(s,document.body.firstChild);
+}
+function gcBg(n,col,op){return'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="'+col+'" stroke-opacity="'+op+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+GC_P[n]+'</svg>')+'")'}
+function gcArt(fuori){
+  const u=(n,x,y,w,c)=>'<use href="#gc-'+n+'" x="'+x+'" y="'+y+'" width="'+w+'" height="'+w+'"'+(c?' class="'+c+'"':'')+'/>';
+  return'<svg class="ho-art" viewBox="0 0 460 130" preserveAspectRatio="xMaxYMid meet" aria-hidden="true">'+(fuori
+    ?u('fiocco',6,10,46,'gc-dr')+u('fiocco',64,66,30,'gc-dr gc-d2')+u('termometro',120,16,100)+u('radiatore',210,24,100)+u('fiocco',330,8,38,'gc-dr gc-d3')+u('goccia',372,34,70,'gc-dr gc-d2')+u('fiocco',296,72,26,'gc-dr')
+    :u('radiatore',0,26,100)+'<path d="M96 66h24" class="gc-flow"/>'+u('valvola',110,30,70)+'<path d="M176 66h12" class="gc-flow"/>'+u('caldaia',184,10,120)+u('fiamma',224,70,22,'gc-fl')+u('fiamma',242,74,16,'gc-fl gc-d2')+u('camino',296,12,100)+u('termometro',380,18,90)+u('manometro',312,74,48))+'</svg>';
+}
+function gcFoot(){
+  const u=(n,x,w)=>'<use href="#gc-'+n+'" x="'+x+'" y="8" width="'+w+'" height="'+w+'"/>';
+  return'<div class="gc-foot" aria-hidden="true"><svg viewBox="0 0 640 80" preserveAspectRatio="xMidYMid meet">'+
+   u('camino',8,64)+u('caldaia',84,64)+u('valvola',170,64)+u('pompa',256,64)+u('radiatore',342,64)+u('radiatore',428,64)+u('termometro',520,64)+u('fiamma',592,32)+
+   '<g class="gc-flow"><path d="M142 48h34M228 48h34M314 48h34M400 48h34"/></g></svg></div>';
+}
+function gcInit(){
+  gcSprite();
+  if(!document.getElementById('gc-css')){
+    const st=document.createElement('style');st.id='gc-css';
+    st.textContent='.gci{width:1.25em;height:1.25em;vertical-align:-.25em;color:currentColor}'+
+    '.gci.gc-big{width:46px;height:46px;opacity:.9}'+
+    'main#main.dk{background-image:'+gcBg('caldaia','#ff8a1f',.09)+','+gcBg('radiatore','#ff8a1f',.08)+','+gcBg('camino','#ffb35c',.06)+';background-repeat:no-repeat;background-position:right 16px bottom 16px,left 16px bottom 16px,right 250px bottom 40px;background-size:230px,200px,120px;background-attachment:fixed}'+
+    'main#main:not(.dk){background-image:'+gcBg('caldaia','#c2410c',.07)+','+gcBg('radiatore','#c2410c',.06)+';background-repeat:no-repeat;background-position:right 10px bottom 10px,left 10px bottom 10px;background-size:210px,180px;background-attachment:fixed}'+
+    'main.dk .ho>.ho-art{position:absolute;right:0;top:0;bottom:0;height:100%;width:auto;max-width:62%;opacity:.12;color:#ffcf8a;pointer-events:none;z-index:0}'+
+    'main.dk .ho.fuori>.ho-art{color:#bfe9f7;opacity:.2}'+
+    '.ho-art .gc-flow,.gc-foot .gc-flow path,.gc-foot path.gc-flow{fill:none;stroke:#ff8a1f;stroke-width:3;stroke-linecap:round;stroke-dasharray:3 7;animation:gcFlow 1.4s linear infinite}'+
+    '.gc-foot{max-width:760px;margin:26px auto 4px;color:#ff8a1f;opacity:.55;pointer-events:none}.gc-foot svg{width:100%;height:auto;display:block}'+
+    'main:not(.dk) .gc-foot{color:#c2410c;opacity:.4}'+
+    '.gc-foot .gc-flow{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-dasharray:3 7;animation:gcFlow 1.4s linear infinite}'+
+    '.gc-fl{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 1.6s ease-in-out infinite;fill:currentColor;color:#ff8a1f}.gc-d2{animation-delay:-.7s!important}.gc-d3{animation-delay:-1.3s!important}'+
+    '.gc-dr{transform-box:fill-box;transform-origin:50% 50%;animation:gcDrift 9s ease-in-out infinite}'+
+    '.brand svg,.logo svg,.ho-mk svg{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 2.6s ease-in-out infinite}'+
+    '.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
+    '.gc-sec{display:flex;align-items:center;gap:8px}.gc-sec .gci{color:#ff8a1f}'+
+    '.vuoto .gc-big{width:84px;height:84px;color:#6b3a1c;opacity:1}'+
+    '.login{position:relative;overflow:hidden}.login .gc-foot{position:absolute;left:0;right:0;bottom:10px;margin:0 auto;width:min(760px,96%);color:#fff;opacity:.3}'+
+    '@keyframes gcFlow{to{stroke-dashoffset:-20}}@keyframes gcFlick{0%,100%{transform:scale(1,1) rotate(0)}30%{transform:scale(.94,1.07) rotate(-2deg)}60%{transform:scale(1.04,.95) rotate(2deg)}}@keyframes gcDrift{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(7px) rotate(25deg)}}'+
+    '@media (prefers-reduced-motion:reduce){.gc-fl,.gc-dr,.brand svg,.logo svg,.ho-mk svg,.gc-load .gci{animation:none!important}.gc-foot .gc-flow,.ho-art .gc-flow{animation:none!important}}'+
+    '@media (max-width:640px){main#main.dk,main#main:not(.dk){background-size:150px,130px,0}main.dk .ho>.ho-art{opacity:.1;max-width:80%}}'+
+    '@media (max-height:780px){.login .gc-foot{display:none}}@media print{.gc-foot,.ho-art{display:none}main#main{background-image:none!important}}';
+    document.head.appendChild(st);
+  }
+  const lg=document.getElementById('login');if(lg&&!lg.querySelector('.gc-foot'))lg.insertAdjacentHTML('beforeend',gcFoot());
+  const mn=document.getElementById('main');
+  if(mn&&!mn.__gc){mn.__gc=1;new MutationObserver(()=>{if(mn.children.length&&!mn.querySelector(':scope>.gc-foot'))mn.insertAdjacentHTML('beforeend',gcFoot())}).observe(mn,{childList:true})}
+}
+gcInit();
+
 /* ---------- caldaie e referenti ---------- */
 const LIM_CALDAIA=15;
 function anniGen(r){return String(r.anni_caldaie||'').split(/[;,]/).map(x=>parseInt(x,10)).filter(x=>x>1900)}
@@ -1318,7 +1384,7 @@ function annoLimite(r){const a=anniGen(r);return a.length?Math.min(...a)+LIM_CAL
 function etaCaldaie(r){
   const a=anniGen(r);if(!a.length)return '';const y=new Date().getFullYear();
   const oltre=a.filter(x=>y-x>=LIM_CALDAIA).length;
-  return '<div class="crit" style="border-left-color:'+(oltre?'#b3261e':'#2e7d32')+'"><b>Generatori</b><p>Anni di installazione: '+a.join(', ')+' · il più vecchio ha '+(y-Math.min(...a))+' anni · raggiunge i '+LIM_CALDAIA+' nel '+(Math.min(...a)+LIM_CALDAIA)+(oltre?' · '+oltre+(oltre===1?' generatore ha già superato':' generatori hanno già superato')+' il limite':'')+'</p></div>';
+  return '<div class="crit" style="border-left-color:'+(oltre?'#b3261e':'#2e7d32')+'"><b>'+gcI('caldaia')+' Generatori</b><p>Anni di installazione: '+a.join(', ')+' · il più vecchio ha '+(y-Math.min(...a))+' anni · raggiunge i '+LIM_CALDAIA+' nel '+(Math.min(...a)+LIM_CALDAIA)+(oltre?' · '+oltre+(oltre===1?' generatore ha già superato':' generatori hanno già superato')+' il limite':'')+'</p></div>';
 }
 async function chiChiamo(r){
   let h=etaCaldaie(r);const bm=String(r.building_manager||'').trim();
@@ -1327,7 +1393,7 @@ async function chiChiamo(r){
   const{data}=await sb.from('contatti').select('nome,ente,email,telefono').ilike('nome','%'+w[w.length-1]+'%').limit(10);
   const c=(data||[]).find(x=>norm(x.nome)===norm(bm))||(data||[]).find(x=>w.every(p=>norm(x.nome).includes(norm(p))));
   const tel=c&&String(c.telefono||'').replace(/[^\d+]/g,'');
-  return h+'<div class="crit" style="border-left-color:#1565c0"><b>Chi chiamo</b><p>Building Manager: '+esc(bm)+(c&&c.telefono?' · <a href="tel:'+esc(tel)+'">'+esc(c.telefono)+'</a>':'')+(c&&c.email?' · <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'')+'</p></div>';
+  return h+'<div class="crit" style="border-left-color:#1565c0"><b>'+gcI('pompa')+' Chi chiamo</b><p>Building Manager: '+esc(bm)+(c&&c.telefono?' · <a href="tel:'+esc(tel)+'">'+esc(c.telefono)+'</a>':'')+(c&&c.email?' · <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'')+'</p></div>';
 }
 async function caldaieVista(){
   const{data}=await sb.from('impianti').select('indirizzo,lotto,anni_caldaie,potenza_kw');
@@ -1337,7 +1403,7 @@ async function caldaieVista(){
   const fmt=l=>[...new Map(l.map(g=>[g.r.indirizzo,g.r.indirizzo])).values()];
   const riga=(t,l)=>'<li><span class="dt">'+t+'</span><span class="tx"><b>'+l.length+'</b> generatori <span class="muted">in '+fmt(l).length+' centrali</span></span></li>';
   const vis=new Map();gia.concat(f(3)).sort((p,q)=>p.sc-q.sc).forEach(g=>{if(!vis.has(g.r.indirizzo))vis.set(g.r.indirizzo,g)});const el=[...vis.values()].slice(0,12);
-  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('impianti')+'Generatori a 15 anni (previsione rinnovi)</h3><ul class="ev">'+riga('Già oltre',gia)+riga('Entro '+(y+1),f(1))+riga('Entro '+(y+2),f(2))+riga('Entro '+(y+3),f(3))+'</ul><p class="muted" style="margin:.5rem 0 0">Centrali con il generatore più vecchio (anno del 15° anno): '+el.map(g=>esc(g.r.indirizzo)+' ('+g.sc+')').join(' · ')+'</p></div>';
+  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+gcI('caldaia')+' Generatori a 15 anni (previsione rinnovi)</h3><ul class="ev">'+riga('Già oltre',gia)+riga('Entro '+(y+1),f(1))+riga('Entro '+(y+2),f(2))+riga('Entro '+(y+3),f(3))+'</ul><p class="muted" style="margin:.5rem 0 0">Centrali con il generatore più vecchio (anno del 15° anno): '+el.map(g=>esc(g.r.indirizzo)+' ('+g.sc+')').join(' · ')+'</p></div>';
 }
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
@@ -1361,7 +1427,7 @@ async function oggiVista(){
     kp('scadenze',ritardo?'ko':'ok',ritardo,'Scadute',ritardo?(ritardo===1?'scadenza non evasa':'scadenze non evase'):'nessuna scadenza in ritardo')+
     kp('attivita',a30?'wa':'ok',a30,'Attività da fare entro 30 giorni','scadute incluse')+'</div>';
   const dtc=d=>d?(d<t?'late':d<=fra?'soon':''):'';
-  const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0">'+vuoto+'</p>')+'</div>';
+  const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0;display:flex;align-items:center;gap:10px">'+gcI('radiatore','gc-big')+vuoto+'</p>')+'</div>';
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
   let cal='';try{cal=await caldaieVista()}catch(e){}
   const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data),sl.data||[],qd.data):'';
@@ -1415,7 +1481,7 @@ const hubRuoli=(T,tipo)=>{const a=T&&T[tipo]&&T[tipo].ruoli;return a&&a.length?a
 const hubRegole=(T,tipo)=>{const a=T&&T[tipo]&&T[tipo].regole;return a&&a.length?a.map(x=>'<li>'+esc(x.testo)+'</li>').join(''):HUB_ND};
 async function hubVista(){
   const h=HUB[hubSel]||HUB.l1,t=oggi(),reg={};
-  glSkin(true);$('#main').innerHTML='<p class="muted">Carico l’hub…</p>';
+  glSkin(true);$('#main').innerHTML='<p class="gc-load">'+gcI('fiamma')+'Carico l’hub…</p>';
   const vuoto=Promise.resolve({data:[],error:null,count:null});
   const[co,sc,at,im,me,ctt,sg,sl,qd,HT]=await Promise.all([
     sb.from('contratti').select('*').order('nome'),
