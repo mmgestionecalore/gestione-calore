@@ -1361,12 +1361,12 @@ function gcInit(){
     '.gc-fl{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 1.6s ease-in-out infinite;fill:currentColor;color:#ff8a1f}.gc-d2{animation-delay:-.7s!important}.gc-d3{animation-delay:-1.3s!important}'+
     '.gc-dr{transform-box:fill-box;transform-origin:50% 50%;animation:gcDrift 9s ease-in-out infinite}'+
     '.brand svg,.logo svg,.ho-mk svg{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 2.6s ease-in-out infinite}'+
-    '.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
+    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
     '.gc-sec{display:flex;align-items:center;gap:8px}.gc-sec .gci{color:#ff8a1f}'+
     '.vuoto .gc-big{width:84px;height:84px;color:#6b3a1c;opacity:1}'+
     '.login{position:relative;overflow:hidden}.login .gc-foot{position:absolute;left:0;right:0;bottom:10px;margin:0 auto;width:min(760px,96%);color:#fff;opacity:.3}'+
     '@keyframes gcFlow{to{stroke-dashoffset:-20}}@keyframes gcFlick{0%,100%{transform:scale(1,1) rotate(0)}30%{transform:scale(.94,1.07) rotate(-2deg)}60%{transform:scale(1.04,.95) rotate(2deg)}}@keyframes gcDrift{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(7px) rotate(25deg)}}'+
-    '@media (prefers-reduced-motion:reduce){.gc-fl,.gc-dr,.brand svg,.logo svg,.ho-mk svg,.gc-load .gci{animation:none!important}.gc-foot .gc-flow,.ho-art .gc-flow{animation:none!important}}'+
+    '@media (prefers-reduced-motion:reduce){.gc-btn:hover .gci,.gc-fl,.gc-dr,.brand svg,.logo svg,.ho-mk svg,.gc-load .gci{animation:none!important}.gc-foot .gc-flow,.ho-art .gc-flow{animation:none!important}}'+
     '@media (max-width:640px){main#main.dk,main#main:not(.dk){background-size:150px,130px,0}main.dk .ho>.ho-art{opacity:.1;max-width:80%}}'+
     '@media (max-height:780px){.login .gc-foot{display:none}}@media print{.gc-foot,.ho-art{display:none}main#main{background-image:none!important}}';
     document.head.appendChild(st);
@@ -1376,6 +1376,18 @@ function gcInit(){
   if(mn&&!mn.__gc){mn.__gc=1;new MutationObserver(()=>{if(mn.children.length&&!mn.querySelector(':scope>.gc-foot'))mn.insertAdjacentHTML('beforeend',gcFoot())}).observe(mn,{childList:true})}
 }
 gcInit();
+const GC_BT=[[/^entra\b/i,'fiamma'],[/^(\+\s*)?(nuov[oa]|aggiungi|rapida)|^\+/i,'fiamma'],[/^salva/i,'fiamma'],[/^conferma|^applica|^procedi/i,'fiamma'],[/inviami un link/i,'goccia'],[/\.ics|scadenze \(/i,'termometro'],[/excel|esporta|scarica|backup/i,'radiatore'],[/^importa/i,'valvola'],[/^(modifica|apri)/i,'manometro']];
+function gcBtns(){
+  document.querySelectorAll('button:not(.chip):not(.gc-no)').forEach(b=>{
+    if(b.querySelector('svg')||b.id==='ovunque')return;
+    const t=b.textContent.trim();if(!t||t.length>40)return;
+    const m=GC_BT.find(x=>x[0].test(t));if(!m)return;
+    b.insertAdjacentHTML('afterbegin',gcI(m[1]));b.classList.add('gc-btn');
+  });
+}
+let gcT=0;
+function gcWatch(){if(gcT)return;gcT=requestAnimationFrame(()=>{gcT=0;gcBtns()})}
+new MutationObserver(gcWatch).observe(document.body,{childList:true,subtree:true});gcBtns();
 
 /* ---------- caldaie e referenti ---------- */
 const LIM_CALDAIA=15;
