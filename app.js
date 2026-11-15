@@ -77,6 +77,7 @@ const aggiungiGiorni=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(
 const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
 /* ---------- tema: icone, stagione termica, calcoli di contabilità ---------- */
 const IC={
+ mappa:'<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/>',
  altro:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
  oggi:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
  attivita:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
@@ -201,6 +202,7 @@ async function entra(session){
   utente=session.user;$('#who').textContent=utente.email;show(true);
   const nav=$('#nav');nav.innerHTML='';
   for(const k in MODULI){if(MODULI[k].nascosto||MODULI[k].altro)continue;const b=document.createElement('button');b.innerHTML=ico(k)+'<span>'+esc(MODULI[k].nome)+'</span>';b.dataset.k=k;b.onclick=()=>apri(k);nav.appendChild(b)}
+  {const b=document.createElement('button');b.innerHTML=ico('mappa')+'<span>Mappa</span>';b.dataset.k='mappa';b.onclick=()=>apri('mappa');nav.appendChild(b)}
   {const b=document.createElement('button');b.innerHTML=ico('altro')+'<span>Altro</span>';b.dataset.k='altro';b.onclick=()=>apri('altro');nav.appendChild(b)}
   if(!$('#bk')){const b=document.createElement('button');b.id='bk';b.className='ghost';b.innerHTML=ico('backup')+'<span class="tx">Backup</span>';b.setAttribute('aria-label','Backup');b.title='Scarica tutti i dati in un file';b.onclick=backup;$('#logout').before(b)}
   if(!$('#pw')){const b=document.createElement('button');b.id='pw';b.className='ghost';b.innerHTML=ico('key')+'<span class="tx">Password</span>';b.setAttribute('aria-label','Password');b.title='Imposta o cambia la tua password';b.onclick=cambiaPassword;$('#logout').before(b)}
@@ -316,6 +318,7 @@ async function apri(k){schedaCt=null;
   if(k==='altro')return altroVista();
   if(k==='oggi')return oggiVista();
   if(k==='hub')return hubVista();
+  if(k==='mappa')return mappaVista();
   if(k==='contabilita')return contabVista();
   if(k==='riferimenti')return normVista();
   const m=MODULI[k];
@@ -356,7 +359,7 @@ function disegna(){
   if(sort)rows=[...rows].sort((a,b)=>{const x=a[sort.k]??'',y=b[sort.k]??'';return(x>y?1:x<y?-1:0)*sort.d});
   const cols=m.campi.filter(c=>c.list&&!(m.vista&&voceCens&&(c.k==='impianto'||c.k==='criticita'))).concat(m.vista&&voceCens?[{k:'__voce',l:voceCens,t:'text'}]:[]).concat(corrente==='impianti'?[{k:'__tag',l:'Tag',t:'text'},{k:'__crit',l:'Criticità principale',t:'text'}]:[]);
   let h=glGen()?glHead(m,rows):'<div class="bar"><span class="muted" style="font-size:12px;letter-spacing:.14em;text-transform:uppercase">Gestione calore · MM</span><span class="grp">'+(m.ro?'':'<button class="ghost" id="imp">Importa</button>')+'<button class="ghost" id="exp">Esporta</button>'+(m.ro?'':'<button id="nuovo">+ Nuovo</button>')+'</span></div>'+glMod(m,rows);
-  if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'&&vistaMappa?' on':'')+'" data-pi="mappa">Mappa</button><button type="button" class="chip'+(corrente==='impianti'&&!vistaMappa?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
+  if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'&&vistaMappa?' on':'')+'" data-pi="mappa">Schema per lotto</button><button type="button" class="chip'+(corrente==='impianti'&&!vistaMappa?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
   if(corrente==='contatti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaRubrica?' on':'')+'" data-ct="rubrica">Rubrica</button><button type="button" class="chip'+(vistaRubrica?'':' on')+'" data-ct="elenco">Elenco</button></div>';
   if(corrente==='contratti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaCruscotto?' on':'')+'" data-cc="cruscotto">Cruscotto</button><button type="button" class="chip'+(vistaCruscotto?'':' on')+'" data-cc="elenco">Elenco</button></div>';
   if(m.tab==='impianti'&&allineato)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Elenco allineato con la lista SharePoint il '+esc(fmtDT(allineato))+'.</p>';
@@ -1361,7 +1364,7 @@ function gcInit(){
     '.gc-fl{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 1.6s ease-in-out infinite;fill:currentColor;color:#ff8a1f}.gc-d2{animation-delay:-.7s!important}.gc-d3{animation-delay:-1.3s!important}'+
     '.gc-dr{transform-box:fill-box;transform-origin:50% 50%;animation:gcDrift 9s ease-in-out infinite}'+
     '.brand svg,.logo svg,.ho-mk svg{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 2.6s ease-in-out infinite}'+
-    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
+    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'#mapbox{position:relative;z-index:0;isolation:isolate;height:68vh;min-height:420px;border-radius:16px;overflow:hidden;border:2px solid #4a2c18}'+'.mp-pin{background:none!important;border:0!important}.mp-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mp-bar .chips{margin:0}#mapq{flex:1;min-width:200px}'+'.mp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}'+'.mp-pop{font-family:Barlow,system-ui,sans-serif;min-width:190px;color:#26160d}.mp-pop b{display:block;font-size:15px;margin-bottom:4px}.mp-pop div{font-size:13px;margin:2px 0}'+'.mp-b{margin:8px 6px 0 0;padding:7px 11px;border-radius:10px;border:0;background:#ff8a1f;color:#1b110b;font-weight:600;cursor:pointer}.mp-g{background:#eee;color:#333}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
     '.gc-sec{display:flex;align-items:center;gap:8px}.gc-sec .gci{color:#ff8a1f}'+
     '.vuoto .gc-big{width:84px;height:84px;color:#6b3a1c;opacity:1}'+
     '.login{position:relative;overflow:hidden}.login .gc-foot{position:absolute;left:0;right:0;bottom:10px;margin:0 auto;width:min(760px,96%);color:#fff;opacity:.3}'+
@@ -1389,6 +1392,133 @@ let gcT=0;
 function gcWatch(){if(gcT)return;gcT=requestAnimationFrame(()=>{gcT=0;gcBtns()})}
 new MutationObserver(gcWatch).observe(document.body,{childList:true,subtree:true});gcBtns();
 
+/* ---------- mappa geografica degli impianti (Leaflet + OpenStreetMap) ---------- */
+const MAP_LEAF={js:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',jh:'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH',css:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',ch:'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H'};
+const MAP_COL={'LOTTO 1':'#ff8a1f','LOTTO 2':'#ffc247','LOTTO TLR':'#ff5a6e'};
+const MAP_BOX={s:45.30,n:45.65,w:8.95,e:9.45};
+let mapMunSel=0,mapObj=null,mapLay=null,mapPos={},mapRows=[],mapLotto='',mapQ='',mapGeoOn=false,mapNonTr=[];
+function caricaLeaflet(){
+  return new Promise((ok,ko)=>{
+    if(window.L)return ok();
+    if(!document.getElementById('lf-css')){const l=document.createElement('link');l.id='lf-css';l.rel='stylesheet';l.href=MAP_LEAF.css;l.integrity=MAP_LEAF.ch;l.crossOrigin='anonymous';document.head.appendChild(l)}
+    const s=document.createElement('script');s.src=MAP_LEAF.js;s.integrity=MAP_LEAF.jh;s.crossOrigin='anonymous';
+    s.onload=()=>ok();s.onerror=()=>ko(new Error('Libreria della mappa non raggiungibile'));document.head.appendChild(s);
+  });
+}
+async function leggiPos(){
+  const{data}=await sb.from('impostazioni').select('valore').eq('chiave','posizioni_impianti').maybeSingle();
+  try{const o=JSON.parse((data&&data.valore)||'{}');return o&&typeof o==='object'?o:{}}catch(e){return{}}
+}
+function salvaPos(){window.__posC=mapPos;return sb.from('impostazioni').upsert({chiave:'posizioni_impianti',valore:JSON.stringify(mapPos)})}
+function mapMun(a){const t=a?String(a.suburb||a.city_district||a.quarter||''):'';const m=t.match(/Municipio\s*(\d)/i);return m?+m[1]:null}
+function mapNomeNum(a){
+  const b=String(a).replace(/\(.*?\)/g,'').replace(/\s*-\s*sc\..*$/i,'');
+  const m=b.match(/^(.*?)(\d+)/);
+  return m?[m[1].trim().replace(/^[ ,-]+|[ ,-]+$/g,''),m[2]]:[b.trim(),''];
+}
+const attesa=ms=>new Promise(r=>setTimeout(r,ms));
+async function nomina(q,largo){
+  const vb=largo?'8.95,45.65,9.45,45.30':'9.04,45.54,9.32,45.38';
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&addressdetails=1&countrycodes=it&bounded=1&viewbox='+vb+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}});
+  if(!r.ok)throw new Error('Servizio posizioni: errore '+r.status);
+  const j=await r.json();
+  return (j||[]).map(x=>({lat:+x.lat,lng:+x.lon,nome:String(x.display_name||''),mun:mapMun(x.address),civ:x.address&&x.address.house_number})).find(x=>x.lat>=MAP_BOX.s&&x.lat<=MAP_BOX.n&&x.lng>=MAP_BOX.w&&x.lng<=MAP_BOX.e)||null;
+}
+async function geoUno(a){
+  const[n,num]=mapNomeNum(a);if(!n)return null;
+  const prove=[];
+  if(num){prove.push(['via '+n+' '+num+', Milano','n'],[n+' '+num+', Milano','n'])}
+  prove.push(['via '+n+', Milano','v'],[n+', Milano','v']);
+  for(const[q,t]of prove){
+    const x=await nomina(q,false);await attesa(1100);
+    if(x)return[+x.lat.toFixed(6),+x.lng.toFixed(6),(t==='n'&&x.civ&&String(x.civ).split(/[\/-]/)[0]===num)?'n':'v',x.mun||0];
+  }
+  return null;
+}
+async function calcolaPosizioni(){
+  if(mapGeoOn)return;mapGeoOn=true;mapNonTr=[];
+  const info=$('#mapinfo'),manc=mapRows.filter(r=>r.indirizzo&&!mapPos[r.indirizzo]);
+  let i=0;
+  try{
+    for(const r of manc){
+      i++;info.textContent='Cerco le posizioni: '+i+' di '+manc.length+' · '+r.indirizzo;
+      const p=await geoUno(r.indirizzo);
+      if(p)mapPos[r.indirizzo]=p;else mapNonTr.push(r.indirizzo);
+      if(i%10===0){await salvaPos();mapDisegna()}
+    }
+    await salvaPos();
+  }catch(e){info.textContent='Ricerca interrotta: '+e.message+'. Le posizioni già trovate sono salvate: puoi riprendere più tardi.';await salvaPos();mapGeoOn=false;mapDisegna();return}
+  mapGeoOn=false;mapDisegna();
+}
+function mapPin(col,appross){
+  return'<svg viewBox="0 0 34 42" width="34" height="42" aria-hidden="true" style="opacity:'+(appross?.65:1)+'"><path d="M17 40C17 40 3 26 3 15a14 14 0 0 1 28 0c0 11-14 25-14 25z" fill="'+col+'" stroke="#1b110b" stroke-width="2"/><path d="M17 7c.8 3.8 5.4 6 5.4 10.6a5.4 5.4 0 0 1-10.8 0c0-2.2 1.1-3.5 2.2-4.7.2 1.5.9 2.3 1.7 2.6C15.4 12.4 16 9.4 17 7z" fill="#1b110b"/></svg>';
+}
+function mapPopup(r,p){
+  const d=document.createElement('div');d.className='mp-pop';
+  const t=document.createElement('b');t.textContent=r.indirizzo;d.appendChild(t);
+  const riga=x=>{if(!x)return;const e=document.createElement('div');e.textContent=x;d.appendChild(e)};
+  riga([r.lotto,r.tipologia].filter(Boolean).join(' · '));
+  if(r.building_manager)riga('Building Manager: '+r.building_manager);
+  if(p[3])riga('Municipio '+p[3]);
+  if(p[2]==='v')riga('Posizione approssimata (solo la via)');
+  if(p[2]==='m')riga('Posizione impostata a mano');
+  const a=document.createElement('button');a.type='button';a.className='gc-no mp-b';a.textContent='Apri la scheda';a.onclick=()=>{corrente='impianti';$('#dlg').addEventListener('close',()=>{corrente='mappa'},{once:true});scheda(r)};d.appendChild(a);
+  const c=document.createElement('button');c.type='button';c.className='gc-no mp-b mp-g';c.textContent='Correggi posizione';
+  c.onclick=()=>{
+    mapObj.closePopup();$('#mapinfo').textContent='Tocca sulla mappa il punto giusto per «'+r.indirizzo+'».';mapObj.getContainer().style.cursor='crosshair';
+    mapObj.once('click',async e=>{mapPos[r.indirizzo]=[+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6),'m',p[3]||0];mapObj.getContainer().style.cursor='';$('#mapinfo').textContent='Posizione salvata.';await salvaPos();mapDisegna()});
+  };d.appendChild(c);
+  return d;
+}
+function mapChipsMun(){
+  const bx=$('#mapmun');if(!bx)return;
+  const c={};mapRows.forEach(x=>{const p=mapPos[x.indirizzo];if(p&&p[3])c[p[3]]=(c[p[3]]||0)+1});
+  bx.innerHTML='<span class="muted" style="align-self:center">Municipio</span><button type="button" class="chip gc-no'+(mapMunSel?'':' on')+'" data-mu="0">Tutti</button>'+[1,2,3,4,5,6,7,8,9].filter(n=>c[n]).map(n=>'<button type="button" class="chip gc-no'+(mapMunSel===n?' on':'')+'" data-mu="'+n+'">'+n+' <span>'+c[n]+'</span></button>').join('');
+  bx.querySelectorAll('[data-mu]').forEach(b=>b.onclick=()=>{mapMunSel=+b.dataset.mu;mapChipsMun();mapDisegna()});
+}
+function mapDisegna(){
+  if(!mapObj||!mapLay)return;
+  mapChipsMun();mapLay.clearLayers();const pts=[];
+  const q=norm(mapQ);
+  for(const r of mapRows){
+    const p=mapPos[r.indirizzo];if(!p)continue;
+    if(mapLotto&&r.lotto!==mapLotto)continue;
+    if(mapMunSel&&p[3]!==mapMunSel)continue;
+    if(q&&!norm(r.indirizzo).includes(q))continue;
+    const col=MAP_COL[r.lotto]||'#ff8a1f';
+    const m=L.marker([p[0],p[1]],{title:r.indirizzo,icon:L.divIcon({className:'mp-pin',html:mapPin(col,p[2]==='v'),iconSize:[34,42],iconAnchor:[17,40],popupAnchor:[0,-36]})});
+    m.bindPopup(()=>mapPopup(r,p));m.addTo(mapLay);pts.push([p[0],p[1]]);
+  }
+  if(pts.length&&(q||mapLotto||!mapObj.__fit)){mapObj.fitBounds(pts,{padding:[30,30],maxZoom:16});mapObj.__fit=1}
+  const manc=mapRows.filter(r=>r.indirizzo&&!mapPos[r.indirizzo]).length;
+  const mm=$('#mapmiss');if(mm)mm.style.display=manc&&!mapGeoOn?'':'none';
+  const mc=$('#mapmc');if(mc)mc.textContent=manc;
+  const nt=$('#mapnt');if(nt)nt.textContent=mapNonTr.length?'Non trovati: '+mapNonTr.join(', ')+'. Puoi correggerli a mano o dirmelo.':'';
+  const hn=document.querySelector('.ho-n b');if(hn&&corrente==='mappa')hn.textContent=mapRows.filter(x=>mapPos[x.indirizzo]).length;
+}
+async function mappaVista(){
+  glSkin(true);$('#main').innerHTML='<p class="gc-load">'+gcI('fiamma')+'Carico la mappa…</p>';
+  try{await caricaLeaflet()}catch(e){$('#main').innerHTML='<p class="late">'+esc(e.message)+'</p>';return}
+  const[r,pos]=await Promise.all([leggiTutto(MODULI.impianti),leggiPos()]);
+  mapRows=r.data||[];mapPos=pos;mapNonTr=[];mapGeoOn=false;mapLotto='';mapQ='';mapMunSel=0;
+  const lotti=[...new Set(mapRows.map(x=>x.lotto).filter(Boolean))].sort();
+  const hero=glHero({ic:'impianti',bl:'Mappa',kick:'Centrali termiche su Milano',title:'Mappa degli impianti',sub:'Tocca un segnaposto per vedere l’impianto e aprire la scheda.',num:mapRows.filter(x=>pos[x.indirizzo]).length,lab:'impianti sulla mappa'});
+  $('#main').innerHTML=hero+
+   '<div class="card mp-bar"><div class="chips fb"><button type="button" class="chip on gc-no" data-lt="">Tutti <span>'+mapRows.length+'</span></button>'+lotti.map(l=>'<button type="button" class="chip gc-no" data-lt="'+esc(l)+'"><i class="mp-dot" style="background:'+(MAP_COL[l]||'#ff8a1f')+'"></i>'+esc(l)+' <span>'+mapRows.filter(x=>x.lotto===l).length+'</span></button>').join('')+'</div>'+
+   '<div class="chips fb" id="mapmun" style="width:100%"></div>'+'<input id="mapq" type="search" placeholder="Cerca un indirizzo sulla mappa…" autocomplete="off"></div>'+
+   '<div class="card" id="mapmiss" style="display:none"><b><span id="mapmc"></span> impianti senza posizione.</b> <span class="muted">Le posizioni si ricavano una volta sola da OpenStreetMap (circa un secondo per indirizzo) e restano salvate per tutti.</span> <button type="button" id="mapgeo">Calcola le posizioni</button></div>'+
+   '<div id="mapinfo" class="muted" style="min-height:1.2em"></div><div id="mapnt" class="muted"></div>'+
+   '<div id="mapbox"></div><p class="muted" style="font-size:12px">Segnaposto: <b>pieno</b> = indirizzo con numero civico · <b>sfumato</b> = solo la via · mappa © OpenStreetMap.</p>';
+  if(mapObj){try{mapObj.remove()}catch(e){}}
+  mapObj=L.map('mapbox',{zoomControl:true,attributionControl:true}).setView([45.4642,9.19],12);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(mapObj);
+  mapLay=L.layerGroup().addTo(mapObj);
+  document.querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>{mapLotto=b.dataset.lt;document.querySelectorAll('[data-lt]').forEach(x=>x.classList.toggle('on',x===b));mapDisegna()});
+  $('#mapq').oninput=e=>{mapQ=e.target.value;mapDisegna()};
+  $('#mapgeo').onclick=calcolaPosizioni;
+  mapDisegna();setTimeout(()=>{try{mapObj.invalidateSize()}catch(e){}},250);
+}
+
 /* ---------- caldaie e referenti ---------- */
 const LIM_CALDAIA=15;
 function anniGen(r){return String(r.anni_caldaie||'').split(/[;,]/).map(x=>parseInt(x,10)).filter(x=>x>1900)}
@@ -1398,8 +1528,14 @@ function etaCaldaie(r){
   const oltre=a.filter(x=>y-x>=LIM_CALDAIA).length;
   return '<div class="crit" style="border-left-color:'+(oltre?'#b3261e':'#2e7d32')+'"><b>'+gcI('caldaia')+' Generatori</b><p>Anni di installazione: '+a.join(', ')+' · il più vecchio ha '+(y-Math.min(...a))+' anni · raggiunge i '+LIM_CALDAIA+' nel '+(Math.min(...a)+LIM_CALDAIA)+(oltre?' · '+oltre+(oltre===1?' generatore ha già superato':' generatori hanno già superato')+' il limite':'')+'</p></div>';
 }
+async function posizioneDi(a){
+  if(!window.__posC)window.__posC=await leggiPos().catch(()=>({}));
+  return window.__posC[a]||null;
+}
 async function chiChiamo(r){
-  let h=etaCaldaie(r);const bm=String(r.building_manager||'').trim();
+  let h=etaCaldaie(r);
+  const ps=await posizioneDi(r.indirizzo);
+  if(ps&&ps[3])h+='<div class="crit" style="border-left-color:#6a1b9a"><b>'+gcI('manometro')+' Zona</b><p>Municipio '+ps[3]+' · Milano</p></div>';const bm=String(r.building_manager||'').trim();
   if(!bm)return h;
   const w=bm.replace(/[,()%*]/g,' ').split(/\s+/).filter(Boolean);
   const{data}=await sb.from('contatti').select('nome,ente,email,telefono').ilike('nome','%'+w[w.length-1]+'%').limit(10);
