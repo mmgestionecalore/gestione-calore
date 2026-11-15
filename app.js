@@ -1364,7 +1364,7 @@ function gcInit(){
     '.gc-fl{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 1.6s ease-in-out infinite;fill:currentColor;color:#ff8a1f}.gc-d2{animation-delay:-.7s!important}.gc-d3{animation-delay:-1.3s!important}'+
     '.gc-dr{transform-box:fill-box;transform-origin:50% 50%;animation:gcDrift 9s ease-in-out infinite}'+
     '.brand svg,.logo svg,.ho-mk svg{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 2.6s ease-in-out infinite}'+
-    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'#mapbox{position:relative;z-index:0;isolation:isolate;height:68vh;min-height:420px;border-radius:16px;overflow:hidden;border:2px solid #4a2c18}'+'.mp-pin{background:none!important;border:0!important}.mp-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mp-bar .chips{margin:0}#mapq{flex:1;min-width:200px}'+'.mp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}'+'.mp-pop{font-family:Barlow,system-ui,sans-serif;min-width:190px;color:#26160d}.mp-pop b{display:block;font-size:15px;margin-bottom:4px}.mp-pop div{font-size:13px;margin:2px 0}'+'.mp-b{margin:8px 6px 0 0;padding:7px 11px;border-radius:10px;border:0;background:#ff8a1f;color:#1b110b;font-weight:600;cursor:pointer}.mp-g{background:#eee;color:#333}'+'.mp-find{margin-top:.6rem}.mp-fr{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}#mapaddr{flex:1;min-width:220px}.mp-nh{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:10px}.mp-nl{list-style:none;margin:6px 0 0;padding:0}.mp-nl li{margin:4px 0}.mp-nb{display:block;width:100%;text-align:left;padding:9px 12px;margin:4px 0;border-radius:10px;border:1px solid #4a2c18;background:rgba(255,138,31,.08);color:inherit;cursor:pointer;font:inherit}.mp-nb:hover{border-color:#ff8a1f}.mp-nb span{color:#c9a98a}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
+    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'#mapbox{position:relative;z-index:0;isolation:isolate;height:68vh;min-height:420px;border-radius:16px;overflow:hidden;border:2px solid #4a2c18}'+'.mp-pin{background:none!important;border:0!important}.mp-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mp-bar .chips{margin:0}#mapq{flex:1;min-width:200px}'+'.mp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}'+'.mp-pop{font-family:Barlow,system-ui,sans-serif;min-width:190px;color:#26160d}.mp-pop b{display:block;font-size:15px;margin-bottom:4px}.mp-pop div{font-size:13px;margin:2px 0}'+'.mp-b{margin:8px 6px 0 0;padding:7px 11px;border-radius:10px;border:0;background:#ff8a1f;color:#1b110b;font-weight:600;cursor:pointer}.mp-g{background:#eee;color:#333}'+'.mp-find{margin-top:.6rem}.mp-fr{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}#mapaddr{flex:1;min-width:220px}.mp-nh{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:10px}.mp-nl{list-style:none;margin:6px 0 0;padding:0}.mp-nl li{margin:4px 0}.mp-nb{display:block;width:100%;text-align:left;padding:9px 12px;margin:4px 0;border-radius:10px;border:1px solid #4a2c18;background:rgba(255,138,31,.08);color:inherit;cursor:pointer;font:inherit}.mp-nb:hover{border-color:#ff8a1f}.mp-nb span{color:#c9a98a}'+'.mp-num{width:28px;height:28px;border-radius:50%;color:#fff;font:700 14px Barlow,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)}.mp-off{background:#1565c0;color:#fff;font:700 11px Barlow,system-ui,sans-serif;letter-spacing:.06em;padding:5px 8px;border-radius:8px;border:2px solid #fff;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.5)}.mp-gl{margin:6px 0 8px 1.2em;padding:0}.mp-gl li{margin:4px 0}.mp-gl li span{color:#c9a98a}#mapgsug{margin-top:6px}.mp-g2{background:transparent!important;border:1px solid #4a2c18!important;color:inherit!important}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
     '.gc-sec{display:flex;align-items:center;gap:8px}.gc-sec .gci{color:#ff8a1f}'+
     '.vuoto .gc-big{width:84px;height:84px;color:#6b3a1c;opacity:1}'+
     '.login{position:relative;overflow:hidden}.login .gc-foot{position:absolute;left:0;right:0;bottom:10px;margin:0 auto;width:min(760px,96%);color:#fff;opacity:.3}'+
@@ -1396,7 +1396,8 @@ new MutationObserver(gcWatch).observe(document.body,{childList:true,subtree:true
 const MAP_LEAF={js:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',jh:'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH',css:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',ch:'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H'};
 const MAP_COL={'LOTTO 1':'#ff8a1f','LOTTO 2':'#ffc247','LOTTO TLR':'#ff5a6e'};
 const MAP_BOX={s:45.30,n:45.65,w:8.95,e:9.45};
-let mapMunSel=0,mapObj=null,mapLay=null,mapPos={},mapRows=[],mapLotto='',mapQ='',mapGeoOn=false,mapNonTr=[],mapMk={},mapSrc=null,mapTrov=null;
+let mapMunSel=0,mapObj=null,mapLay=null,mapPos={},mapRows=[],mapLotto='',mapQ='',mapGeoOn=false,mapNonTr=[],mapMk={},mapSrc=null,mapTrov=null,mapGiro=[],mapGiroLay=null;
+const UFF={lat:45.484724,lng:9.240514,nome:'Ufficio MM · Via Tommaso Pini 1 (Lambrate)'};
 function caricaLeaflet(){
   return new Promise((ok,ko)=>{
     if(window.L)return ok();
@@ -1463,6 +1464,7 @@ function mapPopup(r,p){
   if(p[2]==='v')riga('Posizione approssimata (solo la via)');
   if(p[2]==='m')riga('Posizione impostata a mano');
   const a=document.createElement('button');a.type='button';a.className='gc-no mp-b';a.textContent='Apri la scheda';a.onclick=()=>{corrente='impianti';$('#dlg').addEventListener('close',()=>{corrente='mappa'},{once:true});scheda(r)};d.appendChild(a);
+  const g=document.createElement('button');g.type='button';g.className='gc-no mp-b';g.textContent=mapGiro.includes(r.indirizzo)?'Già nel giro':'Aggiungi al giro';g.onclick=()=>{mapGiroAdd(r.indirizzo);g.textContent='Già nel giro'};d.appendChild(g);
   const c=document.createElement('button');c.type='button';c.className='gc-no mp-b mp-g';c.textContent='Correggi posizione';
   c.onclick=()=>{
     mapObj.closePopup();$('#mapinfo').textContent='Tocca sulla mappa il punto giusto per «'+r.indirizzo+'».';mapObj.getContainer().style.cursor='crosshair';
@@ -1544,6 +1546,81 @@ async function mapTrovaClick(){
   l.style.display='';const t=document.createElement('div');t.className='muted';t.textContent='Più risultati: scegli quello giusto.';l.appendChild(t);
   res.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='gc-no mp-nb';b.textContent=o.nome;b.onclick=()=>{l.style.display='none';l.innerHTML='';mapMostraVicini(o)};l.appendChild(b)});
 }
+const OSRM='https://router.project-osrm.org';
+function mapGiroChips(){
+  const bx=$('#mapgchips');if(!bx)return;bx.innerHTML='';
+  mapGiro.forEach(a=>{const b=document.createElement('button');b.type='button';b.className='chip on gc-no';b.title='Togli dal giro';b.textContent=a+' ×';b.onclick=()=>{mapGiro=mapGiro.filter(x=>x!==a);mapGiroChips();mapGiroPulisci(true)};bx.appendChild(b)});
+  const n=$('#mapgn');if(n)n.textContent=mapGiro.length?mapGiro.length+' centrali scelte':'Nessuna centrale scelta';
+}
+function mapGiroAdd(a){
+  if(!mapPos[a]){const i=$('#mapinfo');if(i)i.textContent='«'+a+'» non ha ancora una posizione sulla mappa.';return}
+  if(mapGiro.includes(a))return;
+  if(mapGiro.length>=12){const i=$('#mapinfo');if(i)i.textContent='Per un giro in auto sono al massimo 12 centrali: dividi in due giri.';return}
+  mapGiro.push(a);mapGiroChips();mapGiroPulisci(true);
+}
+function mapGiroPulisci(soloRis){
+  if(mapGiroLay)mapGiroLay.clearLayers();const r=$('#mapgris');if(r){r.innerHTML='';r.style.display='none'}
+  if(!soloRis){mapGiro=[];mapGiroChips()}
+}
+function mapGiroSug(){
+  const q=norm($('#mapgq').value),bx=$('#mapgsug');bx.innerHTML='';
+  if(q.length<2){bx.style.display='none';return}
+  const v=mapRows.filter(r=>mapPos[r.indirizzo]&&!mapGiro.includes(r.indirizzo)&&norm(r.indirizzo).includes(q)).slice(0,8);
+  bx.style.display=v.length?'':'none';
+  v.forEach(r=>{const b=document.createElement('button');b.type='button';b.className='gc-no mp-nb';b.textContent=r.indirizzo;b.onclick=()=>{mapGiroAdd(r.indirizzo);$('#mapgq').value='';bx.style.display='none';$('#mapgq').focus()};bx.appendChild(b)});
+}
+function mapGiroOrdine(M){
+  const k=M.length-1,costo=o=>{let c=0,p=0;for(const i of o){c+=M[p][i];p=i}return c+M[p][0]};
+  const idx=[...Array(k)].map((_,i)=>i+1);
+  if(k<=8){let best=null,bc=1/0;
+    const perm=(a,r)=>{if(!r.length){const c=costo(a);if(c<bc){bc=c;best=a.slice()}return}for(let i=0;i<r.length;i++){a.push(r[i]);perm(a,r.slice(0,i).concat(r.slice(i+1)));a.pop()}};
+    perm([],idx);return best}
+  let o=[],rim=idx.slice(),p=0;while(rim.length){rim.sort((a,b)=>M[p][a]-M[p][b]);p=rim.shift();o.push(p)}
+  let mig=true;while(mig){mig=false;for(let i=0;i<k-1;i++)for(let j=i+1;j<k;j++){const n=o.slice(0,i).concat(o.slice(i,j+1).reverse(),o.slice(j+1));if(costo(n)<costo(o)-1e-9){o=n;mig=true}}}
+  return o;
+}
+async function mapGiroCalcola(){
+  const info=$('#mapinfo');
+  if(!mapGiro.length){info.textContent='Scegli prima almeno una centrale da visitare.';return}
+  info.textContent='Calcolo il giro…';
+  const pts=[[UFF.lat,UFF.lng]].concat(mapGiro.map(a=>[mapPos[a][0],mapPos[a][1]]));
+  let M=null,stima=false;
+  try{
+    const c=pts.map(p=>p[1]+','+p[0]).join(';');
+    const r=await fetch(OSRM+'/table/v1/driving/'+c+'?annotations=duration');if(!r.ok)throw 0;
+    const j=await r.json();if(j.code!=='Ok'||!j.durations||j.durations.some(rw=>rw.some(x=>x==null)))throw 0;M=j.durations;
+  }catch(e){stima=true;M=pts.map(a=>pts.map(b=>mapDist(a[0],a[1],b[0],b[1])*1.35/8.3))}
+  const ord=mapGiroOrdine(M),seq=[0].concat(ord,[0]);
+  let tratti=null,geom=null;
+  if(!stima){try{
+    const c=seq.map(i=>pts[i][1]+','+pts[i][0]).join(';');
+    const r=await fetch(OSRM+'/route/v1/driving/'+c+'?overview=full&geometries=geojson&steps=false');if(!r.ok)throw 0;
+    const j=await r.json();if(j.code!=='Ok')throw 0;tratti=j.routes[0].legs.map(l=>[l.distance,l.duration]);geom=j.routes[0].geometry;
+  }catch(e){stima=true}}
+  if(!tratti)tratti=seq.slice(1).map((b,i)=>{const a=seq[i],d=mapDist(pts[a][0],pts[a][1],pts[b][0],pts[b][1])*1.35;return[d,d/8.3]});
+  mapGiroDisegna(seq,pts,tratti,geom,stima);info.textContent='';
+}
+function mapGiroDisegna(seq,pts,tratti,geom,stima){
+  if(!mapGiroLay)mapGiroLay=L.layerGroup().addTo(mapObj);mapGiroLay.clearLayers();
+  const line=geom?L.geoJSON(geom,{style:{color:'#1565c0',weight:5,opacity:.8}}):L.polyline(seq.map(i=>pts[i]),{color:'#1565c0',weight:4,opacity:.7,dashArray:'8 8'});
+  line.addTo(mapGiroLay);
+  const num=(n,col)=>L.divIcon({className:'mp-pin',html:'<div class="mp-num" style="background:'+col+'">'+n+'</div>',iconSize:[28,28],iconAnchor:[14,14]});
+  seq.slice(1,-1).forEach((i,n)=>L.marker(pts[i],{icon:num(n+1,'#d32f2f'),zIndexOffset:900,title:mapGiro[i-1]}).addTo(mapGiroLay));
+  mapObj.fitBounds(line.getBounds?line.getBounds():L.latLngBounds(seq.map(i=>pts[i])),{padding:[40,40]});
+  const fk=m=>(m/1000).toFixed(1).replace('.',',')+' km',fm=s=>{const m=Math.round(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min'};
+  const tot=tratti.reduce((a,t)=>[a[0]+t[0],a[1]+t[1]],[0,0]);
+  const bx=$('#mapgris');bx.style.display='';bx.innerHTML='';
+  const h=document.createElement('p');h.style.margin='8px 0 4px';const hb=document.createElement('b');hb.textContent='Giro proposto: '+fk(tot[0])+' · circa '+fm(tot[1])+' di guida (senza soste)';h.appendChild(hb);bx.appendChild(h);
+  const ol=document.createElement('ol');ol.className='mp-gl';
+  const li=(t,d)=>{const e=document.createElement('li');const b=document.createElement('b');b.textContent=t;e.appendChild(b);const sp=document.createElement('span');sp.textContent=d;e.appendChild(sp);ol.appendChild(e)};
+  li('Partenza: Ufficio, Via Tommaso Pini 1','');
+  seq.slice(1).forEach((i,n)=>{const t=tratti[n];li(i?mapGiro[i-1]:'Rientro in Ufficio',' · +'+fk(t[0])+' · '+fm(t[1]))});
+  bx.appendChild(ol);
+  const m=document.createElement('p');m.className='muted';m.style.fontSize='12px';m.textContent=stima?'Stima in linea d’aria (il servizio dei percorsi non ha risposto): i tempi reali possono differire.':'Percorso stradale calcolato con OpenStreetMap, senza traffico. Il giro è il più breve in tempo di guida tra tutti gli ordini possibili.';bx.appendChild(m);
+  const ll=i=>pts[i][0]+','+pts[i][1];
+  const u='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+ll(0)+'&destination='+ll(0)+'&waypoints='+seq.slice(1,-1).map(ll).join('%7C');
+  const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';a.className='mp-b';a.style.display='inline-block';a.style.textDecoration='none';a.textContent='Apri il giro su Google Maps (navigatore)';bx.appendChild(a);
+}
 async function mappaVista(){
   glSkin(true);$('#main').innerHTML='<p class="gc-load">'+gcI('fiamma')+'Carico la mappa…</p>';
   try{await caricaLeaflet()}catch(e){$('#main').innerHTML='<p class="late">'+esc(e.message)+'</p>';return}
@@ -1556,15 +1633,18 @@ async function mappaVista(){
    '<div class="chips fb" id="mapmun" style="width:100%"></div>'+'<input id="mapq" type="search" placeholder="Filtra i miei impianti per indirizzo…" autocomplete="off"></div>'+
    '<div class="card mp-find"><b>Cerca un indirizzo qualsiasi</b> <span class="muted">(un fornitore, un cantiere…): vedi gli impianti più vicini</span><div class="mp-fr"><input id="mapaddr" type="search" placeholder="Es. Via Roma 10, Milano" autocomplete="off"><button type="button" id="mapfind" class="gc-no">Trova indirizzo</button></div><div id="maplist" style="display:none"></div><div id="mapnear" style="display:none"></div></div>'+
    '<div class="card" id="mapmiss" style="display:none"><b><span id="mapmc"></span> impianti senza posizione.</b> <span class="muted">Le posizioni si ricavano una volta sola da OpenStreetMap (circa un secondo per indirizzo) e restano salvate per tutti.</span> <button type="button" id="mapgeo">Calcola le posizioni</button></div>'+
+   '<div class="card mp-find"><b>Pianifica giro</b> <span class="muted">scegli le centrali da visitare: ti propongo il giro in auto più breve, con partenza e rientro in Ufficio (Via Tommaso Pini 1)</span><div class="mp-fr"><input id="mapgq" type="search" placeholder="Aggiungi una centrale (scrivi l’indirizzo)…" autocomplete="off"><button type="button" id="mapgo" class="gc-no">Calcola il giro</button><button type="button" id="mapgx" class="gc-no mp-g2">Svuota</button></div><div id="mapgsug" style="display:none"></div><div class="chips fb" id="mapgchips" style="margin-top:8px"></div><div class="muted" id="mapgn" style="font-size:12px"></div><div id="mapgris" style="display:none"></div></div>'+
    '<div id="mapinfo" class="muted" style="min-height:1.2em"></div><div id="mapnt" class="muted"></div>'+
    '<div id="mapbox"></div><p class="muted" style="font-size:12px">Segnaposto: <b>pieno</b> = indirizzo con numero civico · <b>sfumato</b> = solo la via · mappa © OpenStreetMap.</p>';
   if(mapObj){try{mapObj.remove()}catch(e){}}
   mapObj=L.map('mapbox',{zoomControl:true,attributionControl:true}).setView([45.4642,9.19],12);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(mapObj);
-  mapLay=L.layerGroup().addTo(mapObj);mapSrc=L.layerGroup().addTo(mapObj);mapTrov=null;
+  mapLay=L.layerGroup().addTo(mapObj);mapSrc=L.layerGroup().addTo(mapObj);mapTrov=null;mapGiroLay=L.layerGroup().addTo(mapObj);mapGiro=[];
+  L.marker([UFF.lat,UFF.lng],{title:UFF.nome,zIndexOffset:800,icon:L.divIcon({className:'mp-pin',html:'<div class="mp-off">UFFICIO</div>',iconSize:[70,26],iconAnchor:[35,13]})}).bindPopup(UFF.nome).addTo(mapObj);
   document.querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>{mapLotto=b.dataset.lt;document.querySelectorAll('[data-lt]').forEach(x=>x.classList.toggle('on',x===b));mapDisegna()});
   $('#mapq').oninput=e=>{mapQ=e.target.value;mapDisegna()};
   $('#mapgeo').onclick=calcolaPosizioni;
+  $('#mapgo').onclick=mapGiroCalcola;$('#mapgx').onclick=()=>mapGiroPulisci(false);$('#mapgq').oninput=mapGiroSug;mapGiroChips();
   $('#mapfind').onclick=mapTrovaClick;$('#mapaddr').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();mapTrovaClick()}};
   mapDisegna();setTimeout(()=>{try{mapObj.invalidateSize()}catch(e){}},250);
 }
