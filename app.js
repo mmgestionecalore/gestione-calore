@@ -1256,14 +1256,49 @@ function schedaCens(r,rientro){
 
 /* ---------- Oggi + ricerca globale ---------- */
 function badgeC(t){const x=String(t||''),c=/legionella|rentokil|bioh|108\/2025/i.test(x)?['Legionella','#2e9e5b']:/\bTLR\b|A2A/i.test(x)?['TLR','#d1453b']:/lotto 1(?!\d)|innova/i.test(x)?['Lotto 1','#ff7a26']:/lotto 2(?!\d)|renovit/i.test(x)?['Lotto 2','#2f7fd1']:null;return c?'<span class="hubtag" style="--hc:'+c[1]+';font-size:11px;padding:.05rem .5rem;margin-right:.4rem">'+c[0]+'</span>':''}
+const BK_ORE_MAX=36;
+function statoBackup(righe){
+  const m={};(righe||[]).forEach(r=>{m[r.chiave]=r});
+  const riga=(nome,r)=>{
+    if(!r)return '<li><span class="st ko">Nessun dato</span><span class="tx">'+nome+'</span></li>';
+    const ore=(Date.now()-new Date(r.aggiornato_il).getTime())/3600000,ok=ore<=BK_ORE_MAX;
+    let d={};try{d=JSON.parse(r.valore)||{}}catch(e){}
+    const det=[d.tabelle!=null?d.tabelle+' tabelle':'',d.righe!=null?d.righe+' righe':'',d.file!=null?d.file+' file':''].filter(Boolean).join(', ');
+    return '<li><span class="st '+(ok?'ok':'ko')+'">'+(ok?'Aggiornato':'Vecchio')+'</span><span class="tx">'+nome+' · '+esc(new Date(r.aggiornato_il).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}))+(det?' · '+esc(det):'')+(ok?'':' <b>(più di '+BK_ORE_MAX+' ore fa: controllare)</b>')+'</span></li>';
+  };
+  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Backup e calendario <button class="ghost mini" id="ics" style="margin-left:auto">Scarica scadenze (.ics)</button></h3><ul class="ev">'+
+    riga('Copia nel database (notturna)',m.backup_interno)+riga('Copia su GitHub (notturna)',m.backup_github)+'</ul></div>';
+}
+const icsTesto=t=>String(t==null?'':t).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/;/g,'\;').replace(/,/g,'\\,');
+function icsPiega(l){const out=[];let r=l;while(r.length>73){out.push(r.slice(0,73));r=' '+r.slice(73)}out.push(r);return out.join('\r\n')}
+function costruisciIcs(scad,att){
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,''),L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Gestione Calore//IT','CALSCALE:GREGORIAN','X-WR-CALNAME:Gestione Calore'];
+  const ev=(uid,data,titolo,desc)=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(data||''))return;
+    const d=data.replace(/-/g,''),f=new Date(data+'T00:00:00Z');f.setUTCDate(f.getUTCDate()+1);
+    L.push('BEGIN:VEVENT','UID:'+uid+'@gestione-calore','DTSTAMP:'+stamp,'DTSTART;VALUE=DATE:'+d,'DTEND;VALUE=DATE:'+f.toISOString().slice(0,10).replace(/-/g,''),'SUMMARY:'+icsTesto(titolo||'(senza titolo)'));
+    if(desc)L.push('DESCRIPTION:'+icsTesto(desc));
+    L.push('END:VEVENT');
+  };
+  (scad||[]).forEach(r=>ev('s'+r.id,r.data,'Scadenza: '+(r.titolo||''),r.impianto||''));
+  (att||[]).forEach(r=>ev('a'+r.id,r.scadenza,'Da fare: '+(r.titolo||''),''));
+  L.push('END:VCALENDAR');
+  return L.map(icsPiega).join('\r\n')+'\r\n';
+}
+async function scaricaCalendario(){
+  const[s,a]=await Promise.all([sb.from('scadenze').select('id,data,titolo,impianto').eq('fatto',false).not('data','is',null),sb.from('attivita').select('id,scadenza,titolo').neq('stato','Fatto').not('scadenza','is',null)]);
+  if(s.error||a.error){alert('Non sono riuscito a leggere le scadenze. Riprova.');return}
+  scarica('gestione-calore-scadenze.ics',costruisciIcs(s.data,a.data),'text/calendar;charset=utf-8');
+}
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
-  const[a,s,sl,qd,rg,...cn]=await Promise.all([
+  const[a,s,sl,qd,rg,ss,...cn]=await Promise.all([
     sb.from('attivita').select('*').neq('stato','Fatto').order('scadenza',{ascending:true,nullsFirst:false}),
     sb.from('scadenze').select('*').eq('fatto',false).lte('data',fra).order('data'),
     sb.from('sal').select('lotto,tipo,stato,netto,periodo,numero,anno,progressivo'),
     sb.from('quadro').select('*'),
     sb.from('registro').select('quando,utente,azione,tabella,etichetta').order('quando',{ascending:false}).limit(8),
+    sb.from('stato_sistema').select('chiave,valore,aggiornato_il'),
     ...TABELLE.map(k=>sb.from(MODULI[k].tab).select('id',{count:'exact',head:true}))]);
   const a30=(a.data||[]).filter(r=>r.scadenza&&r.scadenza<=fra).length;
   if(a.data)a.data=ordinaAttivita(a.data).slice(0,15);
@@ -1284,8 +1319,9 @@ async function oggiVista(){
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
    blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
    
-   '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div>'+'<footer class="recente">'+blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+'</footer></div>';
+   '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div>'+statoBackup(ss&&ss.data)+'<footer class="recente">'+blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+'</footer></div>';
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.querySelectorAll('a.kpi b').forEach(b=>{const n=parseInt(b.textContent,10);if(!(n>0))return;const st=Math.max(1,Math.ceil(n/18));let i=0;b.textContent='0';const h=setInterval(()=>{i=Math.min(n,i+st);b.textContent=i;if(i>=n)clearInterval(h)},35)});
+  const bi=$('#ics');if(bi)bi.onclick=scaricaCalendario;
   $('#qa').onclick=()=>{corrente='attivita';modulo(null,'attivita',()=>apri('oggi'))};
   document.querySelectorAll('.cnt a,a.kpi,a[data-k=contabilita]').forEach(x=>x.onclick=e=>{e.preventDefault();const k=x.dataset.k;apri((MODULI[k]&&MODULI[k].vai)||k)});
 }
