@@ -1364,7 +1364,7 @@ function gcInit(){
     '.gc-fl{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 1.6s ease-in-out infinite;fill:currentColor;color:#ff8a1f}.gc-d2{animation-delay:-.7s!important}.gc-d3{animation-delay:-1.3s!important}'+
     '.gc-dr{transform-box:fill-box;transform-origin:50% 50%;animation:gcDrift 9s ease-in-out infinite}'+
     '.brand svg,.logo svg,.ho-mk svg{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick 2.6s ease-in-out infinite}'+
-    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'#mapbox{position:relative;z-index:0;isolation:isolate;height:68vh;min-height:420px;border-radius:16px;overflow:hidden;border:2px solid #4a2c18}'+'.mp-pin{background:none!important;border:0!important}.mp-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mp-bar .chips{margin:0}#mapq{flex:1;min-width:200px}'+'.mp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}'+'.mp-pop{font-family:Barlow,system-ui,sans-serif;min-width:190px;color:#26160d}.mp-pop b{display:block;font-size:15px;margin-bottom:4px}.mp-pop div{font-size:13px;margin:2px 0}'+'.mp-b{margin:8px 6px 0 0;padding:7px 11px;border-radius:10px;border:0;background:#ff8a1f;color:#1b110b;font-weight:600;cursor:pointer}.mp-g{background:#eee;color:#333}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
+    '.gc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}.gc-btn .gci{width:1.2em;height:1.2em;flex:none}'+'button.gc-btn:not(.ghost){box-shadow:0 3px 0 rgba(120,40,0,.45),0 8px 16px rgba(255,138,31,.22);transition:transform .12s,box-shadow .12s,filter .12s}'+'button.gc-btn:not(.ghost):hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 4px 0 rgba(120,40,0,.45),0 10px 20px rgba(255,138,31,.3)}'+'button.gc-btn:not(.ghost):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(120,40,0,.45)}'+'button.gc-btn.ghost .gci{color:#ff8a1f}button.gc-btn.ghost:hover{border-color:#ff8a1f}'+'button.gc-btn:hover .gci{transform-box:fill-box;transform-origin:50% 100%;animation:gcFlick .8s ease-in-out infinite}'+'#mapbox{position:relative;z-index:0;isolation:isolate;height:68vh;min-height:420px;border-radius:16px;overflow:hidden;border:2px solid #4a2c18}'+'.mp-pin{background:none!important;border:0!important}.mp-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.mp-bar .chips{margin:0}#mapq{flex:1;min-width:200px}'+'.mp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}'+'.mp-pop{font-family:Barlow,system-ui,sans-serif;min-width:190px;color:#26160d}.mp-pop b{display:block;font-size:15px;margin-bottom:4px}.mp-pop div{font-size:13px;margin:2px 0}'+'.mp-b{margin:8px 6px 0 0;padding:7px 11px;border-radius:10px;border:0;background:#ff8a1f;color:#1b110b;font-weight:600;cursor:pointer}.mp-g{background:#eee;color:#333}'+'.mp-find{margin-top:.6rem}.mp-fr{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}#mapaddr{flex:1;min-width:220px}.mp-nh{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:10px}.mp-nl{list-style:none;margin:6px 0 0;padding:0}.mp-nl li{margin:4px 0}.mp-nb{display:block;width:100%;text-align:left;padding:9px 12px;margin:4px 0;border-radius:10px;border:1px solid #4a2c18;background:rgba(255,138,31,.08);color:inherit;cursor:pointer;font:inherit}.mp-nb:hover{border-color:#ff8a1f}.mp-nb span{color:#c9a98a}'+'.gc-load{display:flex;align-items:center;gap:10px;color:#c9a98a}.gc-load .gci{width:34px;height:34px;color:#ff8a1f;animation:gcFlick 1.2s ease-in-out infinite;transform-origin:50% 100%}'+
     '.gc-sec{display:flex;align-items:center;gap:8px}.gc-sec .gci{color:#ff8a1f}'+
     '.vuoto .gc-big{width:84px;height:84px;color:#6b3a1c;opacity:1}'+
     '.login{position:relative;overflow:hidden}.login .gc-foot{position:absolute;left:0;right:0;bottom:10px;margin:0 auto;width:min(760px,96%);color:#fff;opacity:.3}'+
@@ -1396,7 +1396,7 @@ new MutationObserver(gcWatch).observe(document.body,{childList:true,subtree:true
 const MAP_LEAF={js:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',jh:'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH',css:'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',ch:'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H'};
 const MAP_COL={'LOTTO 1':'#ff8a1f','LOTTO 2':'#ffc247','LOTTO TLR':'#ff5a6e'};
 const MAP_BOX={s:45.30,n:45.65,w:8.95,e:9.45};
-let mapMunSel=0,mapObj=null,mapLay=null,mapPos={},mapRows=[],mapLotto='',mapQ='',mapGeoOn=false,mapNonTr=[];
+let mapMunSel=0,mapObj=null,mapLay=null,mapPos={},mapRows=[],mapLotto='',mapQ='',mapGeoOn=false,mapNonTr=[],mapMk={},mapSrc=null,mapTrov=null;
 function caricaLeaflet(){
   return new Promise((ok,ko)=>{
     if(window.L)return ok();
@@ -1478,7 +1478,7 @@ function mapChipsMun(){
 }
 function mapDisegna(){
   if(!mapObj||!mapLay)return;
-  mapChipsMun();mapLay.clearLayers();const pts=[];
+  mapChipsMun();mapLay.clearLayers();mapMk={};const pts=[];
   const q=norm(mapQ);
   for(const r of mapRows){
     const p=mapPos[r.indirizzo];if(!p)continue;
@@ -1487,7 +1487,7 @@ function mapDisegna(){
     if(q&&!norm(r.indirizzo).includes(q))continue;
     const col=MAP_COL[r.lotto]||'#ff8a1f';
     const m=L.marker([p[0],p[1]],{title:r.indirizzo,icon:L.divIcon({className:'mp-pin',html:mapPin(col,p[2]==='v'),iconSize:[34,42],iconAnchor:[17,40],popupAnchor:[0,-36]})});
-    m.bindPopup(()=>mapPopup(r,p));m.addTo(mapLay);pts.push([p[0],p[1]]);
+    m.bindPopup(()=>mapPopup(r,p));m.addTo(mapLay);mapMk[r.indirizzo]=m;pts.push([p[0],p[1]]);
   }
   if(pts.length&&(q||mapLotto||!mapObj.__fit)){mapObj.fitBounds(pts,{padding:[30,30],maxZoom:16});mapObj.__fit=1}
   const manc=mapRows.filter(r=>r.indirizzo&&!mapPos[r.indirizzo]).length;
@@ -1495,6 +1495,54 @@ function mapDisegna(){
   const mc=$('#mapmc');if(mc)mc.textContent=manc;
   const nt=$('#mapnt');if(nt)nt.textContent=mapNonTr.length?'Non trovati: '+mapNonTr.join(', ')+'. Puoi correggerli a mano o dirmelo.':'';
   const hn=document.querySelector('.ho-n b');if(hn&&corrente==='mappa')hn.textContent=mapRows.filter(x=>mapPos[x.indirizzo]).length;
+}
+function mapDist(a,b,c,d){const R=6371000,t=x=>x*Math.PI/180,dl=t(c-a),dg=t(d-b),h=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function mapFmtDist(m){return m<1000?Math.round(m/10)*10+' m':(m/1000).toFixed(1).replace('.',',')+' km'}
+async function mapCercaIndirizzo(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=it&viewbox=8.95,45.65,9.45,45.30&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}});
+  if(!r.ok)throw new Error('Servizio indirizzi: errore '+r.status);
+  const j=await r.json();
+  return(j||[]).map(x=>({lat:+x.lat,lng:+x.lon,nome:String(x.display_name||''),mun:mapMun(x.address)})).filter(x=>isFinite(x.lat)&&isFinite(x.lng));
+}
+function mapPulisciRicerca(){
+  if(mapSrc)mapSrc.clearLayers();mapTrov=null;
+  const n=$('#mapnear');if(n){n.innerHTML='';n.style.display='none'}
+  const l=$('#maplist');if(l){l.innerHTML='';l.style.display='none'}
+}
+function mapMostraVicini(t){
+  mapTrov=t;if(mapSrc)mapSrc.clearLayers();
+  const ic=L.divIcon({className:'mp-pin',html:'<svg viewBox="0 0 34 42" width="34" height="42" aria-hidden="true"><path d="M17 40C17 40 3 26 3 15a14 14 0 0 1 28 0c0 11-14 25-14 25z" fill="#1565c0" stroke="#0b1b33" stroke-width="2"/><circle cx="17" cy="15" r="5.5" fill="#fff"/></svg>',iconSize:[34,42],iconAnchor:[17,40],popupAnchor:[0,-36]});
+  const pm=L.marker([t.lat,t.lng],{icon:ic,title:t.nome,zIndexOffset:1000}).addTo(mapSrc);
+  const pd=document.createElement('div');pd.className='mp-pop';const pb=document.createElement('b');pb.textContent='Indirizzo cercato';pd.appendChild(pb);const pe=document.createElement('div');pe.textContent=t.nome;pd.appendChild(pe);if(t.mun){const m=document.createElement('div');m.textContent='Municipio '+t.mun;pd.appendChild(m)}
+  pm.bindPopup(pd);
+  const v=mapRows.filter(r=>mapPos[r.indirizzo]).map(r=>{const p=mapPos[r.indirizzo];return{r,p,d:mapDist(t.lat,t.lng,p[0],p[1])}}).sort((a,b)=>a.d-b.d).slice(0,5);
+  v.forEach((x,i)=>L.polyline([[t.lat,t.lng],[x.p[0],x.p[1]]],{color:i?'#1565c0':'#d32f2f',weight:i?2:3,opacity:i?.45:.9,dashArray:'6 6'}).addTo(mapSrc));
+  if(v.length){const b=L.latLngBounds([[t.lat,t.lng]].concat(v.slice(0,3).map(x=>[x.p[0],x.p[1]])));mapObj.fitBounds(b,{padding:[40,40],maxZoom:16})}else mapObj.setView([t.lat,t.lng],16);
+  pm.openPopup();
+  const bx=$('#mapnear');bx.style.display='';bx.innerHTML='';
+  const h=document.createElement('div');h.className='mp-nh';
+  const ht=document.createElement('b');ht.textContent='Impianti più vicini a: '+t.nome.split(',').slice(0,3).join(',');h.appendChild(ht);
+  const x=document.createElement('button');x.type='button';x.className='gc-no mp-b mp-g';x.textContent='Togli';x.onclick=mapPulisciRicerca;h.appendChild(x);bx.appendChild(h);
+  const ul=document.createElement('ul');ul.className='mp-nl';
+  v.forEach((o,i)=>{const li=document.createElement('li');const bt=document.createElement('button');bt.type='button';bt.className='gc-no mp-nb';
+    const d1=document.createElement('b');d1.textContent=(i+1)+'. '+o.r.indirizzo;const d2=document.createElement('span');d2.textContent=' · '+mapFmtDist(o.d)+' in linea d’aria'+(o.p[3]?' · Municipio '+o.p[3]:'')+(o.p[2]==='v'?' · posizione approssimata':'');
+    bt.appendChild(d1);bt.appendChild(d2);
+    bt.onclick=()=>{const m=mapMk[o.r.indirizzo];mapObj.setView([o.p[0],o.p[1]],17);if(m)m.openPopup()};
+    li.appendChild(bt);ul.appendChild(li)});
+  bx.appendChild(ul);
+  if(!v.length){const e=document.createElement('p');e.className='muted';e.textContent='Nessun impianto ha ancora una posizione sulla mappa.';bx.appendChild(e)}
+}
+async function mapTrovaClick(){
+  const inp=$('#mapaddr'),q=inp.value.trim(),info=$('#mapinfo');
+  if(q.length<3){info.textContent='Scrivi almeno via e numero civico, ad esempio «Via Roma 10».';return}
+  info.textContent='Cerco «'+q+'»…';const l=$('#maplist');l.innerHTML='';l.style.display='none';
+  let res;try{res=await mapCercaIndirizzo(/milano|,/i.test(q)?q:q+', Milano');if(!res.length&&!/milano/i.test(q))res=[]}catch(e){info.textContent='Ricerca non riuscita: '+e.message+'. Riprova tra poco.';return}
+  if(!res.length){try{res=await mapCercaIndirizzo(q)}catch(e){}}
+  if(!res.length){info.textContent='Nessun risultato per «'+q+'». Prova con via, numero e città (es. «Via Roma 10, Monza»).';return}
+  info.textContent='';
+  if(res.length===1){mapMostraVicini(res[0]);return}
+  l.style.display='';const t=document.createElement('div');t.className='muted';t.textContent='Più risultati: scegli quello giusto.';l.appendChild(t);
+  res.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='gc-no mp-nb';b.textContent=o.nome;b.onclick=()=>{l.style.display='none';l.innerHTML='';mapMostraVicini(o)};l.appendChild(b)});
 }
 async function mappaVista(){
   glSkin(true);$('#main').innerHTML='<p class="gc-load">'+gcI('fiamma')+'Carico la mappa…</p>';
@@ -1505,17 +1553,19 @@ async function mappaVista(){
   const hero=glHero({ic:'impianti',bl:'Mappa',kick:'Centrali termiche su Milano',title:'Mappa degli impianti',sub:'Tocca un segnaposto per vedere l’impianto e aprire la scheda.',num:mapRows.filter(x=>pos[x.indirizzo]).length,lab:'impianti sulla mappa'});
   $('#main').innerHTML=hero+
    '<div class="card mp-bar"><div class="chips fb"><button type="button" class="chip on gc-no" data-lt="">Tutti <span>'+mapRows.length+'</span></button>'+lotti.map(l=>'<button type="button" class="chip gc-no" data-lt="'+esc(l)+'"><i class="mp-dot" style="background:'+(MAP_COL[l]||'#ff8a1f')+'"></i>'+esc(l)+' <span>'+mapRows.filter(x=>x.lotto===l).length+'</span></button>').join('')+'</div>'+
-   '<div class="chips fb" id="mapmun" style="width:100%"></div>'+'<input id="mapq" type="search" placeholder="Cerca un indirizzo sulla mappa…" autocomplete="off"></div>'+
+   '<div class="chips fb" id="mapmun" style="width:100%"></div>'+'<input id="mapq" type="search" placeholder="Filtra i miei impianti per indirizzo…" autocomplete="off"></div>'+
+   '<div class="card mp-find"><b>Cerca un indirizzo qualsiasi</b> <span class="muted">(un fornitore, un cantiere…): vedi gli impianti più vicini</span><div class="mp-fr"><input id="mapaddr" type="search" placeholder="Es. Via Roma 10, Milano" autocomplete="off"><button type="button" id="mapfind" class="gc-no">Trova indirizzo</button></div><div id="maplist" style="display:none"></div><div id="mapnear" style="display:none"></div></div>'+
    '<div class="card" id="mapmiss" style="display:none"><b><span id="mapmc"></span> impianti senza posizione.</b> <span class="muted">Le posizioni si ricavano una volta sola da OpenStreetMap (circa un secondo per indirizzo) e restano salvate per tutti.</span> <button type="button" id="mapgeo">Calcola le posizioni</button></div>'+
    '<div id="mapinfo" class="muted" style="min-height:1.2em"></div><div id="mapnt" class="muted"></div>'+
    '<div id="mapbox"></div><p class="muted" style="font-size:12px">Segnaposto: <b>pieno</b> = indirizzo con numero civico · <b>sfumato</b> = solo la via · mappa © OpenStreetMap.</p>';
   if(mapObj){try{mapObj.remove()}catch(e){}}
   mapObj=L.map('mapbox',{zoomControl:true,attributionControl:true}).setView([45.4642,9.19],12);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(mapObj);
-  mapLay=L.layerGroup().addTo(mapObj);
+  mapLay=L.layerGroup().addTo(mapObj);mapSrc=L.layerGroup().addTo(mapObj);mapTrov=null;
   document.querySelectorAll('[data-lt]').forEach(b=>b.onclick=()=>{mapLotto=b.dataset.lt;document.querySelectorAll('[data-lt]').forEach(x=>x.classList.toggle('on',x===b));mapDisegna()});
   $('#mapq').oninput=e=>{mapQ=e.target.value;mapDisegna()};
   $('#mapgeo').onclick=calcolaPosizioni;
+  $('#mapfind').onclick=mapTrovaClick;$('#mapaddr').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();mapTrovaClick()}};
   mapDisegna();setTimeout(()=>{try{mapObj.invalidateSize()}catch(e){}},250);
 }
 
