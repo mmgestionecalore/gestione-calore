@@ -679,10 +679,6 @@ function scMeter(f,t,base){
   if(base&&t>0&&base<t)h+='<b class="sc-tk" style="left:'+(base/t*100).toFixed(1)+'%" title="Importo base"></b>';
   return h+'</div>';
 }
-function scGauge(p){
-  var a=Math.max(0,Math.min(100,p))*1.8-90,L=Math.PI*60,pp=Math.max(0,Math.min(100,p));
-  return '<svg class="sc-g" viewBox="0 0 140 88" role="img" aria-label="'+Math.round(p)+'% del tempo trascorso"><path d="M10 74A60 60 0 0 1 130 74" fill="none" stroke="#33200f" stroke-width="12"/><path d="M10 74A60 60 0 0 1 130 74" fill="none" stroke="#ffc247" stroke-width="12" stroke-dasharray="'+(L*pp/100).toFixed(1)+' '+L.toFixed(1)+'"/><g transform="rotate('+a.toFixed(1)+' 70 74)"><path d="M67.5 74L70 26L72.5 74z" fill="#fdebd3"/></g><circle cx="70" cy="74" r="7" fill="#ff8a1f" stroke="#1b110b" stroke-width="3"/></svg>';
-}
 function scH(t){return '<h2 class="sc-h">'+SC_FL.replace('CLS','')+esc(t)+'</h2>'}
 function scVoce(nome,x,q){
   var res=r2(x.tetto-x.fatto),p=x.tetto>0?x.fatto/x.tetto*100:null,ag=(x.base&&x.tetto>x.base)?r2(x.tetto-x.base):0;
@@ -984,7 +980,6 @@ var GL_CSS=SC_CSS.split('<style>').join('').split('</style>').join('')+
 '@media print{main.dk{--bg:#fff;--bg2:#f3ece3;--fg:#000;--mut:#444;--card:#fff;--bd:#ccc;--ac:#000;background:#fff;color:#000;padding:0;width:auto;margin:0}main.dk .card,main.dk .kpi,main.dk .hero{background:#fff;color:#000;border-color:#ccc}main.dk .sc-ban{background:#fff;color:#000;border-color:#ccc}main.dk .sc-t,main.dk .sc-s,main.dk .sc-k,main.dk .kpi b,main.dk .hero .big,main.dk .hero .sub{color:#000}main.dk .ch,main.dk h3{color:#000}}';
 function glFont(){if(!document.getElementById('pm-font')){var l=document.createElement('link');l.id='pm-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2'+String.fromCharCode(63)+'family=Barlow:wght@400;500;600'+String.fromCharCode(38)+'family=Barlow+Condensed:wght@600;700'+String.fromCharCode(38)+'display=swap';document.head.appendChild(l)}}
 function glSkin(on){var m=document.getElementById('main');if(!document.getElementById('gl-css')){var s=document.createElement('style');s.id='gl-css';s.textContent=GL_CSS+GL_CSS.split('main.dk .ho').join('.ho')+'.ho{color:#fdebd3;margin:0 0 18px}';document.head.appendChild(s)}if(m)m.classList.toggle('dk',!!on);document.body.classList.toggle('fz',!stagione(new Date()).dentro)}
-function glBan(kick,title,sub){return'<div class="sc-ban">'+SC_FL.replace('CLS','sc-fl')+'<div class="sc-k" style="color:#ffb35c">'+esc(kick)+'</div><h1 class="sc-t">'+esc(title)+'</h1>'+(sub?'<div class="sc-s">'+sub+'</div>':'')+'</div>'}
 function glGen(){return!(corrente==='contratti'&&schedaCt!=null)}
 function glOggi(){
   var S=stagione(new Date()),now=new Date(),fd=function(d){return fmtD(iso(d))},dentro=S.dentro;
@@ -1266,7 +1261,7 @@ function statoBackup(righe){
     const det=[d.tabelle!=null?d.tabelle+' tabelle':'',d.righe!=null?d.righe+' righe':'',d.file!=null?d.file+' file':''].filter(Boolean).join(', ');
     return '<li><span class="st '+(ok?'ok':'ko')+'">'+(ok?'Aggiornato':'Vecchio')+'</span><span class="tx">'+nome+' · '+esc(new Date(r.aggiornato_il).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}))+(det?' · '+esc(det):'')+(ok?'':' <b>(più di '+BK_ORE_MAX+' ore fa: controllare)</b>')+'</span></li>';
   };
-  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Backup e calendario <button class="ghost mini" id="ics" style="margin-left:auto">Scarica scadenze (.ics)</button></h3><ul class="ev">'+
+  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Backup e calendario <button class="ghost mini" id="ics" style="margin-left:auto">Scarica scadenze (.ics)</button> <button class="ghost mini" id="xls">Esporta tutto (Excel)</button></h3><ul class="ev">'+
     riga('Copia nel database (notturna)',m.backup_interno)+riga('Copia su GitHub (notturna)',m.backup_github)+'</ul></div>';
 }
 const icsTesto=t=>String(t==null?'':t).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/;/g,'\;').replace(/,/g,'\\,');
@@ -1289,6 +1284,30 @@ async function scaricaCalendario(){
   const[s,a]=await Promise.all([sb.from('scadenze').select('id,data,titolo,impianto').eq('fatto',false).not('data','is',null),sb.from('attivita').select('id,scadenza,titolo').neq('stato','Fatto').not('scadenza','is',null)]);
   if(s.error||a.error){alert('Non sono riuscito a leggere le scadenze. Riprova.');return}
   scarica('gestione-calore-scadenze.ics',costruisciIcs(s.data,a.data),'text/calendar;charset=utf-8');
+}
+function backupVecchio(righe){
+  const m={};(righe||[]).forEach(r=>{m[r.chiave]=r});
+  return['backup_interno','backup_github'].some(k=>!m[k]||(Date.now()-new Date(m[k].aggiornato_il).getTime())/3600000>BK_ORE_MAX);
+}
+function bannerBackup(righe){
+  return backupVecchio(righe)?'<div class="card" role="alert" style="border:2px solid #c0392b;background:#fdecea;color:#7b1d12;margin-bottom:1rem"><b>Attenzione: una copia di sicurezza non è aggiornata.</b> Controlla la scheda «Backup e calendario» più in basso e, se resta rossa, segui la guida «cosa fare se…».</div>':'';
+}
+async function esportaExcel(){
+  const b=$('#xls');b.disabled=true;const t=b.textContent;b.textContent='Preparo il file…';
+  try{
+    const wb=XLSX.utils.book_new(),usati={};
+    for(const k of TABELLE){
+      const r=await leggiTutto(MODULI[k]);
+      if(r.error){alert('Non sono riuscito a leggere «'+MODULI[k].nome+'». Esportazione interrotta.');return}
+      const righe=r.data.map(x=>{const o={};for(const c in x){const v=x[c];o[c]=v!==null&&typeof v==='object'?JSON.stringify(v):v}return o});
+      let nome=String(MODULI[k].nome).replace(/[\\\/?*\[\]:]/g,' ').slice(0,28)||k,n=nome,i=2;
+      while(usati[n.toLowerCase()])n=nome+' '+(i++);
+      usati[n.toLowerCase()]=1;
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(righe),n);
+    }
+    XLSX.writeFile(wb,'gestione-calore-'+oggi()+'.xlsx');
+  }catch(e){alert('Esportazione non riuscita. Riprova.')}
+  finally{b.disabled=false;b.textContent=t}
 }
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
@@ -1315,13 +1334,14 @@ async function oggiVista(){
   const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0">'+vuoto+'</p>')+'</div>';
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
   const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data),sl.data||[],qd.data):'';
-  glSkin(true);$('#main').innerHTML=glOggi()+'<div id="ris"></div><div id="home">'+kpis+'<div class="grid">'+
+  glSkin(true);$('#main').innerHTML=glOggi()+'<div id="ris"></div><div id="home">'+bannerBackup(ss&&ss.data)+kpis+'<div class="grid">'+
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
    blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
    
    '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div>'+statoBackup(ss&&ss.data)+'<footer class="recente">'+blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+'</footer></div>';
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.querySelectorAll('a.kpi b').forEach(b=>{const n=parseInt(b.textContent,10);if(!(n>0))return;const st=Math.max(1,Math.ceil(n/18));let i=0;b.textContent='0';const h=setInterval(()=>{i=Math.min(n,i+st);b.textContent=i;if(i>=n)clearInterval(h)},35)});
   const bi=$('#ics');if(bi)bi.onclick=scaricaCalendario;
+  const bx=$('#xls');if(bx)bx.onclick=esportaExcel;
   $('#qa').onclick=()=>{corrente='attivita';modulo(null,'attivita',()=>apri('oggi'))};
   document.querySelectorAll('.cnt a,a.kpi,a[data-k=contabilita]').forEach(x=>x.onclick=e=>{e.preventDefault();const k=x.dataset.k;apri((MODULI[k]&&MODULI[k].vai)||k)});
 }
@@ -1503,12 +1523,6 @@ function tabAnni(P,nomi,quote,usaQuote){
   const senza=gr.filter(g=>usaQuote&&!g.q).map(g=>g.n.replace('LOTTO','Lotto'));
   return h+'<p class="sub2">L’anno è quello indicato sul SAL: per il canone l’anno di budget, per gli extra-canone l’anno degli ordini. Il residuo della quota annua è calcolato sul solo canone'+(senza.length?'; la quota annua del canone non è caricata per: '+senza.map(esc).join(', ')+'.':'.')+'</p>';
 }
-function cardLotto(nome,L){
-  const T=totV(L),res=r2(T.tetto-T.fatto);
-  let h='<section class="card lotto"><h3>'+esc(nome.replace('LOTTO','Lotto'))+'</h3><div class="tre"><div><small>Tetto</small><b>'+eur(T.tetto)+'</b></div><div><small>Contabilizzato</small><b>'+eur(T.fatto)+'</b></div><div class="res'+(res<0?' neg':'')+'"><small>Residuo</small><b>'+eur(res)+'</b></div></div>'+meterH(T.fatto,T.tetto,T.base);
-  for(const v of ordinaVoci(L))h+=vriga(v,L.voci[v]);
-  return h+'</section>';
-}
 var SC_CSS2='<style>'+
 '.sc .chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0}'+
 '.sc .chip{min-height:40px;padding:0 14px;border-radius:20px;border:2px solid #4a2c18;background:#26160d;color:#fdebd3;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'+
@@ -1575,12 +1589,6 @@ function listaSal(){
   h+='</tbody>'+(rows.length?'<tfoot><tr><td colspan="4">Totale SAL emessi nell’elenco</td><td class="n">'+fmtN(sn)+'</td><td class="n">'+fmtN(st)+'</td><td colspan="2"></td></tr></tfoot>':'')+'</table></div>';
   if(!rows.length)h+='<p class="muted">Nessun SAL con questi filtri.</p>';
   return h;
-}
-function tabQuadro(){
-  const rows=[...ctQuadro].sort((a,b)=>String(a.periodo).localeCompare(String(b.periodo),'it')||String(a.lotto).localeCompare(String(b.lotto))||String(a.voce).localeCompare(String(b.voce),'it'));
-  let h='<details class="card" style="margin-top:1.4rem"><summary>Quadro economico: tetti per voce ('+rows.length+')</summary><p class="sub2">Importo base = valore contrattuale; importo attuale = dopo atti di sottomissione e variazioni. Clic su una riga per correggerla: da qui partono i residui.</p><div class="tw"><table class="scr"><thead><tr><th>Periodo</th><th>Lotto</th><th>Voce</th><th class="n">Importo base</th><th class="n">Importo attuale</th><th>Note</th></tr></thead><tbody>';
-  for(const r of rows)h+='<tr class="row" data-qd="'+esc(r.id)+'"><td>'+esc(r.periodo||'')+'</td><td>'+esc((r.lotto||'').replace('LOTTO','Lotto'))+'</td><td>'+esc(r.voce||'')+'</td><td class="n">'+fmtN(r.importo_base)+'</td><td class="n">'+fmtN(r.importo_attuale)+'</td><td class="wrap">'+esc(String(r.note||'').length>130?String(r.note).slice(0,129).trimEnd()+'…':(r.note||''))+'</td></tr>';
-  return h+'</tbody></table></div><p style="margin:.6rem 0 1rem"><button type="button" class="ghost" id="nqd">+ Nuova voce</button></p></details>';
 }
 /* ---------- registro modifiche ---------- */
 function nomeCampo(tab,k){const m=MODULI[tab],c=m&&m.campi.find(x=>x.k===k);return c?c.l:k}
