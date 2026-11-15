@@ -13,7 +13,7 @@ const MODULI={
   {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile','Quindicinale'],list:1},
   {k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'fatto',l:'Fatto',t:'bool',list:1},{k:'note',l:'Note',t:'long'}]},
  impianti:{nome:'Parco impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,pi:1,intro:'Tutto sugli impianti in un posto solo: note, più le schede tecniche (il know-how raccolto nel censimento). Filtra per lotto o tag; clic su una riga per aprire la scheda completa con ordini, segnalazioni, scadenze e documenti. Passa a «Schede tecniche» per confrontare una voce su tutte le centrali.',avviso:'I campi contrassegnati «da SharePoint» sono allineati con la lista della Dashboard: per cambiarli modifica la lista, altrimenti al prossimo allineamento tornano al valore della lista.',campi:[
-  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},{k:'chiavi_documenti',l:'Chiavi per trovare i documenti (separate da ;)',t:'text'},
+  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},{k:'building_manager',l:'Building Manager',t:'text'},{k:'anni_caldaie',l:'Anni dei generatori (separati da ;)',t:'text'},{k:'potenza_kw',l:'Potenza (kW)',t:'num'},{k:'chiavi_documenti',l:'Chiavi per trovare i documenti (separate da ;)',t:'text'},
   {k:'tipologia',l:'Tipologia',t:'text',list:1,sp:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long',sp:1}]},
  censimento:{nome:'Schede tecniche',tab:'censimento',ord:['ordine',true],vista:1,pi:1,nascosto:1,vai:'impianti',intro:'Il nostro know-how sulle centrali, una scheda per impianto (o per gruppo di impianti). Filtra per lotto e per tag, oppure scegli una voce per confrontarla su tutte le schede. Clic su una riga per leggere la scheda; da lì si modifica. Ogni modifica resta nel Registro.',avviso:'Scheda: una voce per riga, nella forma «Etichetta: testo»; le sotto-voci iniziano con «- ». Criticità principale e Note hanno il loro campo. Tag: separati da virgola, oppure tocca quelli già in uso. Per collegare la scheda a più impianti scrivi gli indirizzi separati da «;», identici a come compaiono nel Parco impianti.',campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},
@@ -1158,6 +1158,7 @@ async function scheda(r){
   let h='<h3>'+esc(a)+'</h3><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
+  h+=await chiChiamo(r);
   h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+esc(x.id)+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
   h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(okUrl(x.link))+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a> <a class="muted" href="'+esc(okUrl(String(x.link||'').replace(/\/[^\/]*$/,'')))+'" target="_blank" rel="noopener" title="Apri la cartella su SharePoint">'+esc(x.cartella)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
@@ -1309,6 +1310,35 @@ async function esportaExcel(){
   }catch(e){alert('Esportazione non riuscita. Riprova.')}
   finally{b.disabled=false;b.textContent=t}
 }
+
+/* ---------- caldaie e referenti ---------- */
+const LIM_CALDAIA=15;
+function anniGen(r){return String(r.anni_caldaie||'').split(/[;,]/).map(x=>parseInt(x,10)).filter(x=>x>1900)}
+function annoLimite(r){const a=anniGen(r);return a.length?Math.min(...a)+LIM_CALDAIA:null}
+function etaCaldaie(r){
+  const a=anniGen(r);if(!a.length)return '';const y=new Date().getFullYear();
+  const oltre=a.filter(x=>y-x>=LIM_CALDAIA).length;
+  return '<div class="crit" style="border-left-color:'+(oltre?'#b3261e':'#2e7d32')+'"><b>Generatori</b><p>Anni di installazione: '+a.join(', ')+' · il più vecchio ha '+(y-Math.min(...a))+' anni · raggiunge i '+LIM_CALDAIA+' nel '+(Math.min(...a)+LIM_CALDAIA)+(oltre?' · '+oltre+(oltre===1?' generatore ha già superato':' generatori hanno già superato')+' il limite':'')+'</p></div>';
+}
+async function chiChiamo(r){
+  let h=etaCaldaie(r);const bm=String(r.building_manager||'').trim();
+  if(!bm)return h;
+  const w=bm.replace(/[,()%*]/g,' ').split(/\s+/).filter(Boolean);
+  const{data}=await sb.from('contatti').select('nome,ente,email,telefono').ilike('nome','%'+w[w.length-1]+'%').limit(10);
+  const c=(data||[]).find(x=>norm(x.nome)===norm(bm))||(data||[]).find(x=>w.every(p=>norm(x.nome).includes(norm(p))));
+  const tel=c&&String(c.telefono||'').replace(/[^\d+]/g,'');
+  return h+'<div class="crit" style="border-left-color:#1565c0"><b>Chi chiamo</b><p>Building Manager: '+esc(bm)+(c&&c.telefono?' · <a href="tel:'+esc(tel)+'">'+esc(c.telefono)+'</a>':'')+(c&&c.email?' · <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>':'')+'</p></div>';
+}
+async function caldaieVista(){
+  const{data}=await sb.from('impianti').select('indirizzo,lotto,anni_caldaie,potenza_kw');
+  const y=new Date().getFullYear(),L=(data||[]).filter(r=>anniGen(r).length);
+  const gen=L.flatMap(r=>anniGen(r).map(a=>({r,a,sc:a+LIM_CALDAIA})));
+  const gia=gen.filter(g=>g.sc<=y),f=n=>gen.filter(g=>g.sc>y&&g.sc<=y+n);
+  const fmt=l=>[...new Map(l.map(g=>[g.r.indirizzo,g.r.indirizzo])).values()];
+  const riga=(t,l)=>'<li><span class="dt">'+t+'</span><span class="tx"><b>'+l.length+'</b> generatori <span class="muted">in '+fmt(l).length+' centrali</span></span></li>';
+  const el=gia.concat(f(3)).sort((p,q)=>p.sc-q.sc).slice(0,12);
+  return '<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('impianti')+'Generatori a 15 anni (previsione rinnovi)</h3><ul class="ev">'+riga('Già oltre',gia)+riga('Entro '+(y+1),f(1))+riga('Entro '+(y+2),f(2))+riga('Entro '+(y+3),f(3))+'</ul><p class="muted" style="margin:.5rem 0 0">Prossimi: '+el.map(g=>esc(g.r.indirizzo)+' ('+g.sc+')').join(' · ')+'</p></div>';
+}
 async function oggiVista(){
   const t=oggi(),fra=aggiungiGiorni(30),cc=(tb,f)=>f(sb.from(tb).select('id',{count:'exact',head:true}));
   const[a,s,sl,qd,rg,ss,...cn]=await Promise.all([
@@ -1333,12 +1363,13 @@ async function oggiVista(){
   const dtc=d=>d?(d<t?'late':d<=fra?'soon':''):'';
   const blocco=(ic,tit,rows,fn,vuoto)=>'<div class="card"><h3 class="ch">'+ico(ic)+tit+'</h3>'+(rows&&rows.length?'<ul class="ev">'+rows.map(fn).join('')+'</ul>':'<p class="muted" style="margin:0">'+vuoto+'</p>')+'</div>';
   const pri=p=>p?' <span class="st '+({Alta:'ko',Media:'wa'}[p]||'off')+'">'+esc(p)+'</span>':'';
+  let cal='';try{cal=await caldaieVista()}catch(e){}
   const cm=!sl.error&&!qd.error&&qd.data&&qd.data.length?contabMini(calcContab(sl.data||[],qd.data),sl.data||[],qd.data):'';
   glSkin(true);$('#main').innerHTML=glOggi()+'<div id="ris"></div><div id="home">'+bannerBackup(ss&&ss.data)+kpis+'<div class="grid">'+
    blocco('attivita','Da fare <button class="ghost mini" id="qa" style="margin-left:auto">+ rapida</button>',a.data,r=>'<li><span class="dt '+dtc(r.scadenza)+'">'+(r.scadenza?fmtD(r.scadenza):'—')+'</span><span class="tx">'+esc(r.titolo)+pri(r.priorita)+'</span></li>','Nulla in sospeso.')+
    blocco('scadenze','Scadenze entro 30 giorni',s.data,r=>'<li><span class="dt '+(r.data<t?'late':'soon')+'">'+fmtD(r.data)+'</span><span class="tx">'+badgeC(r.titolo)+esc(r.titolo)+' <span class="muted">'+esc(r.impianto||'')+'</span></span></li>','Nessuna scadenza imminente.')+
    
-   '</div>'+cm+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div>'+statoBackup(ss&&ss.data)+'<footer class="recente">'+blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+'</footer></div>';
+   '</div>'+cm+cal+'<div class="card" style="margin-top:1rem"><h3 class="ch">'+ico('documenti')+'Contenuto</h3><div class="cnt">'+TABELLE.map((k,i)=>'<a href="#" data-k="'+k+'"><b>'+(cn[i].count??0)+'</b><span>'+esc(MODULI[k].nome)+'</span></a>').join('')+'</div></div>'+statoBackup(ss&&ss.data)+'<footer class="recente">'+blocco('registro','Cosa è cambiato di recente',rg&&rg.data,r=>'<li><span class="dt">'+esc(new Date(r.quando).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+'</span><span class="tx">'+esc(AZIONI[r.azione]||r.azione)+' · '+esc((MODULI[r.tabella]&&MODULI[r.tabella].nome)||r.tabella)+': <b>'+esc(r.etichetta||'')+'</b> <span class="muted">'+esc((r.utente||'').split('@')[0])+'</span></span></li>','Nessuna modifica registrata.')+'</footer></div>';
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.querySelectorAll('a.kpi b').forEach(b=>{const n=parseInt(b.textContent,10);if(!(n>0))return;const st=Math.max(1,Math.ceil(n/18));let i=0;b.textContent='0';const h=setInterval(()=>{i=Math.min(n,i+st);b.textContent=i;if(i>=n)clearInterval(h)},35)});
   const bi=$('#ics');if(bi)bi.onclick=scaricaCalendario;
   const bx=$('#xls');if(bx)bx.onclick=esportaExcel;
