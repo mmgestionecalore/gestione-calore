@@ -184,9 +184,16 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 
 /* ---------- accesso ---------- */
 async function avvia(){
-  const{data:{session}}=await sb.auth.getSession();
-  if(session){await entra(session)}else show(false);
-  sb.auth.onAuthStateChange((e,s)=>{if(s&&!utente)entra(s);if(!s){utente=null;HUB_TESTI=null;show(false);if($('#pwd'))$('#pwd').value=''}});
+  if(/[#?&](access_token|code)=/.test(location.hash+location.search))segnaAttivita(true);
+  let{data:{session}}=await sb.auth.getSession();
+  const ult=attSalvata();
+  if(session&&ult&&Date.now()-ult>=INATT_MIN*60000){uscitaAuto=true;await sb.auth.signOut({scope:'local'});session=null}
+  if(session){await entra(session)}else{show(false);if(uscitaAuto){msg(MSG_INATT);uscitaAuto=false}}
+  sb.auth.onAuthStateChange((e,s)=>{
+    if(e==='SIGNED_IN'&&!utente)segnaAttivita(true);
+    if(s&&!utente)entra(s);
+    if(!s){utente=null;HUB_TESTI=null;pulisciSchermo();show(false);if($('#pwd'))$('#pwd').value='';if(uscitaAuto){msg(MSG_INATT);uscitaAuto=false}}
+  });
 }
 async function entra(session){
   const{data:ok,error}=await sb.rpc('is_autorizzato');
@@ -259,6 +266,22 @@ function cambiaPassword(){
 }
 $('#back').onclick=()=>{$('#stepCode').classList.add('hidden');$('#stepEmail').classList.remove('hidden');msg('')};
 $('#logout').onclick=()=>sb.auth.signOut();
+/* ---------- uscita automatica per inattività (solo su questo dispositivo) ---------- */
+const INATT_MIN=60,INATT_KEY='gc_ultima',MSG_INATT='Sei uscito in automatico dopo '+INATT_MIN+' minuti di inattività: rientra con la password.';
+let ultimoAtt=Date.now(),ultimoSalv=0,uscitaAuto=false;
+const attSalvata=()=>{try{return+localStorage.getItem(INATT_KEY)||0}catch(e){return 0}};
+function segnaAttivita(forza){const n=Date.now();ultimoAtt=n;if(forza||n-ultimoSalv>20000){ultimoSalv=n;try{localStorage.setItem(INATT_KEY,String(n))}catch(e){}}}
+const inattivo=()=>Date.now()-Math.max(ultimoAtt,attSalvata())>=INATT_MIN*60000;
+function controllaInattivita(){if(utente&&inattivo()){uscitaAuto=true;sb.auth.signOut({scope:'local'})}}
+function pulisciSchermo(){
+  const d=$('#dlg');if(d&&d.open)d.close();
+  const f=$('#dform');if(f){f.onsubmit=null;f.innerHTML=''}
+  $('#main').innerHTML='';$('#nav').innerHTML='';$('#search').value='';
+  dati=[];indirizzi=[];censAll=[];
+}
+['pointerdown','keydown','touchstart','scroll','wheel'].forEach(ev=>document.addEventListener(ev,()=>segnaAttivita(),{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)controllaInattivita()});
+setInterval(controllaInattivita,60000);
 let deb,ovunque=false;
 async function vaiRicerca(){const v=$('#search').value;
   if(ovunque&&v.trim().length>=2&&corrente!=='oggi'){await apri('oggi');$('#search').value=v;return ricercaGlobale()}
@@ -1555,7 +1578,7 @@ function importa(){
     try{
       if(!window.XLSX){alert('Libreria Excel non caricata (serve connessione).');return}
       const buf=await f.arrayBuffer();let wb;
-      if(/\.(csv|txt)$/i.test(f.name)){let t=new TextDecoder('utf-8').decode(buf);if(t.includes('�'))t=new TextDecoder('windows-1252').decode(buf);wb=XLSX.read(t,{type:'string',cellDates:true,raw:false})}
+      if(/\.(csv|txt)$/i.test(f.name)){let t=new TextDecoder('utf-8').decode(buf);if(t.includes('�'))t=new TextDecoder('windows-1252').decode(buf);wb=XLSX.read(t,{type:'string',raw:true})}
       else wb=XLSX.read(buf,{type:'array',cellDates:true,raw:false});
       const righe=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:null,raw:true});
       anteprimaImport(f.name,righe);
