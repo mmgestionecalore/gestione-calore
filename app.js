@@ -201,8 +201,7 @@ async function entra(session){
   if(error||ok!==true){await sb.auth.signOut();show(false);msg('Utente non autorizzato.');return}
   utente=session.user;$('#who').textContent=utente.email;show(true);
   const nav=$('#nav');nav.innerHTML='';
-  for(const k in MODULI){if(MODULI[k].nascosto||MODULI[k].altro)continue;const b=document.createElement('button');b.innerHTML=ico(k)+'<span>'+esc(MODULI[k].nome)+'</span>';b.dataset.k=k;b.onclick=()=>apri(k);nav.appendChild(b)}
-  {const b=document.createElement('button');b.innerHTML=ico('mappa')+'<span>Mappa</span>';b.dataset.k='mappa';b.onclick=()=>apri('mappa');nav.appendChild(b)}
+  for(const k in MODULI){if(MODULI[k].nascosto||MODULI[k].altro)continue;const b=document.createElement('button');b.innerHTML=ico(k)+'<span>'+esc(MODULI[k].nome)+'</span>';b.dataset.k=k;b.onclick=()=>apri(k);nav.appendChild(b);if(k==='contatti'){const m=document.createElement('button');m.innerHTML=ico('mappa')+'<span>Mappa</span>';m.dataset.k='mappa';m.onclick=()=>apri('mappa');nav.appendChild(m)}}
   {const b=document.createElement('button');b.innerHTML=ico('altro')+'<span>Altro</span>';b.dataset.k='altro';b.onclick=()=>apri('altro');nav.appendChild(b)}
   if(!$('#bk')){const b=document.createElement('button');b.id='bk';b.className='ghost';b.innerHTML=ico('backup')+'<span class="tx">Backup</span>';b.setAttribute('aria-label','Backup');b.title='Scarica tutti i dati in un file';b.onclick=backup;$('#logout').before(b)}
   if(!$('#pw')){const b=document.createElement('button');b.id='pw';b.className='ghost';b.innerHTML=ico('key')+'<span class="tx">Password</span>';b.setAttribute('aria-label','Password');b.title='Imposta o cambia la tua password';b.onclick=cambiaPassword;$('#logout').before(b)}
