@@ -361,7 +361,6 @@ function disegna(){
   if(m.pi)h+='<div class="chips fb"><button type="button" class="chip'+(corrente==='impianti'&&vistaMappa?' on':'')+'" data-pi="mappa">Schema per lotto</button><button type="button" class="chip'+(corrente==='impianti'&&!vistaMappa?' on':'')+'" data-pi="impianti">Elenco impianti</button><button type="button" class="chip'+(corrente==='censimento'?' on':'')+'" data-pi="censimento">Schede tecniche e confronto</button></div>';
   if(corrente==='contatti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaRubrica?' on':'')+'" data-ct="rubrica">Rubrica</button><button type="button" class="chip'+(vistaRubrica?'':' on')+'" data-ct="elenco">Elenco</button></div>';
   if(corrente==='contratti')h+='<div class="chips fb"><button type="button" class="chip'+(vistaCruscotto?' on':'')+'" data-cc="cruscotto">Cruscotto</button><button type="button" class="chip'+(vistaCruscotto?'':' on')+'" data-cc="elenco">Elenco</button></div>';
-  if(m.tab==='impianti'&&allineato)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Elenco allineato con la lista SharePoint il '+esc(fmtDT(allineato))+'.</p>';
   if(m.ro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">Registro in sola lettura: tiene traccia di chi crea, modifica o elimina elementi nelle altre sezioni.</p>';
   if(m.intro)h+='<p class="muted" style="margin:.2rem 0 .8rem;font-size:13px">'+esc(m.intro)+'</p>';
   if(m.vista)h+=barraCens();
