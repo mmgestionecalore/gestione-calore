@@ -1476,9 +1476,9 @@ function mapPopup(r,p){
 }
 function mapChipsMun(){
   const bx=$('#mapmun');if(!bx)return;
-  const c={};mapRows.forEach(x=>{const p=mapPos[x.indirizzo];if(p&&p[3])c[p[3]]=(c[p[3]]||0)+1});
-  const tot=mapRows.filter(x=>mapPos[x.indirizzo]).length;
-  bx.innerHTML='<span class="muted" style="align-self:center">Filtra per zona di Milano:</span><button type="button" class="chip gc-no'+(mapMunSel?'':' on')+'" data-mu="0">Tutti i municipi <span>'+tot+' impianti</span></button>'+[1,2,3,4,5,6,7,8,9].filter(n=>c[n]).map(n=>'<button type="button" class="chip gc-no'+(mapMunSel===n?' on':'')+'" data-mu="'+n+'" title="Municipio '+n+': '+c[n]+' impianti">Municipio '+n+' <span>'+c[n]+' '+(c[n]===1?'impianto':'impianti')+'</span></button>').join('');
+  const c={},T={ct:0,au:0},cnt=n=>{const o=n?c[n]:T;const p=[];if(o.ct)p.push(o.ct+' CT');if(o.au)p.push(o.au+' autonomi');return '('+(p.join(' · ')||'0')+')'};
+  mapRows.forEach(x=>{const p=mapPos[x.indirizzo];if(!p)return;const k=x.lotto==='AUTONOMI'?'au':'ct';T[k]++;if(p[3]){(c[p[3]]=c[p[3]]||{ct:0,au:0})[k]++}});
+  bx.innerHTML='<span class="muted" style="align-self:center">Filtra per zona di Milano:</span><button type="button" class="chip gc-no'+(mapMunSel?'':' on')+'" data-mu="0">Tutti i municipi <span>'+cnt(0)+'</span></button>'+[1,2,3,4,5,6,7,8,9].filter(n=>c[n]).map(n=>'<button type="button" class="chip gc-no'+(mapMunSel===n?' on':'')+'" data-mu="'+n+'" title="Municipio '+n+': '+cnt(n).slice(1,-1)+'">Municipio '+n+' <span>'+cnt(n)+'</span></button>').join('');
   bx.querySelectorAll('[data-mu]').forEach(b=>b.onclick=()=>{mapMunSel=+b.dataset.mu;mapChipsMun();mapDisegna()});
 }
 function mapDisegna(){
