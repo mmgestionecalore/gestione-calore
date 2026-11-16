@@ -1477,7 +1477,8 @@ function mapPopup(r,p){
 function mapChipsMun(){
   const bx=$('#mapmun');if(!bx)return;
   const c={};mapRows.forEach(x=>{const p=mapPos[x.indirizzo];if(p&&p[3])c[p[3]]=(c[p[3]]||0)+1});
-  bx.innerHTML='<span class="muted" style="align-self:center">Municipio</span><button type="button" class="chip gc-no'+(mapMunSel?'':' on')+'" data-mu="0">Tutti</button>'+[1,2,3,4,5,6,7,8,9].filter(n=>c[n]).map(n=>'<button type="button" class="chip gc-no'+(mapMunSel===n?' on':'')+'" data-mu="'+n+'">'+n+' <span>'+c[n]+'</span></button>').join('');
+  const tot=mapRows.filter(x=>mapPos[x.indirizzo]).length;
+  bx.innerHTML='<span class="muted" style="align-self:center">Filtra per zona di Milano:</span><button type="button" class="chip gc-no'+(mapMunSel?'':' on')+'" data-mu="0">Tutti i municipi <span>'+tot+' impianti</span></button>'+[1,2,3,4,5,6,7,8,9].filter(n=>c[n]).map(n=>'<button type="button" class="chip gc-no'+(mapMunSel===n?' on':'')+'" data-mu="'+n+'" title="Municipio '+n+': '+c[n]+' impianti">Municipio '+n+' <span>'+c[n]+' '+(c[n]===1?'impianto':'impianti')+'</span></button>').join('');
   bx.querySelectorAll('[data-mu]').forEach(b=>b.onclick=()=>{mapMunSel=+b.dataset.mu;mapChipsMun();mapDisegna()});
 }
 function mapDisegna(){
