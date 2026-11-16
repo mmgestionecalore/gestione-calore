@@ -13,7 +13,7 @@ const MODULI={
   {k:'titolo',l:'Scadenza',t:'text',list:1},{k:'data',l:'Data',t:'date',list:1},{k:'ricorrenza',l:'Ricorrenza',t:'sel',o:['Una tantum','Annuale','Semestrale','Trimestrale','Mensile','Quindicinale'],list:1},
   {k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'fatto',l:'Fatto',t:'bool',list:1},{k:'note',l:'Note',t:'long'}]},
  impianti:{nome:'Parco impianti',tab:'impianti',ord:['indirizzo',true],dossier:1,pi:1,intro:'Tutto sugli impianti in un posto solo: note, più le schede tecniche (il know-how raccolto nel censimento). Filtra per lotto o tag; clic su una riga per aprire la scheda completa con ordini, segnalazioni, scadenze e documenti. Passa a «Schede tecniche» per confrontare una voce su tutte le centrali.',avviso:'I campi contrassegnati «da SharePoint» sono allineati con la lista della Dashboard: per cambiarli modifica la lista, altrimenti al prossimo allineamento tornano al valore della lista.',campi:[
-  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},{k:'building_manager',l:'Building Manager',t:'text'},{k:'anni_caldaie',l:'Anni dei generatori (separati da ;)',t:'text'},{k:'potenza_kw',l:'Potenza (kW)',t:'num'},{k:'chiavi_documenti',l:'Chiavi per trovare i documenti (separate da ;)',t:'text'},
+  {k:'indirizzo',l:'Indirizzo',t:'text',list:1,sp:1},{k:'lotto',l:'Lotto',t:'text',list:1,sp:1},{k:'fornitore',l:'Fornitore',t:'text'},{k:'building_manager',l:'Building Manager',t:'text'},{k:'anni_caldaie',l:'Anni dei generatori (separati da ;)',t:'text'},{k:'potenza_kw',l:'Potenza (kW)',t:'num'},{k:'vie_servite',l:'Vie servite (separate da ;)',t:'text'},{k:'chiavi_documenti',l:'Chiavi per trovare i documenti (separate da ;)',t:'text'},
   {k:'tipologia',l:'Tipologia',t:'text',list:1,sp:1},{k:'sintesi',l:'Sintesi',t:'long'},{k:'note',l:'Note',t:'long',sp:1}]},
  censimento:{nome:'Schede tecniche',tab:'censimento',ord:['ordine',true],vista:1,pi:1,nascosto:1,vai:'impianti',intro:'Il nostro know-how sulle centrali, una scheda per impianto (o per gruppo di impianti). Filtra per lotto e per tag, oppure scegli una voce per confrontarla su tutte le schede. Clic su una riga per leggere la scheda; da lì si modifica. Ogni modifica resta nel Registro.',avviso:'Scheda: una voce per riga, nella forma «Etichetta: testo»; le sotto-voci iniziano con «- ». Criticità principale e Note hanno il loro campo. Tag: separati da virgola, oppure tocca quelli già in uso. Per collegare la scheda a più impianti scrivi gli indirizzi separati da «;», identici a come compaiono nel Parco impianti.',campi:[
   {k:'titolo',l:'Titolo',t:'text',list:1},{k:'impianto',l:'Impianto (indirizzo)',t:'text',list:1},{k:'lotto',l:'Lotto',t:'text',list:1},
@@ -1663,6 +1663,8 @@ async function posizioneDi(a){
 }
 async function chiChiamo(r){
   let h=etaCaldaie(r);
+  const vs=String(r.vie_servite||'').split(';').map(x=>x.trim()).filter(Boolean);
+  if(vs.length)h+='<div class="crit" style="border-left-color:#ef6c00"><b>'+gcI('radiatore')+' Vie servite ('+vs.length+')</b><p>'+vs.map(esc).join(' · ')+'</p></div>';
   const ps=await posizioneDi(r.indirizzo);
   if(ps&&ps[3])h+='<div class="crit" style="border-left-color:#6a1b9a"><b>'+gcI('manometro')+' Zona</b><p>Municipio '+ps[3]+' · Milano</p></div>';const bm=String(r.building_manager||'').trim();
   if(!bm)return h;
