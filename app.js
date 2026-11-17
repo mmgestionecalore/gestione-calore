@@ -795,6 +795,21 @@ var NORM_ORD=[
 ['2025/2026','Ord. 41 del 03/10/2025','15/10/2025 – 15/04/2026','13 ore (5–23)','19 °C + 2 °C',['ords-41-2025.pdf']],
 ['2026/2027','Ord. 57 del 09/10/2026','15/10/2026 – 15/04/2027','8 ore fino al 30/10, poi 13 ore (5–23)','19 °C + 2 °C',['ords-57-2026.pdf']]
 ];
+var NORM_CSS4='<style>'+
+'.sc .ord-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}'+
+'.sc .ord-c{background:#1b110b;border:1px solid #4a2c18;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}'+
+'.sc .ord-c.on{border-color:#ff8a1f;box-shadow:0 0 0 1px #ff8a1f55,0 0 22px #ff8a1f33}'+
+'.sc .ord-c.off{opacity:.65;border-style:dashed}'+
+'.sc .ord-h{display:flex;align-items:center;justify-content:space-between;gap:8px}'+
+'.sc .ord-s{font-family:"Barlow Condensed",sans-serif;font-size:34px;font-weight:700;line-height:1;color:#ffb35c;letter-spacing:.02em}'+
+'.sc .ord-b{font-size:12px;font-weight:600;padding:2px 10px;border-radius:12px;background:#3a2314;color:#c9a98a}'+
+'.sc .ord-b.on{background:#ff8a1f;color:#1b110b}'+
+'.sc .ord-a{font-size:15px;font-weight:600;color:#fdebd3;line-height:1.3}'+
+'.sc .ord-n{font-size:14px;color:#c9a98a}'+
+'.sc .ord-r{display:flex;flex-direction:column;gap:1px;border-top:1px dashed #3a2314;padding-top:8px}'+
+'.sc .ord-r span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c9a98a;font-weight:600}'+
+'.sc .ord-r b{font-size:16px;color:#fdebd3;font-weight:600;line-height:1.3}'+
+'</style>';
 var NORM_CSS='<style>'+
 '.sc .nr-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-top:14px}'+
 '.sc .nr-c{background:#26160d;border:1px solid #4a2c18;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}'+
@@ -883,7 +898,7 @@ function normDisegna(){
   const inTxt=function(r){return normTxt.q===q&&r.file&&normTxt.f[r.file]};
   if(q)rows=rows.filter(function(r){return m.campi.some(function(c){return sv(r[c.k]).toLowerCase().includes(q)})||inTxt(r)});
   rows.sort(function(a,b){return String(a.ambito||'').localeCompare(String(b.ambito||''),'it')||String(b.data_atto||'').localeCompare(String(a.data_atto||''))||String(a.titolo||'').localeCompare(String(b.titolo||''),'it')});
-  let h=SC_CSS+NORM_CSS+NORM_CSS2+NORM_CSS3+'<div class="sc">';
+  let h=SC_CSS+NORM_CSS+NORM_CSS2+NORM_CSS3+NORM_CSS4+'<div class="sc">';
   h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrcons">Consulente normativo</button><button class="sc-b" id="nrarch">Archivio Norme (documenti)</button><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
   h+=glHero({ic:'riferimenti',bl:'Normativa',kick:'Leggi, decreti, ordinanze, norme tecniche',title:'Normativa e riferimenti',sub:NORM_FAM.length+' famiglie di riferimento',sub2:'La ricerca in alto cerca anche dentro il testo dei documenti',num:dati.length,lab:'schede'});
   if(consOn)h+='<div class="sc-box" id="cons"></div>';
@@ -894,7 +909,12 @@ function normDisegna(){
   var etk=Object.keys(etc).sort(function(a,b){return etc[b]-etc[a]||a.localeCompare(b,'it')});
   if(etk.length)h+='<div class="sc-chs"><span class="sc-k" style="align-self:center">Etichette:</span>'+etk.map(function(a){return'<button type="button" class="sc-ch'+(normF.amb===a?' on':'')+'" data-na="'+esc(a)+'">'+esc(a)+' <span style="opacity:.7">'+etc[a]+'</span></button>'}).join('')+'</div>';
   if(!q&&(!normF.tipo||normF.tipo==='Ordinanza sindacale')&&(!normF.amb||normF.amb==='Esercizio e orari')){
-    h+=SC_PIPE+'<div class="sc-box sc-lg">'+scH('Ordinanze del Comune di Milano, per stagione termica')+'<div class="tw"><table class="scr"><thead><tr><th>Stagione</th><th>Atto</th><th>Periodo</th><th>Orario massimo</th><th>Temperatura</th><th>Originale</th></tr></thead><tbody>'+NORM_ORD.map(function(o){return'<tr><td><b>'+o[0]+'</b></td><td>'+esc(o[1])+'</td><td>'+esc(o[2])+'</td><td>'+esc(o[3])+'</td><td>'+esc(o[4])+'</td><td>'+(o[5].length?o[5].map(function(f,i){return'<button type="button" class="sc-ch" data-open="'+f+'">'+(o[5].length>1?'Ord. '+(i?'55':'53'):'Apri')+'</button>'}).join(' '):'')+'</td></tr>'}).join('')+'</tbody></table></div><p class="sc-note">Temperatura massima dell\'aria negli ambienti, con 2 °C di tolleranza. Per gli edifici industriali e artigianali e per le esclusioni valgono i limiti indicati in ciascuna ordinanza.</p></div>';
+    h+=SC_PIPE+'<div class="sc-box sc-lg">'+scH('Ordinanze del Comune di Milano, per stagione termica')+'<div class="ord-g">'+NORM_ORD.slice().reverse().map(function(o){
+      var pm=String(o[2]).match(/(\d+)\/(\d+)\/(\d+)\D+(\d+)\/(\d+)\/(\d+)/),st='',oggi=new Date();
+      if(pm){var a=new Date(+pm[3],+pm[2]-1,+pm[1]),b=new Date(+pm[6],+pm[5]-1,+pm[4],23,59);st=oggi>=a&&oggi<=b?'In corso':(oggi<a?'Prossima':'Conclusa')}
+      var vuota=!o[5].length,ore=String(o[3]).match(/^(\d+ ore)\s*(.*)$/);
+      return'<div class="ord-c'+(st==='In corso'?' on':'')+(vuota?' off':'')+'"><div class="ord-h"><span class="ord-s">'+esc(o[0])+'</span>'+(st?'<span class="ord-b'+(st==='In corso'?' on':'')+'">'+st+'</span>':'')+'</div>'+
+      (vuota?'<div class="ord-n">'+esc(o[1])+'</div>':'<div class="ord-a">'+esc(o[1])+'</div><div class="ord-r"><span>Periodo</span><b>'+esc(o[2])+'</b></div><div class="ord-r"><span>Orario massimo</span><b>'+esc(o[3])+'</b></div><div class="ord-r"><span>Temperatura</span><b>'+esc(o[4])+'</b></div><div class="nr-a">'+o[5].map(function(f,i){return'<button type="button" class="sc-ch" data-open="'+f+'">'+(o[5].length>1?'Apri Ord. '+(i?'55':'53'):'Apri l\'originale')+'</button>'}).join('')+'</div>')+'</div>'}).join('')+'</div><p class="sc-note">Temperatura massima dell\'aria negli ambienti, con 2 °C di tolleranza. Per gli edifici industriali e artigianali e per le esclusioni valgono i limiti indicati in ciascuna ordinanza.</p></div>';
   }
   h+=SC_PIPE+'<div class="sc-box">'+scH((normF.amb||'Tutte le schede')+' ('+rows.length+(rows.length!==dati.length?' di '+dati.length:'')+')');
   if(q.length>=3&&normTxt.q!==q)h+='<p class="sc-note">Ricerca nel testo dei documenti in corso…</p>';
@@ -903,7 +923,7 @@ function normDisegna(){
     return'<div class="nr-c" style="--c:'+normCol(r.ambito)+'"><div><span class="nr-b">'+esc(r.tipo||'Senza tipo')+'</span>'+(r.ambito?'<span class="nr-m">'+esc(r.ambito)+'</span>':'')+'</div><div class="nr-t">'+esc(r.titolo)+'</div><div class="nr-m">'+(r.data_atto?esc(fmtD(r.data_atto))+' · ':'')+esc(r.fonte||'')+'</div>'+normTesto(sx,q)+
       (alt.length?'<div class="nr-tg">'+alt.map(function(a){return'<button type="button" data-na="'+esc(a)+'">'+esc(a)+'</button>'}).join('')+'</div>':'')+
       (tx&&tx.sn.length?'<div class="nr-m">'+(tx.n?tx.n+' occorrenze nel testo':'')+'</div>'+tx.sn.map(function(s){return'<div class="nr-sn">…'+normHl(s,q)+'…</div>'}).join(''):'')+
-      '<div class="nr-a">'+(r.file?'<button type="button" class="sc-ch" data-open="'+esc(r.file)+'">Apri originale</button>':'')+(r.link?'<a class="sc-ch" href="'+esc(okUrl(r.link))+'" target="_blank" rel="noopener">Link</a>':'')+'<button type="button" class="sc-ch" data-mod="'+esc(r.id)+'">Modifica</button></div></div>'}).join('')+'</div>'+(rows.length?'':'<p class="sc-note">Nessuna scheda trovata.</p>')+'</div></div>';
+      '<div class="nr-a">'+(r.file?'<button type="button" class="sc-ch" data-open="'+esc(r.file)+'">Apri originale</button>':'')+(r.link?'<a class="sc-ch" href="'+esc(okUrl(r.link))+'" target="_blank" rel="noopener">'+(/sharepoint\.com/i.test(r.link)?'Apri su SharePoint':'Link')+'</a>':'')+'<button type="button" class="sc-ch" data-mod="'+esc(r.id)+'">Modifica</button></div></div>'}).join('')+'</div>'+(rows.length?'':'<p class="sc-note">Nessuna scheda trovata.</p>')+'</div></div>';
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-nt]').forEach(function(b){b.onclick=function(){normF.tipo=normF.tipo===b.dataset.nt?'':b.dataset.nt;normDisegna()}});
   document.querySelectorAll('[data-na]').forEach(function(b){b.onclick=function(){var a=b.dataset.na;normF.amb=(a&&normF.amb===a)?'':a;normDisegna();window.scrollTo(0,0)}});
