@@ -884,7 +884,7 @@ function normDisegna(){
   if(q)rows=rows.filter(function(r){return m.campi.some(function(c){return sv(r[c.k]).toLowerCase().includes(q)})||inTxt(r)});
   rows.sort(function(a,b){return String(a.ambito||'').localeCompare(String(b.ambito||''),'it')||String(b.data_atto||'').localeCompare(String(a.data_atto||''))||String(a.titolo||'').localeCompare(String(b.titolo||''),'it')});
   let h=SC_CSS+NORM_CSS+NORM_CSS2+NORM_CSS3+'<div class="sc">';
-  h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrcons">Consulente normativo</button><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
+  h+='<div class="sc-top"><span class="sc-k">Fonti e riferimenti</span><span style="display:flex;gap:10px;flex-wrap:wrap"><button class="sc-b" id="nrcons">Consulente normativo</button><button class="sc-b" id="nrarch">Archivio Norme (documenti)</button><button class="sc-b" id="nrexp">Esporta</button><button class="sc-b p" id="nrnew">+ Nuova scheda</button></span></div>';
   h+=glHero({ic:'riferimenti',bl:'Normativa',kick:'Leggi, decreti, ordinanze, norme tecniche',title:'Normativa e riferimenti',sub:NORM_FAM.length+' famiglie di riferimento',sub2:'La ricerca in alto cerca anche dentro il testo dei documenti',num:dati.length,lab:'schede'});
   if(consOn)h+='<div class="sc-box" id="cons"></div>';
   h+='<div class="fam"><button type="button" class="ft'+(normF.amb?'':' on')+'" style="--c:#9a8f85" data-na=""><div class="cn">'+dati.length+'</div><div class="nm">Tutte</div></button>'+NORM_FAM.map(function(f){var n=dati.filter(function(r){return normAmb(r).indexOf(f[0])>-1}).length;return'<button type="button" class="ft'+(normF.amb===f[0]?' on':'')+'" style="--c:'+f[1]+'" data-na="'+esc(f[0])+'"><div class="cn">'+n+'</div><div class="nm">'+esc(f[0])+'</div></button>'}).join('')+'</div>';
@@ -910,6 +910,7 @@ function normDisegna(){
   document.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){normApri(b.dataset.open,b)}});
   document.querySelectorAll('[data-mod]').forEach(function(b){b.onclick=function(){modulo(dati.find(function(x){return String(x.id)===b.dataset.mod}),'riferimenti',normVista)}});
   $('#nrnew').onclick=function(){modulo({},'riferimenti',normVista)};
+  $('#nrarch').onclick=function(){docPre={f:'Archivio Norme'};apri('documenti')};
   $('#nrcons').onclick=function(){consOn=!consOn;normDisegna();if(consOn)setTimeout(function(){var e=document.querySelector('#cons .cx-q');if(e){e.focus();e.scrollIntoView({block:'center'})}},60)};
   if(consOn&&window.consMonta)window.consMonta($('#cons'),dati);
   $('#nrexp').onclick=function(){esporta('riferimenti',dati)};
@@ -1113,7 +1114,7 @@ async function prossimaRicorrenza(o){
 }
 
 /* ---------- Documenti: filtri per archivio e cartella; ricerca per indirizzo ---------- */
-var SP_ARCH={'Archivio Centralizzati':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Centralizzati','Archivio Teleriscaldamento':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Teleriscaldamento'};
+var SP_ARCH={'Archivio Centralizzati':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Centralizzati','Archivio Teleriscaldamento':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Teleriscaldamento','Archivio Norme':'https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Norme'};
 function nzDoc(t){return' '+String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' '}
 function chiaviRicerca(a,extra){
   const raw=String(a||''),ex=(raw.match(/\(\s*ex\s+(.*?)\)/i)||[])[1];
