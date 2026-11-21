@@ -1183,12 +1183,14 @@ async function scheda(r){
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
   h+=await chiChiamo(r);
+  var _dt=await docTecnica(a);
   h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+esc(x.id)+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
+  h+=_dt;
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
   h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(okUrl(x.link))+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a> <a class="muted" href="'+esc(okUrl(String(x.link||'').replace(/\/[^\/]*$/,'')))+'" target="_blank" rel="noopener" title="Apri la cartella su SharePoint">'+esc(x.cartella)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
   h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button><button type="button" id="mod">Modifica impianto</button></div>';
   $('#dform').innerHTML=h;const d=$('#dlg');if(!d.open)d.showModal();
-  $('#ann').onclick=()=>d.close();$('#mod').onclick=()=>modulo(r);larga(d);
+  $('#ann').onclick=()=>d.close();$('#mod').onclick=()=>modulo(r);larga(d);bindDocTecnica(d,a);
   d.querySelectorAll('[data-cm]').forEach(b=>b.onclick=()=>modulo(cs.find(x=>x.id===b.dataset.cm),'censimento',()=>scheda(r)));
   $('#nc').onclick=()=>modulo({impianto:a,lotto:r.lotto},'censimento',()=>scheda(r));
 }
@@ -2062,6 +2064,112 @@ function anteprimaImport(nome,righe){
     for(let i=0;i<out.length;i+=200){const{error}=await sb.from(m.tab).insert(out.slice(i,i+200));if(error){alert('Errore alla riga '+(i+1)+': '+error.message+'\nLe righe precedenti sono già state importate.');break}}
     d.close();await caricaIndirizzi();apri(corrente);toast('Importazione completata');
   };
+}
+/* ---------- documentazione tecnica dagli schemi (tabelle doc_) ---------- */
+var DOCT_CSS='.dt{margin:.2rem 0 1rem}.dt details{border:1px solid var(--bd);border-radius:10px;margin:.5rem 0;background:var(--card)}.dt summary{cursor:pointer;padding:.55rem .8rem;font-weight:600;list-style:none;display:flex;align-items:center;gap:.5rem}.dt summary::-webkit-details-marker{display:none}.dt summary::before{content:"▸";color:var(--ac);font-size:.85em;transition:transform .15s}.dt details[open]>summary::before{transform:rotate(90deg)}.dt summary .n{margin-left:auto;font-weight:500;color:var(--mut);font-size:.85em}.dt .db{padding:.1rem .8rem .7rem}.dt table{width:100%;border-collapse:collapse;font-size:.88rem}.dt th{text-align:left;color:var(--mut);font-weight:600;padding:.3rem .4rem;border-bottom:1px solid var(--bd);white-space:nowrap}.dt td{padding:.35rem .4rem;border-bottom:1px solid var(--bd);vertical-align:top}.dt .w{overflow-x:auto}.dt .sg{font-weight:700;color:var(--ac);white-space:nowrap}.dt .lg{display:block;color:var(--mut);font-size:.78rem;margin-top:.15rem;line-height:1.3}.dt .v{display:inline-block;font-size:.7rem;font-weight:600;color:var(--wa);border:1px solid var(--wa);border-radius:999px;padding:0 .45rem;margin-left:.35rem;white-space:nowrap;cursor:help}.dt .ok{color:var(--ok)}.dt .ko{color:var(--ko)}.dt .chs{display:flex;flex-wrap:wrap;gap:.35rem}.dt .ch{border:1px solid var(--bd);border-radius:999px;padding:.1rem .6rem;font-size:.82rem;background:var(--bg2)}.dt .ch b{color:var(--ac)}.dt .doc{border-left:3px solid var(--ac);padding:.2rem .7rem;margin:.5rem 0}.dt .doc .t{font-weight:600}.dt .doc .s{color:var(--mut);font-size:.84rem}.dt .it{padding:.35rem 0;border-bottom:1px solid var(--bd);font-size:.9rem}.dt .it:last-child{border-bottom:0}.dt .it .s{color:var(--mut);font-size:.78rem}.dt .pot{display:grid;grid-template-columns:max-content 1fr;gap:.2rem .9rem;font-size:.92rem}.dt .pot dt{color:var(--mut)}.dt .pot dd{margin:0}.dt .grav{font-size:.7rem;font-weight:700;text-transform:uppercase;border-radius:6px;padding:.05rem .4rem;margin-right:.4rem}.dt .grav.a{background:rgba(251,191,36,.18);color:var(--wa)}.dt .grav.i{background:var(--hov);color:var(--in)}.dt select{margin:.4rem 0;max-width:100%}.dt .src{color:var(--mut);font-size:.76rem;margin:.6rem 0 0}';
+function dtN(v){return v==null||v===''?'':esc(String(v).replace('.',','))}
+function dtVer(x,m){return String(x.da_verificare||'').toLowerCase()==='si'?'<span class="v" title="'+esc(m||x.motivo_verifica||x.nota||'Da verificare sul disegno originale')+'">da verificare</span>':''}
+function dtDet(titolo,n,corpo,aperto,id){return '<details'+(aperto?' open':'')+(id?' data-dt="'+id+'"':'')+'><summary>'+titolo+(n!=null?'<span class="n">'+n+'</span>':'')+'</summary><div class="db">'+corpo+'</div></details>'}
+function dtDati(x){
+  var p=[];
+  if(x.potenza_utile_kw)p.push('utile <b>'+dtN(x.potenza_utile_kw)+' kW</b>'+(x.potenza_utile_condizioni?' ('+esc(x.potenza_utile_condizioni)+')':''));
+  if(x.potenza_utile_min_kw)p.push('min '+dtN(x.potenza_utile_min_kw)+' kW');
+  if(x.potenza_condensazione_kw)p.push('condensazione '+dtN(x.potenza_condensazione_kw)+' kW');
+  if(x.potenza_focolare_kw)p.push('focolare '+dtN(x.potenza_focolare_kw)+' kW');
+  if(x.potenza_intervallo_kw)p.push('intervallo '+dtN(x.potenza_intervallo_kw)+' kW');
+  if(x.potenza_elettrica_kw)p.push('elettrica '+dtN(x.potenza_elettrica_kw)+' kW');
+  if(x.n_moduli)p.push(esc(x.n_moduli)+' moduli');
+  if(x.dn)p.push('DN'+esc(String(x.dn).replace(/^DN/i,'')));
+  if(x.taratura_bar)p.push('taratura '+dtN(x.taratura_bar)+' bar');
+  if(x.orifizio_mm)p.push('orifizio '+dtN(x.orifizio_mm)+' mm');
+  if(x.capacita_l)p.push(dtN(x.capacita_l)+' l');
+  if(x.portata)p.push('portata '+esc(x.portata));
+  if(x.stato_annotato)p.push('<i>'+esc(x.stato_annotato)+'</i>');
+  return p.join(' · ')
+}
+async function docTecnica(a){
+  try{
+    var q=function(t){return sb.from(t).select('*').eq('indirizzo',a).limit(3000)};
+    var r=await Promise.all([q('doc_impianti_lotto1'),q('doc_documenti'),q('doc_componenti'),q('doc_diametri_tubazioni'),q('doc_note_disegni'),q('doc_dati_riepilogo_centrale'),q('doc_quadri_elettrici_etichette'),
+      sb.from('doc_anomalie').select('*').ilike('indirizzo','%'+String(a).replace(/[%_,()]/g,'_')+'%').limit(500),
+      sb.from('doc_testi_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a),
+      sb.from('doc_simboli_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a)]);
+    var im=(r[0].data||[])[0],dc=r[1].data||[],cm=r[2].data||[],dn=r[3].data||[],nt=r[4].data||[],rs=r[5].data||[],qe=r[6].data||[];
+    var an=(r[7].data||[]).filter(function(x){return String(x.indirizzo||'').split('+').some(function(p){return norm(p)===norm(a)})}),nTesti=r[8].count||0,nSimb=r[9].count||0;
+    if(!im&&!dc.length&&!cm.length)return '';
+    var h='<h4>Documentazione tecnica dagli schemi <span class="muted">(estrazione del 21/11/2026)</span></h4><div class="dt"><style>'+DOCT_CSS+'</style>';
+    /* il documento */
+    var docs=dc.filter(function(x){return x.ruolo==='documento'}),altri=dc.length-docs.length;
+    var pdfCod={};docs.forEach(function(x){var k=x.codice_disegno||x.id_documento;if(!pdfCod[k]||x.formato==='pdf')pdfCod[k]=x});
+    var elenco=Object.keys(pdfCod).map(function(k){return pdfCod[k]}).sort(function(x,y){return String(x.categoria).localeCompare(String(y.categoria))||String(x.data_emissione).localeCompare(String(y.data_emissione))});
+    var hd='';
+    elenco.forEach(function(x){
+      var fm=docs.filter(function(y){return (y.codice_disegno||y.id_documento)===(x.codice_disegno||x.id_documento)}).map(function(y){return String(y.formato||'').toUpperCase()}).filter(function(v,i,s){return v&&s.indexOf(v)===i}).join(' + ');
+      var lk=x.url_sharepoint?' <a class="sc-ch" href="'+esc(okUrl(x.url_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>':'';
+      hd+='<div class="doc"><div class="t">'+esc(x.categoria||'Documento')+(x.codice_disegno?' · '+esc(x.codice_disegno):'')+(x.parte_impianto?' · '+esc(x.parte_impianto):'')+(x.abbinamento_da_verificare==='si'?'<span class="v" title="'+esc(x.abbinamento_impianto||'')+'">abbinamento da verificare</span>':'')+lk+'</div>'+
+        '<div class="s">'+(x.data_emissione?'Emesso il '+fmtD(x.data_emissione):'')+(x.sigla_disegnatore?' · disegnatore '+esc(x.sigla_disegnatore):'')+(x.indirizzo_nel_cartiglio?' · nel cartiglio: '+esc(String(x.indirizzo_nel_cartiglio).slice(0,110)):'')+(x.formato_foglio?' · '+esc(x.formato_foglio):'')+(fm?' · '+fm:'')+'</div><div class="s">'+esc(x.nome_file||'')+' ('+esc(x.id_documento)+')</div></div>'});
+    if(altri)hd+='<p class="src">+ '+altri+' file di servizio (pacchetti eTransmit, report, copie identiche) censiti in documenti.</p>';
+    h+=dtDet('Il documento',elenco.length+' disegni',hd||'<p class="muted">Nessun disegno.</p>',true);
+    /* riepilogo e potenza */
+    if(im){
+      var pt='<dl class="pot">';
+      var rw=function(l,v){if(v!=null&&String(v)!=='')pt+='<dt>'+l+'</dt><dd>'+v+'</dd>'};
+      rw('File in cartella',esc(im.n_file_totali)+' ('+esc(im.n_schemi_meccanici_pdf||0)+' schemi meccanici PDF, '+esc(im.n_schemi_elettrici_pdf||0)+' elettrici PDF, '+esc(im.n_dwg_distinti||0)+' DWG)');
+      rw('Disegni meccanici',esc(im.codici_disegno_meccanici));rw('Disegni elettrici',esc(im.codici_disegno_elettrici));
+      rw('Rilievo meccanico',fmtD(im.data_rilievo_meccanico));rw('Rilievo elettrico',fmtD(im.data_rilievo_elettrico));
+      rw('Generatori in legenda',esc(im.generatori_in_legenda));
+      rw('Potenza utile (legenda)',im.potenza_utile_legenda_kw?dtN(im.potenza_utile_legenda_kw)+' kW':'');
+      rw('Potenza al focolare (legenda)',im.potenza_focolare_legenda_kw?dtN(im.potenza_focolare_legenda_kw)+' kW':'');
+      rw('Dettaglio per disegno',esc(im.dettaglio_potenza_per_disegno));
+      var esito=esc(im.esito_confronto_potenza||'');
+      if(String(im.azione_app||'').indexOf('aggiornare')===0)esito='potenza dell\'app aggiornata da '+dtN(im.potenza_kw_app)+' a <b>'+dtN(im.potenza_kw_da_usare)+' kW</b> con quella degli schemi (decisione del DEC del 21/11/2026)';
+      else if(im.decisione)esito=esito+' — '+esc(im.decisione);
+      rw('Confronto con l\'app',esito+(im.da_verificare_potenza==='si'?'<span class="v">da verificare</span>':''));
+      rw('Documentazione mancante',esc(im.documentazione_mancante));rw('Note',esc(im.note_impianto));
+      if(im.url_cartella_sharepoint)rw('Cartella',' <a class="sc-ch" href="'+esc(okUrl(im.url_cartella_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>');
+      h+=dtDet('Riepilogo e potenza',null,pt+'</dl>',true)}
+    /* componenti */
+    var ord=function(x){var t=String(x.tipo_componente||'').toLowerCase();return t.indexOf('generatore')===0?0:/sicurezza|valvola|vaso/.test(t)?1:/pompa/.test(t)?2:3};
+    cm=cm.slice().sort(function(x,y){return ord(x)-ord(y)||String(x.parte_impianto).localeCompare(String(y.parte_impianto))||String(x.sigla).localeCompare(String(y.sigla),'it',{numeric:true})});
+    var tb='<div class="w"><table><thead><tr><th>Sigla</th><th>Componente</th><th>Marca e modello</th><th>Dati</th></tr></thead><tbody>';
+    cm.forEach(function(x){tb+='<tr><td class="sg">'+esc(x.sigla||'')+(x.quantita&&x.quantita!=='1'?' <span class="muted">×'+esc(x.quantita)+'</span>':'')+'</td><td>'+esc(x.tipo_componente||'')+(x.parte_impianto&&x.parte_impianto!=='centrale termica'?'<span class="lg">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+(x.testo_legenda?'<span class="lg">'+esc(x.testo_legenda)+'</span>':'')+(x.nota_lettura?'<span class="lg"><i>'+esc(x.nota_lettura)+'</i></span>':'')+'</td><td>'+esc([x.marca,x.modello].filter(Boolean).join(' '))+'</td><td>'+dtDati(x)+'</td></tr>'});
+    tb+='</tbody></table></div><p class="src">Dati letti dalle legende degli schemi. «da verificare» = lettura a vista o dubbio specifico (passa il mouse per il motivo).</p>';
+    h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',true);
+    /* diametri */
+    if(dn.length)h+=dtDet('Diametri delle tubazioni',dn.length,'<div class="chs">'+dn.map(function(x){return '<span class="ch"><b>'+esc(x.diametro)+'</b> ×'+esc(x.etichette_nel_disegno||'')+(x.parte_impianto&&dn.some(function(y){return y.parte_impianto!==x.parte_impianto})?' <span class="muted">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+'</span>'}).join('')+'</div><p class="src">Numero di etichette con quel diametro presenti nel disegno.</p>');
+    /* riepilogo di centrale */
+    if(rs.length)h+=dtDet('Riepilogo di centrale (rilievo)',rs.length,'<dl class="pot">'+rs.map(function(x){return '<dt>'+esc(x.voce)+'</dt><dd>'+esc(x.valore)+dtVer(x,x.nota)+'</dd>'}).join('')+'</dl>');
+    /* note */
+    if(nt.length){
+      var gr={};nt.forEach(function(x){var k=x.tipo_nota||'altro';(gr[k]=gr[k]||[]).push(x)});
+      var ks=Object.keys(gr).sort(function(x,y){var c=function(k){return /criticit/.test(k)?0:/frammento/.test(k)?9:/^annotazione/.test(k)?5:3};return c(x)-c(y)||x.localeCompare(y)});
+      var nb='';ks.forEach(function(k){nb+=dtDet(esc(k.charAt(0).toUpperCase()+k.slice(1)),gr[k].length,gr[k].map(function(x){return '<div class="it">'+(x.voce?'<b>'+esc(x.voce)+':</b> ':'')+esc(x.testo||'')+dtVer(x)+'<div class="s">'+esc(x.codice_disegno||'')+(x.presente_nel_pdf==='no'?' · scritta nel DWG, non nel PDF':'')+(x.fonte?' · '+esc(x.fonte):'')+'</div></div>'}).join(''),/criticit/.test(k))});
+      h+=dtDet('Note e criticità dai disegni',nt.length,nb)}
+    /* anomalie */
+    if(an.length)h+=dtDet('Anomalie trovate nella lettura',an.length,an.map(function(x){return '<div class="it"><span class="grav '+(x.gravita==='da verificare'?'a':'i')+'">'+esc(x.gravita||'')+'</span>'+esc(x.descrizione||'')+(x.valore_letto?'<div class="s">Letto: '+esc(x.valore_letto)+(x.valore_di_confronto?' · confronto: '+esc(x.valore_di_confronto):'')+'</div>':'')+'<div class="s">'+esc(x.tipo||'')+(x.nome_file?' · '+esc(x.nome_file):'')+' · '+(x.stato==='chiusa'?'<span class="ok">chiusa</span>'+(x.decisione?': '+esc(x.decisione):''):'<span class="ko">aperta</span>')+'</div></div>'}).join(''));
+    /* quadri elettrici */
+    if(qe.length){var qs={};qe.forEach(function(x){qs[x.etichetta]=(qs[x.etichetta]||0)+1});h+=dtDet('Quadri elettrici (etichette)',Object.keys(qs).length,'<div class="chs">'+Object.keys(qs).sort().map(function(k){return '<span class="ch">'+esc(k)+'</span>'}).join('')+'</div><p class="src">Etichette lette nello schema elettrico unifilare (DWG).</p>')}
+    /* testi e simboli, caricati all'apertura */
+    if(nTesti)h+=dtDet('Testi letti nei disegni',nTesti,'<p class="muted">Caricamento…</p>',false,'testi');
+    if(nSimb)h+=dtDet('Simboli (blocchi CAD) nei DWG',nSimb,'<p class="muted">Caricamento…</p>',false,'simboli');
+    return h+'</div>'
+  }catch(e){console.warn('docTecnica',e);return ''}
+}
+function bindDocTecnica(root,a){
+  root.querySelectorAll('.dt details[data-dt]').forEach(function(d){
+    d.addEventListener('toggle',async function(){
+      if(!d.open||d.dataset.ok)return;d.dataset.ok='1';var b=d.querySelector('.db'),k=d.dataset.dt;
+      try{
+        if(k==='testi'){
+          var x=await sb.from('doc_testi_disegni').select('*').eq('indirizzo',a).order('classe').order('testo').limit(2000);var rows=x.data||[];
+          var cl=rows.map(function(y){return y.classe}).filter(function(v,i,s){return v&&s.indexOf(v)===i});
+          b.innerHTML='<select aria-label="Tipo di testo"><option value="">Tutti i tipi ('+rows.length+')</option>'+cl.map(function(c){return '<option value="'+esc(c)+'">'+esc(c.replace(/_/g,' '))+' ('+rows.filter(function(y){return y.classe===c}).length+')</option>'}).join('')+'</select><div class="w"><table><thead><tr><th>Tipo</th><th>Testo</th><th>Volte</th><th>Origine</th></tr></thead><tbody></tbody></table></div><p class="src">Testi standard dei modelli omessi; per i DWG i testi identici sono raggruppati.</p>';
+          var sel=b.querySelector('select'),tbd=b.querySelector('tbody'),dis=function(){var f=sel.value;tbd.innerHTML=rows.filter(function(y){return !f||y.classe===f}).map(function(y){return '<tr><td>'+esc(String(y.classe||'').replace(/_/g,' '))+'</td><td>'+esc(y.testo)+'</td><td>'+esc(y.occorrenze||'')+'</td><td>'+esc(y.origine||'')+'</td></tr>'}).join('')};sel.onchange=dis;dis()}
+        else{
+          var s=await sb.from('doc_simboli_disegni').select('*').eq('indirizzo',a).order('blocco_cad').limit(2000);var sr=s.data||[];
+          b.innerHTML='<div class="w"><table><thead><tr><th>Blocco</th><th>Descrizione</th><th>Inseriti</th><th>Origine</th></tr></thead><tbody>'+sr.map(function(y){return '<tr><td class="sg">'+esc(y.blocco_cad)+'</td><td>'+esc(y.descrizione_simbolo||y.attributi||'')+dtVer(y,'Significato dedotto dal nome del blocco CAD')+'</td><td>'+esc(y.n_inseriti||'')+'</td><td>'+esc((y.origine||'')+(y.ambito?' · '+y.ambito:''))+'</td></tr>'}).join('')+'</tbody></table></div>'}
+      }catch(e){b.innerHTML='<p class="muted">Dati non disponibili.</p>'}
+    })})
 }
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 avvia();
