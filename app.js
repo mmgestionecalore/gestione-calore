@@ -2093,9 +2093,9 @@ async function docTecnica(a){
     var r=await Promise.all([q('doc_impianti_lotto1'),q('doc_documenti'),q('doc_componenti'),q('doc_diametri_tubazioni'),q('doc_note_disegni'),q('doc_dati_riepilogo_centrale'),q('doc_quadri_elettrici_etichette'),
       sb.from('doc_anomalie').select('*').ilike('indirizzo','%'+String(a).replace(/[%_,()]/g,'_')+'%').limit(500),
       sb.from('doc_testi_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a),
-      sb.from('doc_simboli_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a)]);
+      sb.from('doc_simboli_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a),q('doc_descrizione_centrale'),q('doc_componenti_extra'),q('doc_dati_assenti')]);
     var im=(r[0].data||[])[0],dc=r[1].data||[],cm=r[2].data||[],dn=r[3].data||[],nt=r[4].data||[],rs=r[5].data||[],qe=r[6].data||[];
-    var an=(r[7].data||[]).filter(function(x){return String(x.indirizzo||'').split('+').some(function(p){return norm(p)===norm(a)})}),nTesti=r[8].count||0,nSimb=r[9].count||0;
+    var an=(r[7].data||[]).filter(function(x){return String(x.indirizzo||'').split('+').some(function(p){return norm(p)===norm(a)})}),nTesti=r[8].count||0,nSimb=r[9].count||0,ds=r[10].data||[],ex=r[11].data||[],as=r[12].data||[];
     if(!im&&!dc.length&&!cm.length)return '';
     var h='<h4>Documentazione tecnica dagli schemi <span class="muted">(estrazione del 21/11/2026)</span></h4><div class="dt"><style>'+DOCT_CSS+'</style>';
     /* il documento */
@@ -2107,7 +2107,7 @@ async function docTecnica(a){
       var fm=docs.filter(function(y){return (y.codice_disegno||y.id_documento)===(x.codice_disegno||x.id_documento)}).map(function(y){return String(y.formato||'').toUpperCase()}).filter(function(v,i,s){return v&&s.indexOf(v)===i}).join(' + ');
       var lk=x.url_sharepoint?' <a class="sc-ch" href="'+esc(okUrl(x.url_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>':'';
       hd+='<div class="doc"><div class="t">'+esc(x.categoria||'Documento')+(x.codice_disegno?' · '+esc(x.codice_disegno):'')+(x.parte_impianto?' · '+esc(x.parte_impianto):'')+(x.abbinamento_da_verificare==='si'?'<span class="v" title="'+esc(x.abbinamento_impianto||'')+'">abbinamento da verificare</span>':'')+lk+'</div>'+
-        '<div class="s">'+(x.data_emissione?'Emesso il '+fmtD(x.data_emissione):'')+(x.sigla_disegnatore?' · disegnatore '+esc(x.sigla_disegnatore):'')+(x.indirizzo_nel_cartiglio?' · nel cartiglio: '+esc(String(x.indirizzo_nel_cartiglio).slice(0,110)):'')+(x.formato_foglio?' · '+esc(x.formato_foglio):'')+(fm?' · '+fm:'')+'</div><div class="s">'+esc(x.nome_file||'')+' ('+esc(x.id_documento)+')</div></div>'});
+        '<div class="s">'+(x.data_emissione?'Emesso il '+fmtD(x.data_emissione):'')+(x.ente_emittente?' da '+esc(x.ente_emittente):'')+(x.sigla_disegnatore?' · disegnatore '+esc(x.sigla_disegnatore):'')+(x.indirizzo_nel_cartiglio?' · nel cartiglio: '+esc(String(x.indirizzo_nel_cartiglio).slice(0,110)):'')+(x.formato_foglio?' · '+esc(x.formato_foglio):'')+(fm?' · '+fm:'')+'</div><div class="s">'+esc(x.nome_file||'')+' ('+esc(x.id_documento)+')</div></div>'});
     if(altri)hd+='<p class="src">+ '+altri+' file di servizio (pacchetti eTransmit, report, copie identiche) censiti in documenti.</p>';
     h+=dtDet('Il documento',elenco.length+' disegni',hd||'<p class="muted">Nessun disegno.</p>',true);
     /* riepilogo e potenza */
@@ -2128,6 +2128,19 @@ async function docTecnica(a){
       rw('Documentazione mancante',esc(im.documentazione_mancante));rw('Note',esc(im.note_impianto));
       if(im.url_cartella_sharepoint)rw('Cartella',' <a class="sc-ch" href="'+esc(okUrl(im.url_cartella_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>');
       h+=dtDet('Riepilogo e potenza',null,pt+'</dl>',true)}
+    /* descrizione della centrale */
+    var SEZ=['Generatore','Linea gas','Sicurezze e controllo','Circuito anticondensa','Circuito riscaldamento','Acqua'];
+    var dsF=ds.filter(function(x){return x.sezione!=='Il documento'});
+    if(dsF.length){
+      var byDoc={};dsF.forEach(function(x){(byDoc[x.id_documento]=byDoc[x.id_documento]||[]).push(x)});
+      var dk=Object.keys(byDoc).sort(),db='';
+      dk.forEach(function(k){
+        var it=byDoc[k].slice().sort(function(x,y){return (+x.ordine||0)-(+y.ordine||0)});
+        if(dk.length>1)db+='<p class="src"><b>Disegno '+esc(it[0].codice_disegno||k)+'</b> ('+esc(k)+')</p>';
+        SEZ.forEach(function(sz){var l=it.filter(function(x){return x.sezione===sz});if(!l.length)return;
+          db+='<div class="it"><b>'+esc(sz)+'</b><ul class="lst">'+l.map(function(x){return '<li>'+esc(x.testo)+dtVer(x)+(/interpretato/.test(x.fonte||'')?' <span class="s">(dedotto dal simbolo)</span>':'')+'</li>'}).join('')+'</ul></div>'})});
+      var vis=dsF.some(function(x){return /a vista/.test(x.fonte||'')});
+      h+=dtDet('Descrizione della centrale',dsF.length+' voci',db+'<p class="src">Frasi riprese dalla legenda e dalle etichette del disegno'+(vis?'; per questo impianto il PDF non ha testo estraibile e i dati sono letti a vista':'')+'. Le frasi di legenda troncate sono così anche nel PDF.</p>',true)}
     /* componenti */
     var ord=function(x){var t=String(x.tipo_componente||'').toLowerCase();return t.indexOf('generatore')===0?0:/sicurezza|valvola|vaso/.test(t)?1:/pompa/.test(t)?2:3};
     cm=cm.slice().sort(function(x,y){return ord(x)-ord(y)||String(x.parte_impianto).localeCompare(String(y.parte_impianto))||String(x.sigla).localeCompare(String(y.sigla),'it',{numeric:true})});
@@ -2135,6 +2148,12 @@ async function docTecnica(a){
     cm.forEach(function(x){tb+='<tr><td class="sg">'+esc(x.sigla||'')+(x.quantita&&x.quantita!=='1'?' <span class="muted">×'+esc(x.quantita)+'</span>':'')+'</td><td>'+esc(x.tipo_componente||'')+(x.parte_impianto&&x.parte_impianto!=='centrale termica'?'<span class="lg">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+(x.testo_legenda?'<span class="lg">'+esc(x.testo_legenda)+'</span>':'')+(x.nota_lettura?'<span class="lg"><i>'+esc(x.nota_lettura)+'</i></span>':'')+'</td><td>'+esc([x.marca,x.modello].filter(Boolean).join(' '))+'</td><td>'+dtDati(x)+'</td></tr>'});
     tb+='</tbody></table></div><p class="src">Dati letti dalle legende degli schemi. «da verificare» = lettura a vista o dubbio specifico (passa il mouse per il motivo).</p>';
     h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',true);
+    if(ex.length){
+      var et='<div class="w"><table><thead><tr><th>Componente</th><th>Blocchi nel DWG</th><th>Nota</th></tr></thead><tbody>'+ex.slice().sort(function(x,y){return String(x.tipo_componente).localeCompare(String(y.tipo_componente),'it')}).map(function(x){return '<tr><td>'+esc(x.tipo_componente||'')+dtVer(x,x.motivo_verifica)+'</td><td>'+esc(x.quantita||'')+'</td><td class="muted">'+esc(x.nota_lettura||'')+'</td></tr>'}).join('')+'</tbody></table></div><p class="src">Riconosciuti dai simboli del DWG meccanico: non sono in legenda, il significato è dedotto dal nome del blocco. Il numero può comprendere i simboli della legenda del disegno.</p>';
+      h+=dtDet('Altri componenti riconosciuti dai simboli',ex.length,et)}
+    if(as.length){
+      var ab={};as.forEach(function(x){(ab[x.dato]=ab[x.dato]||[]).push(x)});
+      h+=dtDet('Dati che il disegno non riporta',Object.keys(ab).length,'<ul class="lst">'+Object.keys(ab).sort().map(function(k){return '<li>'+esc(k.charAt(0).toUpperCase()+k.slice(1))+'</li>'}).join('')+'</ul><p class="src">Non si ricavano dallo schema: vanno cercati in altri documenti o in centrale.</p>')}
     /* diametri */
     if(dn.length)h+=dtDet('Diametri delle tubazioni',dn.length,'<div class="chs">'+dn.map(function(x){return '<span class="ch"><b>'+esc(x.diametro)+'</b> ×'+esc(x.etichette_nel_disegno||'')+(x.parte_impianto&&dn.some(function(y){return y.parte_impianto!==x.parte_impianto})?' <span class="muted">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+'</span>'}).join('')+'</div><p class="src">Numero di etichette con quel diametro presenti nel disegno.</p>');
     /* riepilogo di centrale */
