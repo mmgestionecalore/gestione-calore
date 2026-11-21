@@ -188,7 +188,7 @@ async function avvia(){
   if(/[#?&](access_token|code)=/.test(location.hash+location.search))segnaAttivita(true);
   let{data:{session}}=await sb.auth.getSession();
   const ult=attSalvata();
-  if(session&&ult&&Date.now()-ult>=INATT_MIN*60000){uscitaAuto=true;await sb.auth.signOut({scope:'local'});session=null}
+  if(!ricordato()&&session&&ult&&Date.now()-ult>=INATT_MIN*60000){uscitaAuto=true;await sb.auth.signOut({scope:'local'});session=null}
   if(session){await entra(session)}else{show(false);if(uscitaAuto){msg(MSG_INATT);uscitaAuto=false}}
   sb.auth.onAuthStateChange((e,s)=>{
     if(e==='SIGNED_IN'&&!utente)segnaAttivita(true);
@@ -225,6 +225,7 @@ $('#loginForm').addEventListener('submit',async e=>{
   const{error}=await sb.auth.signInWithPassword({email,password});
   b.disabled=false;b.textContent='Entra';
   if(error){msg(erroreAccesso(error,'password'));return}
+  try{if($('#ricorda')&&$('#ricorda').checked){localStorage.setItem(RICORDA_KEY,'1');localStorage.setItem(EMAIL_KEY,email)}else{localStorage.removeItem(RICORDA_KEY);localStorage.removeItem(EMAIL_KEY)}}catch(e){}
   setTimeout(()=>{$('#pwd').value=''},3000);
 });
 if($('#linkMail'))$('#linkMail').onclick=async()=>{
@@ -268,11 +269,14 @@ function cambiaPassword(){
 $('#back').onclick=()=>{$('#stepCode').classList.add('hidden');$('#stepEmail').classList.remove('hidden');msg('')};
 $('#logout').onclick=()=>sb.auth.signOut();
 /* ---------- uscita automatica per inattività (solo su questo dispositivo) ---------- */
+const RICORDA_KEY='gc_ricorda',EMAIL_KEY='gc_email';
+const ricordato=()=>{try{return localStorage.getItem(RICORDA_KEY)==='1'}catch(e){return false}};
+(function(){try{var em=localStorage.getItem(EMAIL_KEY);if(em&&$('#email')&&!$('#email').value)$('#email').value=em;if($('#ricorda'))$('#ricorda').checked=ricordato()}catch(e){}})();
 const INATT_MIN=60,INATT_KEY='gc_ultima',MSG_INATT='Sei uscito in automatico dopo '+INATT_MIN+' minuti di inattività: rientra con la password.';
 let ultimoAtt=Date.now(),ultimoSalv=0,uscitaAuto=false;
 const attSalvata=()=>{try{return+localStorage.getItem(INATT_KEY)||0}catch(e){return 0}};
 function segnaAttivita(forza){const n=Date.now();ultimoAtt=n;if(forza||n-ultimoSalv>20000){ultimoSalv=n;try{localStorage.setItem(INATT_KEY,String(n))}catch(e){}}}
-const inattivo=()=>Date.now()-Math.max(ultimoAtt,attSalvata())>=INATT_MIN*60000;
+const inattivo=()=>!ricordato()&&Date.now()-Math.max(ultimoAtt,attSalvata())>=INATT_MIN*60000;
 function controllaInattivita(){if(utente&&inattivo()){uscitaAuto=true;sb.auth.signOut({scope:'local'})}}
 function pulisciSchermo(){
   const d=$('#dlg');if(d&&d.open)d.close();
