@@ -348,6 +348,7 @@ function disegna(){
     if(fc.lotto)rows=rows.filter(r=>r.lotto===fc.lotto);
     if(fc.stato)rows=rows.filter(r=>r.stato===fc.stato);
     if(fc.crit)rows=rows.filter(r=>r.__crit);
+    if(fc.sch==='si')rows=rows.filter(r=>r.__sd>0);if(fc.sch==='no')rows=rows.filter(r=>!r.__sd);if(fc.sch==='anom')rows=rows.filter(r=>r.__sa>0);
     for(const t of fc.tag)rows=rows.filter(r=>r.__tags.some(x=>norm(x)===t));
     if(!sort)rows=[...rows].sort((a,b)=>String(a.lotto||'~').localeCompare(String(b.lotto||'~'))||String(a.indirizzo||'').localeCompare(String(b.indirizzo||''),'it'));
   }
@@ -393,7 +394,7 @@ function disegna(){
   if(corrente==='contratti'&&schedaCt!=null){bindScheda();return}if(corrente==='contratti'&&vistaCruscotto)bindCruscotto();
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
-  document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
+  document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else if(g==='sch')fc.sch=fc.sch===v?'':v;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
   document.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{fonteDoc=fonteDoc===b.dataset.gd?'':b.dataset.gd;cartDoc='';lottoDoc='';limite=LIM;disegna()});
   document.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{lottoDoc=lottoDoc===b.dataset.gl?'':b.dataset.gl;cartDoc='';limite=LIM;disegna()});
   document.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>window.open(b.dataset.ap,'_blank','noopener'));
@@ -1216,15 +1217,15 @@ async function tagPick(f){
   };
   inp.addEventListener('input',dis);dis();
 }
-let docTxt=null;
+let docTxt=null,docInfo={};
 async function caricaDocTxt(){
   if(docTxt)return;const t={},add=(a,v)=>{const k=norm(a);if(k&&v)t[k]=(t[k]||'')+' '+String(v).toLowerCase()};
   const pg=async(tab,cols,fn)=>{for(let o=0;o<20000;o+=1000){const r=await sb.from(tab).select(cols).range(o,o+999);if(r.error||!r.data||!r.data.length)break;r.data.forEach(fn);if(r.data.length<1000)break}};
   try{await Promise.all([
     pg('doc_componenti','indirizzo,tipo_componente,marca,modello,matricola,sigla',x=>add(x.indirizzo,[x.tipo_componente,x.marca,x.modello,x.matricola].join(' '))),
     pg('doc_note_disegni','indirizzo,voce,testo',x=>add(x.indirizzo,x.voce+' '+x.testo)),
-    pg('doc_anomalie','indirizzo,descrizione',x=>String(x.indirizzo||'').split('+').forEach(p=>add(p,x.descrizione))),
-    pg('doc_documenti','indirizzo,nome_file,descrizione,codice_disegno,categoria',x=>add(x.indirizzo,[x.nome_file,x.descrizione,x.codice_disegno,x.categoria].join(' ')))
+    pg('doc_anomalie','indirizzo,descrizione,gravita',x=>String(x.indirizzo||'').split('+').forEach(p=>{add(p,x.descrizione);if(x.gravita==='da verificare'){const o=docInfo[norm(p)]||(docInfo[norm(p)]={d:0,a:0});o.a++}})),
+    pg('doc_documenti','indirizzo,nome_file,descrizione,codice_disegno,categoria,ruolo',x=>{add(x.indirizzo,[x.nome_file,x.descrizione,x.codice_disegno,x.categoria].join(' '));if(x.ruolo==='documento'&&x.indirizzo){const o=docInfo[norm(x.indirizzo)]||(docInfo[norm(x.indirizzo)]={d:0,a:0});o.d++}})
   ]);docTxt=t}catch(e){docTxt={}}
 }
 function arricchisciImp(){
@@ -1234,7 +1235,7 @@ function arricchisciImp(){
     const cs=per[norm(r.indirizzo)]||[];
     r.__tags=[...new Map(cs.flatMap(x=>tagLista(x.tag)).map(t=>[norm(t),t])).values()];
     r.__crit=cs.map(x=>x.criticita).filter(Boolean).join(' · ');
-    r.__txt=cs.map(x=>[x.titolo,x.tag,x.scheda,x.criticita,x.note].join(' ')).join(' ').toLowerCase()+(docTxt?(docTxt[norm(r.indirizzo)]||''):'');
+    r.__sd=(docInfo[norm(r.indirizzo)]||{}).d||0;r.__sa=(docInfo[norm(r.indirizzo)]||{}).a||0;r.__txt=cs.map(x=>[x.titolo,x.tag,x.scheda,x.criticita,x.note].join(' ')).join(' ').toLowerCase()+(docTxt?(docTxt[norm(r.indirizzo)]||''):'');
   }
 }
 function barraImp(){
@@ -1243,8 +1244,9 @@ function barraImp(){
   const tg={};dati.forEach(r=>(r.__tags||[]).forEach(t=>{const k=norm(t);(tg[k]=tg[k]||{t,n:0}).n++}));
   const tags=Object.entries(tg).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t,'it'));
   const ch=(g,v,t,n,on)=>'<button type="button" class="chip'+(on?' on':'')+'" data-g="'+g+'" data-v="'+esc(v)+'">'+esc(t)+' <span>'+n+'</span></button>';
-  const attivi=fc.lotto||fc.crit||fc.tag.length;
+  const attivi=fc.lotto||fc.crit||fc.tag.length||fc.sch;
   return '<div class="chips fb">'+lotti.map(l=>ch('lotto',l,l,dati.filter(r=>r.lotto===l).length,fc.lotto===l)).join('')+ch('crit','1','Con criticità principale',dati.filter(r=>r.__crit).length,fc.crit)+'</div>'+
+    '<div class="chips fb">'+ch('sch','si','Con schema in archivio',dati.filter(r=>r.__sd>0).length,fc.sch==='si')+ch('sch','no','Senza schema',dati.filter(r=>!r.__sd).length,fc.sch==='no')+ch('sch','anom','Anomalie schemi da verificare',dati.filter(r=>r.__sa>0).length,fc.sch==='anom')+'</div>'+
     (tags.length?'<div class="chips fb">'+tags.map(([k,o])=>ch('tag',k,o.t,o.n,fc.tag.includes(k))).join('')+'</div>':'')+
     (attivi?'<div class="vc"><button type="button" class="ghost mini" id="azzera">Azzera filtri</button></div>':'');
 }
