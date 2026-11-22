@@ -292,6 +292,7 @@ async function vaiRicerca(){const v=$('#search').value;
   if(ovunque&&v.trim().length>=2&&corrente!=='oggi'){await apri('oggi');$('#search').value=v;return ricercaGlobale()}
   corrente==='oggi'?ricercaGlobale():corrente==='contabilita'?contabDisegna():corrente==='hub'?0:(limite=LIM,disegna())}
 $('#search').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(vaiRicerca,250)});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){e.preventDefault();if(!ovunque)$('#ovunque').click();else $('#search').focus();$('#search').select()}});
 $('#ovunque').onclick=()=>{ovunque=!ovunque;const b=$('#ovunque');b.classList.toggle('on',ovunque);b.setAttribute('aria-pressed',ovunque?'true':'false');
   $('#search').placeholder=ovunque?'Cerca in tutta l’app…':'Cerca in questa sezione…';$('#search').focus();if(ovunque&&$('#search').value.trim().length>=2)vaiRicerca()};
 
@@ -394,6 +395,8 @@ function disegna(){
   if(corrente==='contratti'&&schedaCt!=null){bindScheda();return}if(corrente==='contratti'&&vistaCruscotto)bindCruscotto();
   const piu=$('#piu');if(piu)piu.onclick=()=>{limite+=LIM;disegna()};
   const ft=$('#fatte');if(ft)ft.onclick=()=>{mostraFatte=!mostraFatte;limite=LIM;disegna()};
+  document.querySelectorAll('.chip[data-ap]').forEach(b=>b.onclick=()=>{const r=dati.find(x=>x.indirizzo===b.dataset.ap);if(r)scheda(r)});
+  const cfp=document.getElementById('cfrPot');if(cfp)cfp.onclick=confrontoPotenze;
   document.querySelectorAll('.chip[data-g]').forEach(b=>b.onclick=()=>{const g=b.dataset.g,v=b.dataset.v;if(g==='lotto')fc.lotto=fc.lotto===v?'':v;else if(g==='stato')fc.stato=fc.stato===v?'':v;else if(g==='crit')fc.crit=!fc.crit;else if(g==='sch')fc.sch=fc.sch===v?'':v;else fc.tag=fc.tag.includes(v)?fc.tag.filter(x=>x!==v):[...fc.tag,v];limite=LIM;disegna()});
   document.querySelectorAll('[data-gd]').forEach(b=>b.onclick=()=>{fonteDoc=fonteDoc===b.dataset.gd?'':b.dataset.gd;cartDoc='';lottoDoc='';limite=LIM;disegna()});
   document.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{lottoDoc=lottoDoc===b.dataset.gl?'':b.dataset.gl;cartDoc='';limite=LIM;disegna()});
@@ -773,12 +776,14 @@ function schedaCtHtml(r){
     h+='<tr class="tot"><td colspan="4" class="l">Totale SAL emessi nell’elenco</td><td>'+eur(r2(sn))+'</td><td>'+eur(r2(sv))+'</td><td></td><td></td></tr></tbody></table></div>';
     h+='<p class="sc-note">Tocca un SAL per modificarlo.</p></div>';
   }
+  if(/^LOTTO/.test(r.lotto||''))h+=SC_PIPE+'<div class="sc-box" id="scImp">'+scH('Impianti del lotto')+'<p class="sc-note">Carico…</p></div>';
   return h+'</div>';
 }
 function bindScheda(){
   var r=dati.find(function(x){return String(x.id)===String(schedaCt)});if(!r)return;
   var D=schedaD,k=scKey(r),q=function(s){return document.querySelector(s)},dopo=function(){caricaSchedaCt(r)};
   q('#scBack').onclick=function(){schedaCt=null;disegna();window.scrollTo(0,0)};
+  var bi=q('#scImp');if(bi)sb.from('impianti').select('*').eq('lotto',r.lotto).order('indirizzo').then(function(x){var im=x.data||[];bi.innerHTML=scH('Impianti del lotto ('+im.length+')')+'<div class="sc-chs">'+im.map(function(i){return '<button class="sc-ch" data-imp="'+esc(i.id)+'">'+esc(i.indirizzo)+'</button>'}).join('')+'</div><p class="sc-note">Tocca un impianto per aprire la sua scheda.</p>';bi.querySelectorAll('[data-imp]').forEach(function(b){b.onclick=function(){var row=im.find(function(i){return String(i.id)===b.dataset.imp});if(row)scheda(row)}})});
   q('#scMod').onclick=function(){modulo(r,'contratti',dopo)};
   if(!D)return;
   var e=q('#scEsp');if(e)e.onclick=function(){esporta('sal',D.sal)};
@@ -1175,7 +1180,7 @@ function barraDoc(){
     '<div class="chips fb"><button type="button" class="chip'+(soloDopp?' on':'')+'" id="dopp" title="File con lo stesso nome e la stessa dimensione, in cartelle diverse">Possibili doppioni <span>'+nd+'</span></button></div>'+'<div class="vc"><label>'+lab+' <select id="cdoc"><option value="">— tutte —</option>'+cart.map(([k,n])=>'<option value="'+esc(k)+'"'+(k===cartDoc?' selected':'')+'>'+esc(k)+' ('+n+')</option>').join('')+'</select></label> '+ap+((fonteDoc||cartDoc||lottoDoc||soloDopp)?' <button type="button" class="ghost mini" id="azzerad">Azzera filtri</button>':'')+'</div>';
 }
 async function scheda(r){
-  const a=r.indirizzo,coll=[
+  const a=r.indirizzo;segnaRecente(a);const coll=[
    ['ordini','Ordini e manutenzione',x=>fmtD(x.data)+' · '+(x.numero||'')+' · '+(x.codice_stato||'')+' · '+(x.descrizione||'')],
    ['segnalazioni','Segnalazioni',x=>fmtD(x.data)+' · '+(x.oggetto||'')+' · '+(x.stato||'')],
    ['scadenze','Scadenze',x=>fmtD(x.data)+' · '+(x.titolo||'')+(x.fatto?' ✔':'')],
@@ -1184,18 +1189,25 @@ async function scheda(r){
   const [dc,ce]=await Promise.all([sb.from('documenti').select('titolo,cartella,link').or(chiaviRicerca(a,r.chiavi_documenti).flatMap(k=>{const p='%'+k.st.replace(/ /g,'_')+'%'+(k.c?k.c+'%':'');return['cartella.ilike.'+p,'titolo.ilike.'+p]}).join(',')).limit(800),sb.from('censimento').select('*').ilike('impianto','%'+a+'%').order('ordine')]);
   const vi=chiaviRicerca(a,r.chiavi_documenti),dfil=(dc.data||[]).filter(x=>{const t=nzDoc(x.cartella+' '+x.titolo);return vi.some(k=>docCorrisponde(t,k))});dc.count=dfil.length;dc.data=dfil.slice(0,40);
   const cs=(ce.data||[]).filter(x=>String(x.impianto||'').split(';').some(p=>norm(p)===norm(a)));
-  let h='<h3 class="gc-sec">'+gcI('caldaia','gc-big')+esc(a)+'</h3><dl class="kv">';
+  const [ctR,atR]=await Promise.all([r.lotto?sb.from('contratti').select('*').eq('lotto',r.lotto):Promise.resolve({data:[]}),sb.from('attivita').select('titolo,stato,scadenza,priorita').or('titolo.ilike.%'+a.replace(/[,()%*]/g,' ').trim()+'%,note.ilike.%'+a.replace(/[,()%*]/g,' ').trim()+'%').limit(20)]);
+  const ctt=(ctR.data||[]).filter(x=>!/legionella/i.test(x.lotto||''))[0],att=atR.data||[];
+  const isP=preferiti().indexOf(a)>=0;
+  let h='<h3 class="gc-sec">'+gcI('caldaia','gc-big')+esc(a)+'</h3><div class="chs" style="margin:.1rem 0 .6rem"><a href="#" class="ch" id="stella" style="text-decoration:none">'+(isP?'★ Tra i preferiti':'☆ Aggiungi ai preferiti')+'</a><a href="#" class="ch" id="stampaSch" style="text-decoration:none">Stampa / salva PDF</a>'+(ctt?'<a href="#" class="ch" id="vaCt" style="text-decoration:none">Contratto: '+esc(ctt.nome)+'</a>':'')+'</div><dl class="kv">';
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
   h+=await chiChiamo(r);
   var _dt=await docTecnica(a);
   h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+esc(x.id)+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
   h+=_dt;
+  h+='<h4>Attività correlate <span class="muted">('+att.length+')</span></h4>'+(att.length?'<ul class="lst">'+att.map(x=>'<li>'+esc(x.titolo||'')+' · '+esc(x.stato||'')+(x.scadenza?' · scad. '+fmtD(x.scadenza):'')+'</li>').join('')+'</ul>':'<p class="muted">Nessuna attività che citi questo impianto.</p>');
   coll.forEach((c,i)=>{const rows=res[i].data||[];h+='<h4>'+c[1]+' <span class="muted">('+rows.length+')</span></h4>'+(rows.length?'<ul class="lst">'+rows.map(x=>'<li>'+esc(c[2](x))+'</li>').join('')+'</ul>':'<p class="muted">Nessuno.</p>')});
   h+='<h4>Documenti <span class="muted">('+(dc.count??0)+')</span></h4>'+(dc.data&&dc.data.length?'<ul class="lst">'+dc.data.map(x=>'<li><a href="'+esc(okUrl(x.link))+'" target="_blank" rel="noopener">'+esc(x.titolo)+'</a> <a class="muted" href="'+esc(okUrl(String(x.link||'').replace(/\/[^\/]*$/,'')))+'" target="_blank" rel="noopener" title="Apri la cartella su SharePoint">'+esc(x.cartella)+'</a></li>').join('')+'</ul>'+(dc.count>dc.data.length?'<p class="muted">… e altri '+(dc.count-dc.data.length)+' (cerca nella sezione Documenti)</p>':''):'<p class="muted">Nessuno.</p>');
   h+='<div class="acts"><button type="button" class="ghost" id="ann">Chiudi</button><button type="button" id="mod">Modifica impianto</button></div>';
   $('#dform').innerHTML=h;const d=$('#dlg');if(!d.open)d.showModal();
   $('#ann').onclick=()=>d.close();$('#mod').onclick=()=>modulo(r);larga(d);bindDocTecnica(d,a);
+  $('#stella').onclick=e=>{e.preventDefault();e.target.textContent=togliPref(a)?'★ Tra i preferiti':'☆ Aggiungi ai preferiti'};
+  $('#stampaSch').onclick=e=>{e.preventDefault();stampaScheda(d,a)};
+  const vc=$('#vaCt');if(vc)vc.onclick=async e=>{e.preventDefault();d.close();await apri('contratti');const rr=dati.find(x=>x.id===ctt.id);if(rr)apriSchedaCt(rr)};
   d.querySelectorAll('[data-cm]').forEach(b=>b.onclick=()=>modulo(cs.find(x=>x.id===b.dataset.cm),'censimento',()=>scheda(r)));
   $('#nc').onclick=()=>modulo({impianto:a,lotto:r.lotto},'censimento',()=>scheda(r));
 }
@@ -1217,6 +1229,49 @@ async function tagPick(f){
   };
   inp.addEventListener('input',dis);dis();
 }
+
+/* ---------- preferiti, recenti, stampa, confronto potenze ---------- */
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return[]}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function segnaRecente(a){var l=lsGet('gc_recenti').filter(function(x){return x!==a});l.unshift(a);lsSet('gc_recenti',l.slice(0,10))}
+function preferiti(){return lsGet('gc_pref')}
+function togliPref(a){var l=preferiti(),i=l.indexOf(a);if(i<0)l.unshift(a);else l.splice(i,1);lsSet('gc_pref',l);return i<0}
+function stampaScheda(d,a){
+  var cl=d.querySelector('#dform').cloneNode(true);
+  cl.querySelectorAll('details[data-dt]').forEach(function(x){x.remove()});
+  cl.querySelectorAll('details').forEach(function(x){x.setAttribute('open','')});
+  cl.querySelectorAll('button,.acts,select,.chs a.ch').forEach(function(x){x.remove()});
+  var css='';try{[].forEach.call(document.styleSheets,function(ss){try{[].forEach.call(ss.cssRules,function(r){css+=r.cssText})}catch(e){}})}catch(e){}
+  var f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  var dd=f.contentDocument;dd.open();
+  dd.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Scheda '+esc(a)+'</title><style>'+css+'</style><style>html,body{background:#fff!important;color:#000!important;font:12px/1.4 system-ui,sans-serif}*{background:transparent!important;color:#000!important;box-shadow:none!important}.v{border:1px solid #000;padding:0 3px;font-size:10px}details>summary{font-weight:700;list-style:none;margin-top:8px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #999;padding:2px 4px;text-align:left}a{text-decoration:none}h3,h4{margin:10px 0 4px}svg{display:none}</style></head><body><h2>Gestione Calore · scheda impianto</h2><p>Stampata il '+new Date().toLocaleDateString('it-IT')+'</p>'+cl.innerHTML+'</body></html>');
+  dd.close();
+  setTimeout(function(){try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast('Stampa non disponibile')}setTimeout(function(){f.remove()},60000)},400);
+}
+async function confrontoPotenze(){
+  $('#main').innerHTML='<p class="muted">Carico il confronto…</p>';
+  var r=await Promise.all([sb.from('impianti').select('indirizzo,lotto,potenza_kw'),sb.from('doc_impianti_lotto1').select('*'),sb.from('doc_impianti_lotto2').select('*')]);
+  var app={};(r[0].data||[]).forEach(function(x){app[x.indirizzo]=x});
+  var n=function(v){var x=parseFloat(String(v==null?'':v).replace(',','.'));return isNaN(x)?null:x};
+  var rows=(r[1].data||[]).concat(r[2].data||[]).map(function(x){
+    var ap=app[x.indirizzo]||{},pa=n(ap.potenza_kw),ut=n(x.potenza_utile_legenda_kw),fo=n(x.potenza_focolare_legenda_kw);
+    return {ind:x.indirizzo,lotto:ap.lotto||x.lotto,app:pa,ut:ut,fo:fo,diff:(pa!=null&&ut!=null)?Math.round((pa-ut)*10)/10:null,esito:x.esito_confronto_potenza||'',dv:x.da_verificare_potenza==='si',dec:x.decisione||'',gen:x.generatori_in_legenda||''}});
+  var flt='tutti';
+  var fm=function(v){return v==null?'—':Number(v).toLocaleString('it-IT',{maximumFractionDigits:1})};
+  var draw=function(){
+    var list=rows.filter(function(x){return flt==='tutti'||(flt==='diff'&&x.diff!=null&&Math.abs(x.diff)>=1)||(flt==='dv'&&x.dv)||(flt==='dec'&&x.dec)}).sort(function(a,b){return Math.abs(b.diff||0)-Math.abs(a.diff||0)||String(a.ind).localeCompare(String(b.ind),'it',{numeric:true})});
+    var ch=function(k,t){return '<button type="button" class="chip'+(flt===k?' on':'')+'" data-f="'+k+'">'+t+'</button>'};
+    var h='<div class="bar"><span class="muted" style="font-size:12px;letter-spacing:.14em;text-transform:uppercase">Gestione calore · MM</span><span class="grp"><button class="ghost" id="cfIndietro">← Parco impianti</button><button class="ghost" id="cfCsv">Esporta CSV</button></span></div><h2 style="margin:.4rem 0">Potenza in app e potenza degli schemi</h2><p class="muted" style="font-size:13px">Confronto tra la potenza registrata in app e la potenza utile letta nelle legende degli schemi ('+rows.length+' impianti con schema). Un clic apre la scheda.</p><div class="chips fb">'+ch('tutti','Tutti ('+rows.length+')')+ch('diff','Differenza ≥ 1 kW ('+rows.filter(function(x){return x.diff!=null&&Math.abs(x.diff)>=1}).length+')')+ch('dv','Da verificare ('+rows.filter(function(x){return x.dv}).length+')')+ch('dec','Con decisione del DEC ('+rows.filter(function(x){return x.dec}).length+')')+'</div>';
+    h+='<div class="w"><table><thead><tr><th>Impianto</th><th>Lotto</th><th>In app (kW)</th><th>Utile schemi (kW)</th><th>Focolare schemi (kW)</th><th>Differenza (kW)</th><th>Esito</th></tr></thead><tbody>'+list.map(function(x){return '<tr class="row" data-i="'+esc(x.ind)+'" style="cursor:pointer"><td><b>'+esc(x.ind)+'</b>'+(x.dv?' <span class="v">da verificare</span>':'')+'</td><td>'+esc(x.lotto||'')+'</td><td>'+fm(x.app)+'</td><td>'+fm(x.ut)+'</td><td>'+fm(x.fo)+'</td><td>'+(x.diff==null?'—':(x.diff>0?'+':'')+fm(x.diff))+'</td><td class="muted" style="font-size:12px">'+esc(String(x.dec||x.esito).slice(0,160))+'</td></tr>'}).join('')+'</tbody></table></div>';
+    $('#main').innerHTML=h;
+    document.querySelectorAll('[data-f]').forEach(function(b){b.onclick=function(){flt=b.dataset.f;draw()}});
+    $('#cfIndietro').onclick=function(){apri('impianti')};
+    $('#cfCsv').onclick=function(){var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};var t='﻿indirizzo;lotto;potenza_app_kw;potenza_utile_schemi_kw;potenza_focolare_schemi_kw;differenza_kw;esito\n'+list.map(function(x){return [x.ind,x.lotto,x.app,x.ut,x.fo,x.diff,x.dec||x.esito].map(q).join(';')}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download='confronto_potenze_'+new Date().toISOString().slice(0,10)+'.csv';a.click()};
+    document.querySelectorAll('tr.row[data-i]').forEach(function(t){t.onclick=function(){var im=dati.find(function(x){return x.indirizzo===t.dataset.i});if(im){corrente='impianti';scheda(im)}}});
+  };
+  draw();
+}
+
 let docTxt=null,docInfo={};
 async function caricaDocTxt(){
   if(docTxt)return;const t={},add=(a,v)=>{const k=norm(a);if(k&&v)t[k]=(t[k]||'')+' '+String(v).toLowerCase()};
@@ -1245,7 +1300,9 @@ function barraImp(){
   const tags=Object.entries(tg).sort((a,b)=>b[1].n-a[1].n||a[1].t.localeCompare(b[1].t,'it'));
   const ch=(g,v,t,n,on)=>'<button type="button" class="chip'+(on?' on':'')+'" data-g="'+g+'" data-v="'+esc(v)+'">'+esc(t)+' <span>'+n+'</span></button>';
   const attivi=fc.lotto||fc.crit||fc.tag.length||fc.sch;
-  return '<div class="chips fb">'+lotti.map(l=>ch('lotto',l,l,dati.filter(r=>r.lotto===l).length,fc.lotto===l)).join('')+ch('crit','1','Con criticità principale',dati.filter(r=>r.__crit).length,fc.crit)+'</div>'+
+  const pf=preferiti().filter(a=>dati.some(r=>r.indirizzo===a)),rc=lsGet('gc_recenti').filter(a=>pf.indexOf(a)<0&&dati.some(r=>r.indirizzo===a)).slice(0,6);
+  const rapidi=(pf.length||rc.length)?'<div class="chips fb">'+(pf.length?'<span class="muted" style="font-size:12px">Preferiti</span>'+pf.map(a=>'<button type="button" class="chip" data-ap="'+esc(a)+'">★ '+esc(a)+'</button>').join(''):'')+(rc.length?'<span class="muted" style="font-size:12px">Aperti di recente</span>'+rc.map(a=>'<button type="button" class="chip" data-ap="'+esc(a)+'">'+esc(a)+'</button>').join(''):'')+'</div>':'';
+  return rapidi+'<div class="chips fb"><button type="button" class="chip" id="cfrPot">Confronto potenze con gli schemi →</button></div><div class="chips fb">'+lotti.map(l=>ch('lotto',l,l,dati.filter(r=>r.lotto===l).length,fc.lotto===l)).join('')+ch('crit','1','Con criticità principale',dati.filter(r=>r.__crit).length,fc.crit)+'</div>'+
     '<div class="chips fb">'+ch('sch','si','Con schema in archivio',dati.filter(r=>r.__sd>0).length,fc.sch==='si')+ch('sch','no','Senza schema',dati.filter(r=>!r.__sd).length,fc.sch==='no')+ch('sch','anom','Anomalie schemi da verificare',dati.filter(r=>r.__sa>0).length,fc.sch==='anom')+'</div>'+
     (tags.length?'<div class="chips fb">'+tags.map(([k,o])=>ch('tag',k,o.t,o.n,fc.tag.includes(k))).join('')+'</div>':'')+
     (attivi?'<div class="vc"><button type="button" class="ghost mini" id="azzera">Azzera filtri</button></div>':'');
