@@ -2097,20 +2097,21 @@ async function docTecnica(a){
     var r=await Promise.all([q('doc_impianti_lotto1'),q('doc_documenti'),q('doc_componenti'),q('doc_diametri_tubazioni'),q('doc_note_disegni'),q('doc_dati_riepilogo_centrale'),q('doc_quadri_elettrici_etichette'),
       sb.from('doc_anomalie').select('*').ilike('indirizzo','%'+String(a).replace(/[%_,()]/g,'_')+'%').limit(500),
       sb.from('doc_testi_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a),
-      sb.from('doc_simboli_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a),q('doc_descrizione_centrale'),q('doc_componenti_extra'),q('doc_dati_assenti')]);
-    var im=(r[0].data||[])[0],dc=r[1].data||[],cm=r[2].data||[],dn=r[3].data||[],nt=r[4].data||[],rs=r[5].data||[],qe=r[6].data||[];
+      sb.from('doc_simboli_disegni').select('id_documento',{count:'exact',head:true}).eq('indirizzo',a),q('doc_descrizione_centrale'),q('doc_componenti_extra'),q('doc_dati_assenti'),q('doc_impianti_lotto2')]);
+    var im=(r[0].data||[])[0]||(r[13].data||[])[0],dc=r[1].data||[],cm=r[2].data||[],dn=r[3].data||[],nt=r[4].data||[],rs=r[5].data||[],qe=r[6].data||[];
     var an=(r[7].data||[]).filter(function(x){return String(x.indirizzo||'').split('+').some(function(p){return norm(p)===norm(a)})}),nTesti=r[8].count||0,nSimb=r[9].count||0,ds=r[10].data||[],ex=r[11].data||[],as=r[12].data||[];
     if(!im&&!dc.length&&!cm.length)return '';
-    var h='<h4>Documentazione tecnica dagli schemi <span class="muted">(estrazione del 21/11/2026)</span></h4><div class="dt"><style>'+DOCT_CSS+'</style>';
+    var h='<h4>Documentazione tecnica dagli schemi <span class="muted">(estrazione del 21 e 22/11/2026)</span></h4><div class="dt"><style>'+DOCT_CSS+'</style>';
     /* il documento */
     var docs=dc.filter(function(x){return x.ruolo==='documento'}),altri=dc.length-docs.length;
-    var pdfCod={};docs.forEach(function(x){var k=x.codice_disegno||x.id_documento;if(!pdfCod[k]||x.formato==='pdf')pdfCod[k]=x});
+    var SDF={'L2-0036':1,'L2-0046':1},SDFT='stato di fatto precedente all\'intervento: non conta nella potenza';
+    var pdfCod={};docs.forEach(function(x){var k=(x.lotto==='LOTTO 2'||/^L2-/.test(x.id_documento))?x.id_documento:(x.codice_disegno||x.id_documento);if(!pdfCod[k]||x.formato==='pdf')pdfCod[k]=x});
     var elenco=Object.keys(pdfCod).map(function(k){return pdfCod[k]}).sort(function(x,y){return String(x.categoria).localeCompare(String(y.categoria))||String(x.data_emissione).localeCompare(String(y.data_emissione))});
     var hd='';
     elenco.forEach(function(x){
-      var fm=docs.filter(function(y){return (y.codice_disegno||y.id_documento)===(x.codice_disegno||x.id_documento)}).map(function(y){return String(y.formato||'').toUpperCase()}).filter(function(v,i,s){return v&&s.indexOf(v)===i}).join(' + ');
+      var fm=docs.filter(function(y){return ((/^L2-/.test(y.id_documento))?y.id_documento===x.id_documento:(y.codice_disegno||y.id_documento)===(x.codice_disegno||x.id_documento))}).map(function(y){return String(y.formato||'').toUpperCase()}).filter(function(v,i,s){return v&&s.indexOf(v)===i}).join(' + ');
       var lk=x.url_sharepoint?' <a class="sc-ch" href="'+esc(okUrl(x.url_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>':'';
-      hd+='<div class="doc"><div class="t">'+esc(x.categoria||'Documento')+(x.codice_disegno?' · '+esc(x.codice_disegno):'')+(x.parte_impianto?' · '+esc(x.parte_impianto):'')+(x.abbinamento_da_verificare==='si'?'<span class="v" title="'+esc(x.abbinamento_impianto||'')+'">abbinamento da verificare</span>':'')+lk+'</div>'+
+      hd+='<div class="doc"><div class="t">'+esc(x.categoria||'Documento')+(x.codice_disegno?' · '+esc(x.codice_disegno):'')+(x.parte_impianto?' · '+esc(x.parte_impianto):'')+(SDF[x.id_documento]?'<span class="v" title="'+SDFT+'">'+SDFT+'</span>':'')+(x.abbinamento_da_verificare==='si'?'<span class="v" title="'+esc(x.abbinamento_impianto||'')+'">abbinamento da verificare</span>':'')+lk+'</div>'+
         '<div class="s">'+(x.data_emissione?'Emesso il '+fmtD(x.data_emissione):'')+(x.ente_emittente?' da '+esc(x.ente_emittente):'')+(x.sigla_disegnatore?' · disegnatore '+esc(x.sigla_disegnatore):'')+(x.indirizzo_nel_cartiglio?' · nel cartiglio: '+esc(String(x.indirizzo_nel_cartiglio).slice(0,110)):'')+(x.formato_foglio?' · '+esc(x.formato_foglio):'')+(fm?' · '+fm:'')+'</div><div class="s">'+esc(x.nome_file||'')+' ('+esc(x.id_documento)+')</div></div>'});
     if(altri)hd+='<p class="src">+ '+altri+' file di servizio (pacchetti eTransmit, report, copie identiche) censiti in documenti.</p>';
     h+=dtDet('Il documento',elenco.length+' disegni',hd||'<p class="muted">Nessun disegno.</p>',true);
@@ -2126,7 +2127,7 @@ async function docTecnica(a){
       rw('Potenza al focolare (legenda)',im.potenza_focolare_legenda_kw?dtN(im.potenza_focolare_legenda_kw)+' kW':'');
       rw('Dettaglio per disegno',esc(im.dettaglio_potenza_per_disegno));
       var esito=esc(im.esito_confronto_potenza||'');
-      if(String(im.azione_app||'').indexOf('aggiornare')===0)esito='potenza dell\'app aggiornata da '+dtN(im.potenza_kw_app)+' a <b>'+dtN(im.potenza_kw_da_usare)+' kW</b> con quella degli schemi (decisione del DEC del 21/11/2026)';
+      if(String(im.azione_app||'').indexOf('aggiornare')===0)esito='potenza dell\'app aggiornata da '+dtN(im.potenza_kw_app)+' a <b>'+dtN(im.potenza_kw_da_usare)+' kW</b> con quella degli schemi ('+esc(im.decisione||'decisione del DEC')+')';
       else if(im.decisione)esito=esito+' — '+esc(im.decisione);
       rw('Confronto con l\'app',esito+(im.da_verificare_potenza==='si'?'<span class="v">da verificare</span>':''));
       rw('Documentazione mancante',esc(im.documentazione_mancante));rw('Note',esc(im.note_impianto));
@@ -2140,7 +2141,7 @@ async function docTecnica(a){
       var dk=Object.keys(byDoc).sort(),db='';
       dk.forEach(function(k){
         var it=byDoc[k].slice().sort(function(x,y){return (+x.ordine||0)-(+y.ordine||0)});
-        if(dk.length>1)db+='<p class="src"><b>Disegno '+esc(it[0].codice_disegno||k)+'</b> ('+esc(k)+')</p>';
+        if(dk.length>1)db+='<p class="src"><b>Disegno '+esc(it[0].codice_disegno||k)+'</b> ('+esc(k)+')'+(SDF[k]?' <span class="v">'+SDFT+'</span>':'')+'</p>';
         SEZ.forEach(function(sz){var l=it.filter(function(x){return x.sezione===sz});if(!l.length)return;
           db+='<div class="it"><b>'+esc(sz)+'</b><ul class="lst">'+l.map(function(x){return '<li>'+esc(x.testo)+dtVer(x)+(/interpretato/.test(x.fonte||'')?' <span class="s">(dedotto dal simbolo)</span>':'')+'</li>'}).join('')+'</ul></div>'})});
       var vis=dsF.some(function(x){return /a vista/.test(x.fonte||'')});
@@ -2149,7 +2150,7 @@ async function docTecnica(a){
     var ord=function(x){var t=String(x.tipo_componente||'').toLowerCase();return t.indexOf('generatore')===0?0:/sicurezza|valvola|vaso/.test(t)?1:/pompa/.test(t)?2:3};
     cm=cm.slice().sort(function(x,y){return ord(x)-ord(y)||String(x.parte_impianto).localeCompare(String(y.parte_impianto))||String(x.sigla).localeCompare(String(y.sigla),'it',{numeric:true})});
     var tb='<div class="w"><table><thead><tr><th>Sigla</th><th>Componente</th><th>Marca e modello</th><th>Dati</th></tr></thead><tbody>';
-    cm.forEach(function(x){tb+='<tr><td class="sg">'+esc(x.sigla||'')+(x.quantita&&x.quantita!=='1'?' <span class="muted">×'+esc(x.quantita)+'</span>':'')+'</td><td>'+esc(x.tipo_componente||'')+(x.parte_impianto&&x.parte_impianto!=='centrale termica'?'<span class="lg">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+(x.testo_legenda?'<span class="lg">'+esc(x.testo_legenda)+'</span>':'')+(x.nota_lettura?'<span class="lg"><i>'+esc(x.nota_lettura)+'</i></span>':'')+'</td><td>'+esc([x.marca,x.modello].filter(Boolean).join(' '))+'</td><td>'+dtDati(x)+'</td></tr>'});
+    cm.forEach(function(x){tb+='<tr><td class="sg">'+esc(x.sigla||'')+(SDF[x.id_documento]?'<span class="v" title="'+SDFT+'">stato di fatto precedente</span>':'')+(x.quantita&&x.quantita!=='1'?' <span class="muted">×'+esc(x.quantita)+'</span>':'')+'</td><td>'+esc(x.tipo_componente||'')+(x.parte_impianto&&x.parte_impianto!=='centrale termica'?'<span class="lg">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+(x.testo_legenda?'<span class="lg">'+esc(x.testo_legenda)+'</span>':'')+(x.nota_lettura?'<span class="lg"><i>'+esc(x.nota_lettura)+'</i></span>':'')+'</td><td>'+esc([x.marca,x.modello].filter(Boolean).join(' '))+'</td><td>'+dtDati(x)+'</td></tr>'});
     tb+='</tbody></table></div><p class="src">Dati letti dalle legende degli schemi. «da verificare» = lettura a vista o dubbio specifico (passa il mouse per il motivo).</p>';
     h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',true);
     if(ex.length){
