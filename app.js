@@ -327,7 +327,7 @@ async function apri(k){schedaCt=null;
   const m=MODULI[k];
   const{data,error}=await leggiTutto(m);
   if(error){$('#main').innerHTML='<p class="late">Errore di lettura: '+esc(error.message)+'</p>';return}
-  if(k==='impianti'){const ce=await leggiTutto(MODULI.censimento);censAll=ce.data||[];const st=await sb.from('impostazioni').select('valore').eq('chiave','allineamento_sharepoint').maybeSingle();allineato=st&&st.data?st.data.valore:null}
+  if(k==='impianti'){await caricaDocTxt();const ce=await leggiTutto(MODULI.censimento);censAll=ce.data||[];const st=await sb.from('impostazioni').select('valore').eq('chiave','allineamento_sharepoint').maybeSingle();allineato=st&&st.data?st.data.valore:null}
   dati=data;disegna();
 }
 async function altroVista(){
@@ -1216,6 +1216,17 @@ async function tagPick(f){
   };
   inp.addEventListener('input',dis);dis();
 }
+let docTxt=null;
+async function caricaDocTxt(){
+  if(docTxt)return;const t={},add=(a,v)=>{const k=norm(a);if(k&&v)t[k]=(t[k]||'')+' '+String(v).toLowerCase()};
+  const pg=async(tab,cols,fn)=>{for(let o=0;o<20000;o+=1000){const r=await sb.from(tab).select(cols).range(o,o+999);if(r.error||!r.data||!r.data.length)break;r.data.forEach(fn);if(r.data.length<1000)break}};
+  try{await Promise.all([
+    pg('doc_componenti','indirizzo,tipo_componente,marca,modello,matricola,sigla',x=>add(x.indirizzo,[x.tipo_componente,x.marca,x.modello,x.matricola].join(' '))),
+    pg('doc_note_disegni','indirizzo,voce,testo',x=>add(x.indirizzo,x.voce+' '+x.testo)),
+    pg('doc_anomalie','indirizzo,descrizione',x=>String(x.indirizzo||'').split('+').forEach(p=>add(p,x.descrizione))),
+    pg('doc_documenti','indirizzo,nome_file,descrizione,codice_disegno,categoria',x=>add(x.indirizzo,[x.nome_file,x.descrizione,x.codice_disegno,x.categoria].join(' ')))
+  ]);docTxt=t}catch(e){docTxt={}}
+}
 function arricchisciImp(){
   const per={};
   for(const x of censAll)for(const p of String(x.impianto||'').split(';')){const k=norm(p);if(k)(per[k]=per[k]||[]).push(x)}
@@ -1223,7 +1234,7 @@ function arricchisciImp(){
     const cs=per[norm(r.indirizzo)]||[];
     r.__tags=[...new Map(cs.flatMap(x=>tagLista(x.tag)).map(t=>[norm(t),t])).values()];
     r.__crit=cs.map(x=>x.criticita).filter(Boolean).join(' · ');
-    r.__txt=cs.map(x=>[x.titolo,x.tag,x.scheda,x.criticita,x.note].join(' ')).join(' ').toLowerCase();
+    r.__txt=cs.map(x=>[x.titolo,x.tag,x.scheda,x.criticita,x.note].join(' ')).join(' ').toLowerCase()+(docTxt?(docTxt[norm(r.indirizzo)]||''):'');
   }
 }
 function barraImp(){
@@ -1762,16 +1773,25 @@ async function ricercaGlobale(){
     const{data,count}=await sb.from(m.tab).select('*',{count:'exact'}).or(cols).limit(25);return[k,data||[],count||0]}));
   let sch=[],schR={};
   try{
-    const cq=await sb.from('doc_componenti').select('indirizzo,tipo_componente,marca,modello,matricola,sigla').or(['marca','modello','matricola','tipo_componente','testo_legenda'].map(c=>c+'.ilike.%'+q+'%').join(',')).limit(600);
-    const g={};(cq.data||[]).forEach(x=>{const o=g[x.indirizzo]||(g[x.indirizzo]={a:x.indirizzo,n:0,v:[]});o.n++;const t=[x.sigla,x.tipo_componente,[x.marca,x.modello].filter(Boolean).join(' '),x.matricola?'matr. '+x.matricola:''].filter(Boolean).join(' · ');if(o.v.length<3&&o.v.indexOf(t)<0)o.v.push(t)});
-    sch=Object.keys(g).sort((x,y)=>x.localeCompare(y,'it',{numeric:true})).slice(0,40).map(k=>g[k]);
+    const ORq=cs=>cs.map(c=>c+'.ilike.%'+q+'%').join(',');
+    const SRC=[
+      ['doc_componenti','indirizzo,tipo_componente,marca,modello,matricola,sigla',['marca','modello','matricola','tipo_componente','testo_legenda'],x=>'Componente: '+[x.sigla,x.tipo_componente,[x.marca,x.modello].filter(Boolean).join(' '),x.matricola?'matr. '+x.matricola:''].filter(Boolean).join(' · ')],
+      ['doc_note_disegni','indirizzo,voce,testo',['voce','testo'],x=>'Nota: '+[x.voce,x.testo].filter(Boolean).join(': ').slice(0,110)],
+      ['doc_descrizione_centrale','indirizzo,testo',['testo'],x=>'Centrale: '+String(x.testo||'').slice(0,110)],
+      ['doc_anomalie','indirizzo,descrizione',['descrizione'],x=>'Anomalia: '+String(x.descrizione||'').slice(0,110)],
+      ['doc_documenti','indirizzo,nome_file,descrizione',['nome_file','descrizione','codice_disegno'],x=>'Schema: '+(x.nome_file||'')]
+    ];
+    const res=await Promise.all(SRC.map(sr=>sb.from(sr[0]).select(sr[1]).or(ORq(sr[2])).limit(300)));
+    const g={};
+    res.forEach((r,ix)=>(r.data||[]).forEach(x=>String(x.indirizzo||'').split('+').forEach(p=>{p=p.trim();if(!p)return;const o=g[p]||(g[p]={a:p,n:0,v:[]});o.n++;const t=SRC[ix][3](x);if(o.v.length<3&&o.v.indexOf(t)<0)o.v.push(t)})));
+    sch=Object.keys(g).sort((x,y)=>g[y].n-g[x].n||x.localeCompare(y,'it',{numeric:true})).slice(0,40).map(k=>g[k]);
     if(sch.length){const ir=await sb.from('impianti').select('*').in('indirizzo',sch.map(x=>x.a));(ir.data||[]).forEach(x=>{schR[x.indirizzo]=x});sch=sch.filter(x=>schR[x.a])}
   }catch(e){sch=[]}
   let h='',n=0;
   for(const[k,rows,tot]of out){if(!rows.length)continue;n+=rows.length;const m=MODULI[k],cs=m.campi.filter(c=>c.list).slice(0,3);
     h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">'+esc(m.nome)+' <span class="muted">('+(tot>rows.length?rows.length+' di '+tot:rows.length)+')</span>'+(tot>rows.length&&k==='documenti'?' <a href="#" class="vtd" style="font-size:13px;margin-left:.6rem">Vedi tutti nella sezione Documenti →</a>':'')+'</h3><ul class="lst">'+rows.map(r=>{const ql=q.toLowerCase();let sn='';for(const c of m.campi){if(c.t!=='long'&&c.t!=='text')continue;if(cs.some(x=>x.k===c.k))continue;const v=String(r[c.k]||''),i=v.toLowerCase().indexOf(ql);if(i>=0){sn='<small class="muted" style="display:block;margin:.1rem 0 .35rem">…'+esc(v.slice(Math.max(0,i-45),i+q.length+70).replace(/\s+/g,' '))+'…</small>';break}}
       return'<li><a href="'+(k==='documenti'&&/^https?:\/\//i.test(r.link||'')?esc(r.link)+'" target="_blank" rel="noopener" data-dir="1':'#')+'" data-k="'+k+'" data-id="'+esc(r.id)+'">'+esc((m.glob?m.glob(r):cs.map(c=>r[c.k]).filter(Boolean).join(' · '))||'(senza titolo)')+'</a>'+sn+'</li>'}).join('')+'</ul></div>'}
-  if(sch.length){n+=sch.length;h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">Componenti dagli schemi tecnici <span class="muted">('+sch.length+' impianti)</span></h3><ul class="lst">'+sch.map(x=>'<li><a href="#" data-sk="'+esc(x.a)+'">'+esc(x.a)+'</a> <span class="muted">'+x.n+(x.n===1?' componente':' componenti')+': '+esc(x.v.join(' | '))+'</span></li>').join('')+'</ul></div>'}
+  if(sch.length){n+=sch.length;h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">Schemi tecnici, note e componenti <span class="muted">('+sch.length+' impianti)</span></h3><ul class="lst">'+sch.map(x=>'<li><a href="#" data-sk="'+esc(x.a)+'">'+esc(x.a)+'</a> <span class="muted">'+x.n+(x.n===1?' riscontro':' riscontri')+' · '+esc(x.v.join(' | '))+'</span></li>').join('')+'</ul></div>'}
   ris.innerHTML=n?h:'<p class="muted">Nessun risultato in tutta l\'archivio.</p>';
   ris.querySelectorAll('a[data-sk]').forEach(a=>a.onclick=e=>{e.preventDefault();const r=schR[a.dataset.sk];if(r){corrente='impianti';scheda(r)}});
   ris.querySelectorAll('a.vtd').forEach(a=>a.onclick=async e=>{e.preventDefault();docPre={q:$('#search').value.trim()};await apri('documenti')});
@@ -2082,7 +2102,7 @@ function anteprimaImport(nome,righe){
 var DOCT_CSS='.dt{margin:.2rem 0 1rem}.dt details{border:1px solid var(--bd);border-radius:10px;margin:.5rem 0;background:var(--card)}.dt summary{cursor:pointer;padding:.55rem .8rem;font-weight:600;list-style:none;display:flex;align-items:center;gap:.5rem}.dt summary::-webkit-details-marker{display:none}.dt summary::before{content:"▸";color:var(--ac);font-size:.85em;transition:transform .15s}.dt details[open]>summary::before{transform:rotate(90deg)}.dt summary .n{margin-left:auto;font-weight:500;color:var(--mut);font-size:.85em}.dt .db{padding:.1rem .8rem .7rem}.dt table{width:100%;border-collapse:collapse;font-size:.88rem}.dt th{text-align:left;color:var(--mut);font-weight:600;padding:.3rem .4rem;border-bottom:1px solid var(--bd);white-space:nowrap}.dt td{padding:.35rem .4rem;border-bottom:1px solid var(--bd);vertical-align:top}.dt .w{overflow-x:auto}.dt .sg{font-weight:700;color:var(--ac);white-space:nowrap}.dt .lg{display:block;color:var(--mut);font-size:.78rem;margin-top:.15rem;line-height:1.3}.dt .v{display:inline-block;font-size:.7rem;font-weight:600;color:var(--wa);border:1px solid var(--wa);border-radius:999px;padding:0 .45rem;margin-left:.35rem;white-space:nowrap;cursor:help}.dt .ok{color:var(--ok)}.dt .ko{color:var(--ko)}.dt .chs{display:flex;flex-wrap:wrap;gap:.35rem}.dt .ch{border:1px solid var(--bd);border-radius:999px;padding:.1rem .6rem;font-size:.82rem;background:var(--bg2)}.dt .ch b{color:var(--ac)}.dt .doc{border-left:3px solid var(--ac);padding:.2rem .7rem;margin:.5rem 0}.dt .doc .t{font-weight:600}.dt .doc .s{color:var(--mut);font-size:.84rem}.dt .it{padding:.35rem 0;border-bottom:1px solid var(--bd);font-size:.9rem}.dt .it:last-child{border-bottom:0}.dt .it .s{color:var(--mut);font-size:.78rem}.dt .pot{display:grid;grid-template-columns:max-content 1fr;gap:.2rem .9rem;font-size:.92rem}.dt .pot dt{color:var(--mut)}.dt .pot dd{margin:0}.dt .grav{font-size:.7rem;font-weight:700;text-transform:uppercase;border-radius:6px;padding:.05rem .4rem;margin-right:.4rem}.dt .grav.a{background:rgba(251,191,36,.18);color:var(--wa)}.dt .grav.i{background:var(--hov);color:var(--in)}.dt select{margin:.4rem 0;max-width:100%}.dt .src{color:var(--mut);font-size:.76rem;margin:.6rem 0 0}';
 function dtN(v){return v==null||v===''?'':esc(String(v).replace('.',','))}
 function dtVer(x,m){return String(x.da_verificare||'').toLowerCase()==='si'?'<span class="v" title="'+esc(m||x.motivo_verifica||x.nota||'Da verificare sul disegno originale')+'">da verificare</span>':''}
-function dtDet(titolo,n,corpo,aperto,id){return '<details'+(aperto?' open':'')+(id?' data-dt="'+id+'"':'')+'><summary>'+titolo+(n!=null?'<span class="n">'+n+'</span>':'')+'</summary><div class="db">'+corpo+'</div></details>'}
+function dtDet(titolo,n,corpo,aperto,id,sec){return '<details'+(aperto?' open':'')+(id?' data-dt="'+id+'"':'')+(sec?' data-sec="'+sec+'"':'')+'><summary>'+titolo+(n!=null?'<span class="n">'+n+'</span>':'')+'</summary><div class="db">'+corpo+'</div></details>'}
 function dtDati(x){
   var p=[];
   if(x.potenza_utile_kw)p.push('utile <b>'+dtN(x.potenza_utile_kw)+' kW</b>'+(x.potenza_utile_condizioni?' ('+esc(x.potenza_utile_condizioni)+')':''));
@@ -2110,7 +2130,7 @@ async function docTecnica(a){
     var im=(r[0].data||[])[0]||(r[13].data||[])[0],dc=r[1].data||[],cm=r[2].data||[],dn=r[3].data||[],nt=r[4].data||[],rs=r[5].data||[],qe=r[6].data||[];
     var an=(r[7].data||[]).filter(function(x){return String(x.indirizzo||'').split('+').some(function(p){return norm(p)===norm(a)})}),nTesti=r[8].count||0,nSimb=r[9].count||0,ds=r[10].data||[],ex=r[11].data||[],as=r[12].data||[];
     if(!im&&!dc.length&&!cm.length)return '';
-    var h='<h4>Documentazione tecnica dagli schemi <span class="muted">(estrazione del 21 e 22/11/2026)</span></h4><div class="dt"><style>'+DOCT_CSS+'</style>';
+    var h='<h4>Documentazione tecnica dagli schemi <span class="muted">(estrazione del 21 e 22/11/2026)</span></h4><div class="dt"><style>'+DOCT_CSS+'</style>@@STRIP@@';
     /* il documento */
     var docs=dc.filter(function(x){return x.ruolo==='documento'}),altri=dc.length-docs.length;
     var SDF={'L2-0036':1,'L2-0046':1},SDFT='stato di fatto precedente all\'intervento: non conta nella potenza';
@@ -2119,11 +2139,11 @@ async function docTecnica(a){
     var hd='';
     elenco.forEach(function(x){
       var fm=docs.filter(function(y){return ((/^L2-/.test(y.id_documento))?y.id_documento===x.id_documento:(y.codice_disegno||y.id_documento)===(x.codice_disegno||x.id_documento))}).map(function(y){return String(y.formato||'').toUpperCase()}).filter(function(v,i,s){return v&&s.indexOf(v)===i}).join(' + ');
-      var lk=x.url_sharepoint?' <a class="sc-ch" href="'+esc(okUrl(x.url_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>':'';
+      var lk=(x.url_sharepoint?' <a class="sc-ch" href="'+esc(okUrl(x.url_sharepoint))+'" target="_blank" rel="noopener">Apri su SharePoint</a>':'')+(x.nome_file?' <a href="#" class="sc-ch dtdoc" data-q="'+esc(x.nome_file)+'">Trova in Documenti</a>':'');
       hd+='<div class="doc"><div class="t">'+esc(x.categoria||'Documento')+(x.codice_disegno?' · '+esc(x.codice_disegno):'')+(x.parte_impianto?' · '+esc(x.parte_impianto):'')+(SDF[x.id_documento]?'<span class="v" title="'+SDFT+'">'+SDFT+'</span>':'')+(x.abbinamento_da_verificare==='si'?'<span class="v" title="'+esc(x.abbinamento_impianto||'')+'">abbinamento da verificare</span>':'')+lk+'</div>'+
         '<div class="s">'+(x.data_emissione?'Emesso il '+fmtD(x.data_emissione):'')+(x.ente_emittente?' da '+esc(x.ente_emittente):'')+(x.sigla_disegnatore?' · disegnatore '+esc(x.sigla_disegnatore):'')+(x.indirizzo_nel_cartiglio?' · nel cartiglio: '+esc(String(x.indirizzo_nel_cartiglio).slice(0,110)):'')+(x.formato_foglio?' · '+esc(x.formato_foglio):'')+(fm?' · '+fm:'')+'</div><div class="s">'+esc(x.nome_file||'')+' ('+esc(x.id_documento)+')</div></div>'});
     if(altri)hd+='<p class="src">+ '+altri+' file di servizio (pacchetti eTransmit, report, copie identiche) censiti in documenti.</p>';
-    h+=dtDet('Il documento',elenco.length+' disegni',hd||'<p class="muted">Nessun disegno.</p>',true);
+    h+=dtDet('Il documento',elenco.length+' disegni',hd||'<p class="muted">Nessun disegno.</p>',true,null,'doc');
     /* riepilogo e potenza */
     if(im){
       var pt='<dl class="pot">';
@@ -2161,7 +2181,7 @@ async function docTecnica(a){
     var tb='<div class="w"><table><thead><tr><th>Sigla</th><th>Componente</th><th>Marca e modello</th><th>Dati</th></tr></thead><tbody>';
     cm.forEach(function(x){tb+='<tr><td class="sg">'+esc(x.sigla||'')+(SDF[x.id_documento]?'<span class="v" title="'+SDFT+'">stato di fatto precedente</span>':'')+(x.quantita&&x.quantita!=='1'?' <span class="muted">×'+esc(x.quantita)+'</span>':'')+'</td><td>'+esc(x.tipo_componente||'')+(x.parte_impianto&&x.parte_impianto!=='centrale termica'?'<span class="lg">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+(x.testo_legenda?'<span class="lg">'+esc(x.testo_legenda)+'</span>':'')+(x.nota_lettura?'<span class="lg"><i>'+esc(x.nota_lettura)+'</i></span>':'')+'</td><td>'+esc([x.marca,x.modello].filter(Boolean).join(' '))+'</td><td>'+dtDati(x)+'</td></tr>'});
     tb+='</tbody></table></div><p class="src">Dati letti dalle legende degli schemi. «da verificare» = lettura a vista o dubbio specifico (passa il mouse per il motivo).</p>';
-    h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',cm.length<=60);
+    h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',cm.length<=60,null,'comp');
     if(ex.length){
       var et='<div class="w"><table><thead><tr><th>Componente</th><th>Blocchi nel DWG</th><th>Nota</th></tr></thead><tbody>'+ex.slice().sort(function(x,y){return String(x.tipo_componente).localeCompare(String(y.tipo_componente),'it')}).map(function(x){return '<tr><td>'+esc(x.tipo_componente||'')+dtVer(x,x.motivo_verifica)+'</td><td>'+esc(x.quantita||'')+'</td><td class="muted">'+esc(x.nota_lettura||'')+'</td></tr>'}).join('')+'</tbody></table></div><p class="src">Riconosciuti dai simboli del DWG meccanico: non sono in legenda, il significato è dedotto dal nome del blocco. Il numero può comprendere i simboli della legenda del disegno.</p>';
       h+=dtDet('Altri componenti riconosciuti dai simboli',ex.length,et)}
@@ -2177,18 +2197,22 @@ async function docTecnica(a){
       var gr={};nt.forEach(function(x){var k=x.tipo_nota||'altro';(gr[k]=gr[k]||[]).push(x)});
       var ks=Object.keys(gr).sort(function(x,y){var c=function(k){return /criticit/.test(k)?0:/frammento/.test(k)?9:/^annotazione/.test(k)?5:3};return c(x)-c(y)||x.localeCompare(y)});
       var nb='';ks.forEach(function(k){nb+=dtDet(esc(k.charAt(0).toUpperCase()+k.slice(1)),gr[k].length,gr[k].map(function(x){return '<div class="it">'+(x.voce?'<b>'+esc(x.voce)+':</b> ':'')+esc(x.testo||'')+dtVer(x)+'<div class="s">'+esc(x.codice_disegno||'')+(x.presente_nel_pdf==='no'?' · scritta nel DWG, non nel PDF':'')+(x.fonte?' · '+esc(x.fonte):'')+'</div></div>'}).join(''),/criticit/.test(k))});
-      h+=dtDet('Note e criticità dai disegni',nt.length,nb)}
+      h+=dtDet('Note e criticità dai disegni',nt.length,nb,true,null,'note')}
     /* anomalie */
-    if(an.length)h+=dtDet('Anomalie trovate nella lettura',an.length,an.map(function(x){return '<div class="it"><span class="grav '+(x.gravita==='da verificare'?'a':'i')+'">'+esc(x.gravita||'')+'</span>'+esc(x.descrizione||'')+(x.valore_letto?'<div class="s">Letto: '+esc(x.valore_letto)+(x.valore_di_confronto?' · confronto: '+esc(x.valore_di_confronto):'')+'</div>':'')+'<div class="s">'+esc(x.tipo||'')+(x.nome_file?' · '+esc(x.nome_file):'')+' · '+(x.stato==='chiusa'?'<span class="ok">chiusa</span>'+(x.decisione?': '+esc(x.decisione):''):'<span class="ko">aperta</span>')+'</div></div>'}).join(''));
+    if(an.length)h+=dtDet('Anomalie trovate nella lettura',an.length,an.map(function(x){return '<div class="it"><span class="grav '+(x.gravita==='da verificare'?'a':'i')+'">'+esc(x.gravita||'')+'</span>'+esc(x.descrizione||'')+(x.valore_letto?'<div class="s">Letto: '+esc(x.valore_letto)+(x.valore_di_confronto?' · confronto: '+esc(x.valore_di_confronto):'')+'</div>':'')+'<div class="s">'+esc(x.tipo||'')+(x.nome_file?' · '+esc(x.nome_file):'')+' · '+(x.stato==='chiusa'?'<span class="ok">chiusa</span>'+(x.decisione?': '+esc(x.decisione):''):'<span class="ko">aperta</span>')+'</div></div>'}).join(''),true,null,'anom');
     /* quadri elettrici */
     if(qe.length){var qs={};qe.forEach(function(x){qs[x.etichetta]=(qs[x.etichetta]||0)+1});h+=dtDet('Quadri elettrici (etichette)',Object.keys(qs).length,'<div class="chs">'+Object.keys(qs).sort().map(function(k){return '<span class="ch">'+esc(k)+'</span>'}).join('')+'</div><p class="src">Etichette lette nello schema elettrico unifilare (DWG).</p>')}
     /* testi e simboli, caricati all'apertura */
     if(nTesti)h+=dtDet('Testi letti nei disegni',nTesti,'<p class="muted">Caricamento…</p>',false,'testi');
     if(nSimb)h+=dtDet('Simboli (blocchi CAD) nei DWG',nSimb,'<p class="muted">Caricamento…</p>',false,'simboli');
+    var chp=[['doc','Schemi e documenti',Object.keys(pdfCod).length],['note','Note e criticità',nt.length],['anom','Anomalie',an.length],['comp','Componenti',cm.length]].filter(function(c){return c[2]});
+    h=h.replace('@@STRIP@@',chp.length?'<div class="chs" style="margin:.2rem 0 .6rem">'+chp.map(function(c){return '<a href="#" class="ch" data-vai="'+c[0]+'" style="text-decoration:none"><b>'+c[2]+'</b> '+c[1]+'</a>'}).join('')+'</div>':'');
     return h+'</div>'
   }catch(e){console.warn('docTecnica',e);return ''}
 }
 function bindDocTecnica(root,a){
+  root.querySelectorAll('a.dtdoc').forEach(function(l){l.onclick=function(e){e.preventDefault();var d=l.closest('dialog');if(d&&d.open)d.close();docPre={q:l.dataset.q};apri('documenti')}});
+  root.querySelectorAll('[data-vai]').forEach(function(b){b.onclick=function(e){e.preventDefault();var t=root.querySelector('details[data-sec="'+b.dataset.vai+'"]');if(t){t.open=true;t.scrollIntoView({behavior:'smooth',block:'start'})}}});
   root.querySelectorAll('.dt details[data-dt]').forEach(function(d){
     d.addEventListener('toggle',async function(){
       if(!d.open||d.dataset.ok)return;d.dataset.ok='1';var b=d.querySelector('.db'),k=d.dataset.dt;
