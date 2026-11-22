@@ -1760,11 +1760,20 @@ async function ricercaGlobale(){
   const out=await Promise.all(TABELLE.map(async k=>{
     const m=MODULI[k],cols=m.campi.filter(c=>c.t==='text'||c.t==='long'||c.t==='sel').map(c=>c.k+'.ilike.%'+q+'%').join(',');
     const{data,count}=await sb.from(m.tab).select('*',{count:'exact'}).or(cols).limit(25);return[k,data||[],count||0]}));
+  let sch=[],schR={};
+  try{
+    const cq=await sb.from('doc_componenti').select('indirizzo,tipo_componente,marca,modello,matricola,sigla').or(['marca','modello','matricola','tipo_componente','testo_legenda'].map(c=>c+'.ilike.%'+q+'%').join(',')).limit(600);
+    const g={};(cq.data||[]).forEach(x=>{const o=g[x.indirizzo]||(g[x.indirizzo]={a:x.indirizzo,n:0,v:[]});o.n++;const t=[x.sigla,x.tipo_componente,[x.marca,x.modello].filter(Boolean).join(' '),x.matricola?'matr. '+x.matricola:''].filter(Boolean).join(' · ');if(o.v.length<3&&o.v.indexOf(t)<0)o.v.push(t)});
+    sch=Object.keys(g).sort((x,y)=>x.localeCompare(y,'it',{numeric:true})).slice(0,40).map(k=>g[k]);
+    if(sch.length){const ir=await sb.from('impianti').select('*').in('indirizzo',sch.map(x=>x.a));(ir.data||[]).forEach(x=>{schR[x.indirizzo]=x});sch=sch.filter(x=>schR[x.a])}
+  }catch(e){sch=[]}
   let h='',n=0;
   for(const[k,rows,tot]of out){if(!rows.length)continue;n+=rows.length;const m=MODULI[k],cs=m.campi.filter(c=>c.list).slice(0,3);
     h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">'+esc(m.nome)+' <span class="muted">('+(tot>rows.length?rows.length+' di '+tot:rows.length)+')</span>'+(tot>rows.length&&k==='documenti'?' <a href="#" class="vtd" style="font-size:13px;margin-left:.6rem">Vedi tutti nella sezione Documenti →</a>':'')+'</h3><ul class="lst">'+rows.map(r=>{const ql=q.toLowerCase();let sn='';for(const c of m.campi){if(c.t!=='long'&&c.t!=='text')continue;if(cs.some(x=>x.k===c.k))continue;const v=String(r[c.k]||''),i=v.toLowerCase().indexOf(ql);if(i>=0){sn='<small class="muted" style="display:block;margin:.1rem 0 .35rem">…'+esc(v.slice(Math.max(0,i-45),i+q.length+70).replace(/\s+/g,' '))+'…</small>';break}}
       return'<li><a href="'+(k==='documenti'&&/^https?:\/\//i.test(r.link||'')?esc(r.link)+'" target="_blank" rel="noopener" data-dir="1':'#')+'" data-k="'+k+'" data-id="'+esc(r.id)+'">'+esc((m.glob?m.glob(r):cs.map(c=>r[c.k]).filter(Boolean).join(' · '))||'(senza titolo)')+'</a>'+sn+'</li>'}).join('')+'</ul></div>'}
+  if(sch.length){n+=sch.length;h+='<div class="card" style="margin-bottom:.8rem"><h3 style="margin-top:0">Componenti dagli schemi tecnici <span class="muted">('+sch.length+' impianti)</span></h3><ul class="lst">'+sch.map(x=>'<li><a href="#" data-sk="'+esc(x.a)+'">'+esc(x.a)+'</a> <span class="muted">'+x.n+(x.n===1?' componente':' componenti')+': '+esc(x.v.join(' | '))+'</span></li>').join('')+'</ul></div>'}
   ris.innerHTML=n?h:'<p class="muted">Nessun risultato in tutta l\'archivio.</p>';
+  ris.querySelectorAll('a[data-sk]').forEach(a=>a.onclick=e=>{e.preventDefault();const r=schR[a.dataset.sk];if(r){corrente='impianti';scheda(r)}});
   ris.querySelectorAll('a.vtd').forEach(a=>a.onclick=async e=>{e.preventDefault();docPre={q:$('#search').value.trim()};await apri('documenti')});
   ris.querySelectorAll('a[data-k]').forEach(a=>a.onclick=async e=>{if(a.dataset.dir)return;e.preventDefault();const k=a.dataset.k,row=out.find(o=>o[0]===k)[1].find(x=>x.id===a.dataset.id);if(MODULI[k].vista)return schedaCens(row,ricercaGlobale);corrente=k;MODULI[k].dossier?scheda(row):modulo(row,k,()=>apri('oggi'))});
 }
@@ -2145,14 +2154,14 @@ async function docTecnica(a){
         SEZ.forEach(function(sz){var l=it.filter(function(x){return x.sezione===sz});if(!l.length)return;
           db+='<div class="it"><b>'+esc(sz)+'</b><ul class="lst">'+l.map(function(x){return '<li>'+esc(x.testo)+dtVer(x)+(/interpretato/.test(x.fonte||'')?' <span class="s">(dedotto dal simbolo)</span>':'')+'</li>'}).join('')+'</ul></div>'})});
       var vis=dsF.some(function(x){return /a vista/.test(x.fonte||'')});
-      h+=dtDet('Descrizione della centrale',dsF.length+' voci',db+'<p class="src">Frasi riprese dalla legenda e dalle etichette del disegno'+(vis?'; per questo impianto il PDF non ha testo estraibile e i dati sono letti a vista':'')+'. Le frasi di legenda troncate sono così anche nel PDF.</p>',true)}
+      h+=dtDet('Descrizione della centrale',dsF.length+' voci',db+'<p class="src">Frasi riprese dalla legenda e dalle etichette del disegno'+(vis?'; per questo impianto il PDF non ha testo estraibile e i dati sono letti a vista':'')+'. Le frasi di legenda troncate sono così anche nel PDF.</p>',dsF.length<=80)}
     /* componenti */
     var ord=function(x){var t=String(x.tipo_componente||'').toLowerCase();return t.indexOf('generatore')===0?0:/sicurezza|valvola|vaso/.test(t)?1:/pompa/.test(t)?2:3};
     cm=cm.slice().sort(function(x,y){return ord(x)-ord(y)||String(x.parte_impianto).localeCompare(String(y.parte_impianto))||String(x.sigla).localeCompare(String(y.sigla),'it',{numeric:true})});
     var tb='<div class="w"><table><thead><tr><th>Sigla</th><th>Componente</th><th>Marca e modello</th><th>Dati</th></tr></thead><tbody>';
     cm.forEach(function(x){tb+='<tr><td class="sg">'+esc(x.sigla||'')+(SDF[x.id_documento]?'<span class="v" title="'+SDFT+'">stato di fatto precedente</span>':'')+(x.quantita&&x.quantita!=='1'?' <span class="muted">×'+esc(x.quantita)+'</span>':'')+'</td><td>'+esc(x.tipo_componente||'')+(x.parte_impianto&&x.parte_impianto!=='centrale termica'?'<span class="lg">'+esc(x.parte_impianto)+'</span>':'')+dtVer(x)+(x.testo_legenda?'<span class="lg">'+esc(x.testo_legenda)+'</span>':'')+(x.nota_lettura?'<span class="lg"><i>'+esc(x.nota_lettura)+'</i></span>':'')+'</td><td>'+esc([x.marca,x.modello].filter(Boolean).join(' '))+'</td><td>'+dtDati(x)+'</td></tr>'});
     tb+='</tbody></table></div><p class="src">Dati letti dalle legende degli schemi. «da verificare» = lettura a vista o dubbio specifico (passa il mouse per il motivo).</p>';
-    h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',true);
+    h+=dtDet('Cosa c\'è nella centrale · componenti',cm.length,cm.length?tb:'<p class="muted">Nessun componente in legenda.</p>',cm.length<=60);
     if(ex.length){
       var et='<div class="w"><table><thead><tr><th>Componente</th><th>Blocchi nel DWG</th><th>Nota</th></tr></thead><tbody>'+ex.slice().sort(function(x,y){return String(x.tipo_componente).localeCompare(String(y.tipo_componente),'it')}).map(function(x){return '<tr><td>'+esc(x.tipo_componente||'')+dtVer(x,x.motivo_verifica)+'</td><td>'+esc(x.quantita||'')+'</td><td class="muted">'+esc(x.nota_lettura||'')+'</td></tr>'}).join('')+'</tbody></table></div><p class="src">Riconosciuti dai simboli del DWG meccanico: non sono in legenda, il significato è dedotto dal nome del blocco. Il numero può comprendere i simboli della legenda del disegno.</p>';
       h+=dtDet('Altri componenti riconosciuti dai simboli',ex.length,et)}
