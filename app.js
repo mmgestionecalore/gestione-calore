@@ -1179,6 +1179,21 @@ function barraDoc(){
   return '<div class="chips fb">'+fonti.map(f=>ch(f,dati.filter(r=>r.fonte===f).length,fonteDoc===f)).join('')+'</div>'+sub+
     '<div class="chips fb"><button type="button" class="chip'+(soloDopp?' on':'')+'" id="dopp" title="File con lo stesso nome e la stessa dimensione, in cartelle diverse">Possibili doppioni <span>'+nd+'</span></button></div>'+'<div class="vc"><label>'+lab+' <select id="cdoc"><option value="">— tutte —</option>'+cart.map(([k,n])=>'<option value="'+esc(k)+'"'+(k===cartDoc?' selected':'')+'>'+esc(k)+' ('+n+')</option>').join('')+'</select></label> '+ap+((fonteDoc||cartDoc||lottoDoc||soloDopp)?' <button type="button" class="ghost mini" id="azzerad">Azzera filtri</button>':'')+'</div>';
 }
+/* schemi unifilari su SharePoint: link diretti meccanico / elettrico */
+var SP_SCHEMI='https://metropolitanamilanese.sharepoint.com/sites/GestioneCalore/Archivio%20Schemi%20Unifilari/';
+function spUrl(p){
+  if(/\.[a-z0-9]{2,4}$/i.test(p))return SP_SCHEMI+p.split('/').map(encodeURIComponent).join('/');
+  return SP_SCHEMI+'Forms/AllItems.aspx?id='+encodeURIComponent('/sites/GestioneCalore/Archivio Schemi Unifilari/'+p);
+}
+async function blocSchemiSp(a,lotto){
+  var r=await sb.from('schemi_sharepoint').select('tipo,percorso').eq('indirizzo',a);
+  var m={};(r.data||[]).forEach(function(x){m[x.tipo]=x.percorso});
+  if(r.error)return '';
+  var b=function(t,l){return m[t]?'<a class="ch" href="'+esc(spUrl(m[t]))+'" target="_blank" rel="noopener" style="text-decoration:none">'+l+' ↗</a>':'<span class="ch" style="opacity:.55">'+l+': non presente in archivio</span>'};
+  if(!m.meccanico&&!m.elettrico&&!/LOTTO [12]$/.test(lotto||''))return '';
+  return '<h4>Schemi unifilari della centrale</h4><div class="chs" style="margin:.1rem 0 .6rem">'+b('meccanico','Schema meccanico')+b('elettrico','Schema elettrico')+'</div>';
+}
+
 async function scheda(r){
   const a=r.indirizzo;segnaRecente(a);const coll=[
    ['ordini','Ordini e manutenzione',x=>fmtD(x.data)+' · '+(x.numero||'')+' · '+(x.codice_stato||'')+' · '+(x.descrizione||'')],
@@ -1196,6 +1211,7 @@ async function scheda(r){
   for(const c of MODULI.impianti.campi.slice(1))if(r[c.k])h+='<dt>'+esc(c.l)+'</dt><dd>'+esc(r[c.k])+'</dd>';
   h+='</dl>';
   h+=await chiChiamo(r);
+  h+=await blocSchemiSp(a,r.lotto);
   var _dt=await docTecnica(a);
   h+='<h4>Scheda tecnica <span class="muted">('+cs.length+')</span></h4>'+(cs.length?cs.map(x=>'<div class="cens-box"><div class="ct"><b>'+esc(x.titolo||'')+'</b><button type="button" class="ghost mini" data-cm="'+esc(x.id)+'">Modifica</button></div>'+corpoCens(x)+'</div>').join(''):'<p class="muted">Nessuna scheda.</p>')+'<p><button type="button" class="ghost mini" id="nc" style="margin-left:0">+ Aggiungi scheda</button></p>';
   h+=_dt;
